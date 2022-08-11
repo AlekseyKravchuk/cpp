@@ -1,13 +1,13 @@
 #include <iostream>
 #include <set>
+#include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
-#include <sstream>
 
 using namespace std;
 
-# global constant to store maximum number of relevant documents to retirieve
+// global constant to store maximum number of relevant documents to retirieve
 int MAX_RESULT_DOCUMENT_COUNT = 5;
 
 string ReadLine() {
@@ -28,7 +28,7 @@ vector<string> SplitIntoWords(const string& text) {
     vector<string> words;
     string word;
 
-    while(iss >> word) {
+    while (iss >> word) {
         words.push_back(word);
     }
 
@@ -61,6 +61,7 @@ void AddDocument(vector<pair<int, vector<string>>>& documents, const set<string>
 
 set<string> ParseQuery(const string& text, const set<string>& stop_words) {
     set<string> query_words;
+
     for (const string& word : SplitIntoWordsNoStop(text, stop_words)) {
         query_words.insert(word);
     }
@@ -106,6 +107,18 @@ vector<pair<int, int>> FindAllDocuments(const vector<pair<int, vector<string>>>&
     // Первым элементом возвращаемых пар идёт релевантность документа, а вторым - его id
 }
 */
+// Для каждого документа возвращает его id и релевантность
+vector<pair<int, int>> FindAllDocuments(const vector<pair<int, vector<string>>>& documents,
+                                        const set<string>& stop_words, const string& query) {
+    const set<string> query_words = ParseQuery(query, stop_words);
+    vector<pair<int, int>> matched_documents;
+    for (const auto& document : documents) {
+        const int relevance = MatchDocument(document, query_words);
+        if (relevance > 0) {
+            matched_documents.push_back({document.first, relevance});
+        }
+    }
+    return matched_documents;
 
 /*
 // Возвращает топ-5 самых релевантных документов в виде пар: {id, релевантность}

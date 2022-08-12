@@ -16,13 +16,7 @@ string ReadLine() {
     return s;
 }
 
-int ReadLineWithNumber() {
-    int result = 0;
-    cin >> result;
-    ReadLine();
-    return result;
-}
-
+// converts space-separated string "text" into vector of strings
 vector<string> SplitIntoWords(const string& text) {
     istringstream iss(text);
     vector<string> words;
@@ -35,16 +29,20 @@ vector<string> SplitIntoWords(const string& text) {
     return words;
 }
 
+// composes set of stop words
 set<string> ParseStopWords(const string& text) {
     set<string> stop_words;
+
     for (const string& word : SplitIntoWords(text)) {
         stop_words.insert(word);
     }
     return stop_words;
 }
 
-vector<string> SplitIntoWordsNoStop(const string& text, const set<string>& stop_words) {
+vector<string> SplitIntoWordsNoStop(const string& text,
+                                    const set<string>& stop_words) {
     vector<string> words;
+
     for (const string& word : SplitIntoWords(text)) {
         if (stop_words.count(word) == 0) {
             words.push_back(word);
@@ -53,7 +51,8 @@ vector<string> SplitIntoWordsNoStop(const string& text, const set<string>& stop_
     return words;
 }
 
-void AddDocument(vector<pair<int, vector<string>>>& documents, const set<string>& stop_words,
+void AddDocument(vector<pair<int, vector<string>>>& documents,
+                 const set<string>& stop_words,
                  int document_id, const string& document) {
     const vector<string> words = SplitIntoWordsNoStop(document, stop_words);
     documents.push_back(pair<int, vector<string>>{document_id, words});
@@ -61,19 +60,24 @@ void AddDocument(vector<pair<int, vector<string>>>& documents, const set<string>
 
 set<string> ParseQuery(const string& text, const set<string>& stop_words) {
     set<string> query_words;
-
     for (const string& word : SplitIntoWordsNoStop(text, stop_words)) {
         query_words.insert(word);
     }
     return query_words;
 }
 
-int MatchDocument(const pair<int, vector<string>>& content, const set<string>& query_words) {
+
+// !!!!!!!!!!!!!!! TO DO:
+// structured bindings in C++ is analogues to unpacking in Python
+// Returns document_relevance.
+int MatchDocument(const pair<int, vector<string>>& db_entry,
+                  const set<string>& query_words) {
     if (query_words.empty()) {
         return 0;
     }
     set<string> matched_words;
-    for (const string& word : content.second) {
+    
+    for (const auto& [doc_id, vector_of_word] : db_entry) {
         if (matched_words.count(word) != 0) {
             continue;
         }
@@ -84,15 +88,42 @@ int MatchDocument(const pair<int, vector<string>>& content, const set<string>& q
     return static_cast<int>(matched_words.size());
 }
 
-// Для каждого документа возвращает его id и релевантность
-vector<pair<int, int>> FindDocuments(const vector<pair<int, vector<string>>>& documents,
-                                     const set<string>& stop_words, const string& query) {
+void ComposeDocumentsDB(vector<pair<int, vector<string>>>& documents,
+                        const set<string>& stop_words) {
+    try {
+        const int doc_count = stoi(ReadLine());
+
+        for (int doc_id = 0; doc_id < doc_count; ++doc_id) {
+            AddDocument(documents, stop_words, doc_id, ReadLine());
+        }
+    } catch (std::invalid_argument& e) {
+        // if no conversion could be performed
+        cout << "Invalid argument for [document_count] variable." << endl;
+    } catch (std::out_of_range& e) {
+        // if the converted value would fall out of the range of the result type
+        // or if the underlying function (std::strtol or std::strtoull) sets errno
+        // to ERANGE.
+        cout << "[document_count] is out of range." << endl;
+    } catch (...) {
+        // everything else
+        cout << "Unexpected error occured." << endl;
+    }
+}
+
+// Returns vector of pairs in form of {document_relevance, document_id}
+vector<pair<int, int>> FindAllDocuments(const vector<pair<int, vector<string>>>& documents,
+                                        const set<string>& stop_words,
+                                        const string& query) {
     const set<string> query_words = ParseQuery(query, stop_words);
+
+    // each pair in vector represents {document_relevance, document_id}
     vector<pair<int, int>> matched_documents;
+
     for (const auto& document : documents) {
         const int relevance = MatchDocument(document, query_words);
+
         if (relevance > 0) {
-            matched_documents.push_back({document.first, relevance});
+            matched_documents.push_back({relevance, document.first});
         }
     }
     return matched_documents;
@@ -107,18 +138,6 @@ vector<pair<int, int>> FindAllDocuments(const vector<pair<int, vector<string>>>&
     // Первым элементом возвращаемых пар идёт релевантность документа, а вторым - его id
 }
 */
-// Для каждого документа возвращает его id и релевантность
-vector<pair<int, int>> FindAllDocuments(const vector<pair<int, vector<string>>>& documents,
-                                        const set<string>& stop_words, const string& query) {
-    const set<string> query_words = ParseQuery(query, stop_words);
-    vector<pair<int, int>> matched_documents;
-    for (const auto& document : documents) {
-        const int relevance = MatchDocument(document, query_words);
-        if (relevance > 0) {
-            matched_documents.push_back({document.first, relevance});
-        }
-    }
-    return matched_documents;
 
 /*
 // Возвращает топ-5 самых релевантных документов в виде пар: {id, релевантность}
@@ -129,19 +148,21 @@ vector<pair<int, int>> FindTopDocuments(const vector<pair<int, vector<string>>>&
 */
 
 int main() {
-    const string stop_words_joined = ReadLine();
-    const set<string> stop_words = ParseStopWords(stop_words_joined);
-
-    // Read documents
+    // Placeholder for documents DB: each entry is represented by pair:
+    // {FIRST: document_id; SECOND: vector of words composing the document}
     vector<pair<int, vector<string>>> documents;
-    const int document_count = ReadLineWithNumber();
-    for (int document_id = 0; document_id < document_count; ++document_id) {
-        AddDocument(documents, stop_words, document_id, ReadLine());
-    }
 
+    // get set of stop words
+    const set<string> stop_words_unique = ParseStopWords(ReadLine());
+
+    // read documents into database
+    ComposeDocumentsDB(documents, stop_words_unique);
+
+    // read query, the last line in the input
     const string query = ReadLine();
+
     // Вместо FindDocuments используйте FindTopDocuments
-    for (auto [document_id, relevance] : FindDocuments(documents, stop_words, query)) {
+    for (auto [document_id, relevance] : FindAllDocuments(documents, stop_words_unique, query)) {
         cout << "{ document_id = "s << document_id << ", relevance = "s << relevance << " }"s
              << endl;
     }

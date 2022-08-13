@@ -4,11 +4,23 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <algorithm>   // header for function "std::sort()"
 
 using namespace std;
 
 // global constant to store maximum number of relevant documents to retirieve
 int MAX_RESULT_DOCUMENT_COUNT = 5;
+
+// accept 2 pairs in form: {document_relevance, document_id}
+bool sortDocumentsByRelevance(pair<int, int> doc1,
+                              pair<int, int> doc2) {
+    // if documents have the same relevance
+    if (doc1.first == doc2.first) {
+        return doc1.second > doc2.second;
+    } else {
+        return doc1.first > doc2.first;
+    }
+}
 
 string ReadLine() {
     string s;
@@ -67,7 +79,6 @@ set<string> ParseQuery(const string& text, const set<string>& stop_words) {
 }
 
 
-// !!!!!!!!!!!!!!! TO DO:
 // structured bindings in C++ is analogues to unpacking in Python
 // Returns document_relevance.
 int MatchDocument(const pair<int, vector<string>>& db_entry,
@@ -75,12 +86,14 @@ int MatchDocument(const pair<int, vector<string>>& db_entry,
     if (query_words.empty()) {
         return 0;
     }
+
     set<string> matched_words;
     
-    for (const auto& [doc_id, vector_of_word] : db_entry) {
+    for (const string& word: db_entry.second) {
         if (matched_words.count(word) != 0) {
             continue;
         }
+
         if (query_words.count(word) != 0) {
             matched_words.insert(word);
         }
@@ -111,7 +124,7 @@ void ComposeDocumentsDB(vector<pair<int, vector<string>>>& documents,
 }
 
 // Returns vector of pairs in form of {document_relevance, document_id}
-vector<pair<int, int>> FindAllDocuments(const vector<pair<int, vector<string>>>& documents,
+vector<pair<int, int>> FindAllDocuments(const vector<pair<int, vector<string>>>& documents_db,
                                         const set<string>& stop_words,
                                         const string& query) {
     const set<string> query_words = ParseQuery(query, stop_words);
@@ -119,40 +132,41 @@ vector<pair<int, int>> FindAllDocuments(const vector<pair<int, vector<string>>>&
     // each pair in vector represents {document_relevance, document_id}
     vector<pair<int, int>> matched_documents;
 
-    for (const auto& document : documents) {
-        const int relevance = MatchDocument(document, query_words);
+    for (const auto& db_entry : documents_db) {
+        int doc_id = db_entry.first;
+        const int doc_relevance = MatchDocument(db_entry, query_words);
 
-        if (relevance > 0) {
-            matched_documents.push_back({relevance, document.first});
+        if (doc_relevance > 0) {
+            matched_documents.push_back({doc_relevance, doc_id});
         }
     }
     return matched_documents;
 }
 
-/*
-// Для каждого документа возвращает его релевантность и id
-vector<pair<int, int>> FindAllDocuments(const vector<pair<int, vector<string>>>& documents,
-    const set<string>& query_words)
-{
-    // Превратите функцию FindDocuments в FindAllDocuments
-    // Первым элементом возвращаемых пар идёт релевантность документа, а вторым - его id
-}
-*/
 
-/*
 // Возвращает топ-5 самых релевантных документов в виде пар: {id, релевантность}
-vector<pair<int, int>> FindTopDocuments(const vector<pair<int, vector<string>>>& documents,
-                                        const set<string>& stop_words, const string& raw_query) {
-    // Напишите функцию, используя FindAllDocuments
+vector<pair<int, int>> FindTopDocuments(const vector<pair<int, vector<string>>>& documents_db,
+                                        const set<string>& stop_words,
+                                        const string& raw_query) {
+    // Напишите функцию, используя FindAllDocuments-std=gnu++17
+    vector<pair<int, int>> ranked_docs = FindAllDocuments(documents_db, stop_words, raw_query);
+    sort(ranked_docs.begin(), ranked_docs.end(), sortDocumentsByRelevance);
+    
+    if(ranked_docs.size() >= MAX_RESULT_DOCUMENT_COUNT) {
+        return vector<pair<int, int>>{ranked_docs.begin(), ranked_docs.begin() + MAX_RESULT_DOCUMENT_COUNT};
+    } else {
+        return ranked_docs;
+    }
+
 }
-*/
+
 
 int main() {
     // Placeholder for documents DB: each entry is represented by pair:
     // {FIRST: document_id; SECOND: vector of words composing the document}
     vector<pair<int, vector<string>>> documents;
 
-    // get set of stop words
+    // get set of unique stop words
     const set<string> stop_words_unique = ParseStopWords(ReadLine());
 
     // read documents into database
@@ -161,8 +175,7 @@ int main() {
     // read query, the last line in the input
     const string query = ReadLine();
 
-    // Вместо FindDocuments используйте FindTopDocuments
-    for (auto [document_id, relevance] : FindAllDocuments(documents, stop_words_unique, query)) {
+    for (const auto& [relevance, document_id] : FindTopDocuments(documents, stop_words_unique, query)) {
         cout << "{ document_id = "s << document_id << ", relevance = "s << relevance << " }"s
              << endl;
     }

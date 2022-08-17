@@ -33,10 +33,26 @@ class SearchServer {
     set<string> _stop_words;
 };
 
-struct Document {
-    int id;
-    int relevance;
-};
+    void ComposeDocumentsDB() {
+        try {
+            const int doc_count = stoi(ReadLine());
+
+            for (int doc_id = 0; doc_id < doc_count; ++doc_id) {
+                this->AddDocument(doc_id, ReadLine());
+            }
+        } catch (std::invalid_argument& e) {
+            // if no conversion could be performed
+            cout << "Invalid argument for [document_count] variable." << endl;
+        } catch (std::out_of_range& e) {
+            // if the converted value would fall out of the range of the result type
+            // or if the underlying function (std::strtol or std::strtoull) sets errno
+            // to ERANGE.
+            cout << "[document_count] is out of range." << endl;
+        } catch (...) {
+            // everything else
+            cout << "Unexpected error occured." << endl;
+        }
+    }
 
 
 bool HasDocumentGreaterRelevance(const Document& lhs,

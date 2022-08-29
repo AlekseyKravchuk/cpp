@@ -33,3 +33,10 @@
 
 # VSCode
 .vscode/
+
+# executables
+bin/
+sprint_01/bin/
+
+# VSCode congiguration
+.idea/

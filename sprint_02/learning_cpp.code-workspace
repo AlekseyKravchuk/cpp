@@ -1,0 +1,18 @@
+{
+	"folders": [
+		{
+			"name": "learning_cpp",
+			"path": ".."
+		}
+	],
+    "settings": {
+        "files.associations": {
+            "vector": "cpp",
+            "iostream": "cpp",
+            "stdexcept": "cpp",
+            "ostream": "cpp",
+            "deque": "cpp",
+            "string": "cpp"
+        }
+    }
+}

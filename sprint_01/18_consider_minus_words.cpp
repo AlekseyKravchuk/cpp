@@ -80,7 +80,7 @@ class SearchServer {
    public:
     void SetStopWords(const string& text) {
         for (const string& word : SplitIntoWords(text)) {
-            stop_words_.insert(word);
+            _stop_words.insert(word);
         }
     }
 
@@ -110,10 +110,10 @@ class SearchServer {
     };
 
     vector<DocumentContent> _documents;
-    set<string> stop_words_;
+    set<string> _stop_words;
 
     bool IsStopWord(const string& word) const {
-        return stop_words_.count(word) > 0;
+        return _stop_words.count(word) > 0;
     }
 
     vector<string> SplitIntoWordsNoStop(const string& text) const {
@@ -134,7 +134,7 @@ class SearchServer {
             if (!word.empty()) {
                 if (word[0] == '-') {
                     word = word.substr(1);
-                    if (stop_words_.count(word) == 0) {  // word is NOT present in "stop_words_" set
+                    if (_stop_words.count(word) == 0) {  // word is NOT present in "stop_words_" set
                         query_words.minus_words.insert(word);
                     }
                 } else {

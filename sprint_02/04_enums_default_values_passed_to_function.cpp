@@ -93,7 +93,7 @@ class SearchServer {
     }
 
     vector<Document> FindTopDocuments(const string& raw_query,
-                                      DocumentStatus status) const {
+                                      DocumentStatus status = DocumentStatus::ACTUAL) const {
         const Query query = ParseQuery(raw_query);
         auto matched_documents = FindAllDocuments(query, status);
 
@@ -233,7 +233,7 @@ int main() {
     search_server.AddDocument(3, "ухоженный скворец евгений"s, DocumentStatus::BANNED, {9});
 
     cout << "ACTUAL:"s << endl;
-    for (const Document& document : search_server.FindTopDocuments("пушистый ухоженный кот"s, DocumentStatus::ACTUAL)) {
+    for (const Document& document : search_server.FindTopDocuments("пушистый ухоженный кот"s)) {
         PrintDocument(document);
     }
 
@@ -241,6 +241,4 @@ int main() {
     for (const Document& document : search_server.FindTopDocuments("пушистый ухоженный кот"s, DocumentStatus::BANNED)) {
         PrintDocument(document);
     }
-
-    return 0;
 }

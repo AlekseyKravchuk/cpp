@@ -4,6 +4,9 @@
 
 using namespace std;
 
+/* Все типы с суффиксом _t из таблицы доступны при подключении библиотеки cstdint.
+Гарантируется, что они имеют указанный размер и диапазон значений. */
+
 int main() {
     // const auto min = numeric_limits<int64_t>::min();   // минимальное значение типа int64_t
     // const auto max = numeric_limits<uint64_t>::max();  // максимальное значение типа uint64_t

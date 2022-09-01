@@ -198,15 +198,15 @@ class SearchServer {
         return words;
     }
 
-    Query ParseQuery(const string& text) const {
+    Query ParseQuery(const string& raw_query) const {
         Query query_words;
         set<string> plusWordsExceptMinusWords;
 
-        for (string& word : SplitIntoWordsNoStop(text)) {
+        for (string& word : SplitIntoWordsNoStop(raw_query)) {
             if (!word.empty()) {
                 if (word[0] == '-') {
                     word = word.substr(1);
-                    if (_stop_words.count(word) == 0) {  // word is NOT present in "stop_words_" set
+                    if (_stop_words.count(word) == 0) {  // word is NOT present in "_stop_words" set
                         query_words.minus_words.insert(word);
                     }
                 } else {

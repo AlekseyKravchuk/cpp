@@ -71,9 +71,9 @@ class SearchServer {
         const vector<string> words = SplitIntoWordsNoStop(document);
         const double inv_word_count = 1.0 / words.size();
         for (const string& word : words) {
-            word_to_document_freqs_[word][document_id] += inv_word_count;
+            _word_docID_freqs[word][document_id] += inv_word_count;
         }
-        documents_.emplace(document_id,
+        _documents.emplace(document_id,
                            DocumentData{
                                ComputeAverageRating(ratings),
                                status});
@@ -100,8 +100,8 @@ class SearchServer {
     };
 
     set<string> stop_words_;
-    map<string, map<int, double>> word_to_document_freqs_;
-    map<int, DocumentData> documents_;
+    map<string, map<int, double>> _word_docID_freqs;
+    map<int, DocumentData> _documents;
 
     bool IsStopWord(const string& word) const {
         return stop_words_.count(word) > 0;
@@ -169,28 +169,28 @@ class SearchServer {
 
     // Existence required
     double ComputeWordInverseDocumentFreq(const string& word) const {
-        return log(documents_.size() * 1.0 / word_to_document_freqs_.at(word).size());
+        return log(_documents.size() * 1.0 / _word_docID_freqs.at(word).size());
     }
 
     vector<Document> FindAllDocuments(const Query& query, DocumentStatus status) const {
         map<int, double> document_to_relevance;
         for (const string& word : query.plus_words) {
-            if (word_to_document_freqs_.count(word) == 0) {
+            if (_word_docID_freqs.count(word) == 0) {
                 continue;
             }
             const double inverse_document_freq = ComputeWordInverseDocumentFreq(word);
-            for (const auto [document_id, term_freq] : word_to_document_freqs_.at(word)) {
-                if (documents_.at(document_id).status == status) {
+            for (const auto [document_id, term_freq] : _word_docID_freqs.at(word)) {
+                if (_documents.at(document_id).status == status) {
                     document_to_relevance[document_id] += term_freq * inverse_document_freq;
                 }
             }
         }
 
         for (const string& word : query.minus_words) {
-            if (word_to_document_freqs_.count(word) == 0) {
+            if (_word_docID_freqs.count(word) == 0) {
                 continue;
             }
-            for (const auto [document_id, _] : word_to_document_freqs_.at(word)) {
+            for (const auto [document_id, _] : _word_docID_freqs.at(word)) {
                 document_to_relevance.erase(document_id);
             }
         }
@@ -199,7 +199,7 @@ class SearchServer {
         for (const auto [document_id, relevance] : document_to_relevance) {
             matched_documents.push_back({document_id,
                                          relevance,
-                                         documents_.at(document_id).rating});
+                                         _documents.at(document_id).rating});
         }
         return matched_documents;
     }

@@ -89,7 +89,7 @@ class SearchServer {
         const double inv_word_count = 1.0 / wordsNoStop.size();
 
         for (const string& word : wordsNoStop) {
-            _word2doc_freqs[word][docID] += inv_word_count;
+            _word_docID_freqs[word][docID] += inv_word_count;
         }
 
         _doc_ratings[docID] = ComputeAverageRating(ratings);
@@ -113,7 +113,7 @@ class SearchServer {
    private:
     int _document_count = 0;
     set<string> _stop_words;
-    map<string, map<int, double>> _word2doc_freqs;
+    map<string, map<int, double>> _word_docID_freqs;
     map<int, int> _doc_ratings;  // key: document_ID; value: document_Rating
 
     struct Query {
@@ -171,28 +171,28 @@ class SearchServer {
 
     // Existence required
     double ComputeWordInverseDocumentFreq(const string& word) const {
-        return log(_document_count * 1.0 / _word2doc_freqs.at(word).size());
+        return log(_document_count * 1.0 / _word_docID_freqs.at(word).size());
     }
 
     vector<Document> FindAllDocuments(const Query& query) const {
         map<int, double> doc_to_relevance;
 
         for (const string& word : query.plus_words) {
-            if (_word2doc_freqs.count(word) == 0) {
+            if (_word_docID_freqs.count(word) == 0) {
                 continue;
             }
             const double inverse_document_freq = ComputeWordInverseDocumentFreq(word);
-            for (const auto [document_id, term_freq] : _word2doc_freqs.at(word)) {
+            for (const auto [document_id, term_freq] : _word_docID_freqs.at(word)) {
                 doc_to_relevance[document_id] += term_freq * inverse_document_freq;
             }
         }
 
         for (const string& word : query.minus_words) {
-            if (_word2doc_freqs.count(word) == 0) {
+            if (_word_docID_freqs.count(word) == 0) {
                 continue;
             }
 
-            for (const auto [document_id, _] : _word2doc_freqs.at(word)) {
+            for (const auto [document_id, _] : _word_docID_freqs.at(word)) {
                 doc_to_relevance.erase(document_id);
             }
         }

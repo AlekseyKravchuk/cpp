@@ -84,7 +84,7 @@ class SearchServer {
         const double inv_word_count = 1.0 / words.size();
 
         for (const string& word : words) {
-            _word2doc_freqs[word][docID] += inv_word_count;
+            _word_docID_freqs[word][docID] += inv_word_count;
         }
 
         auto avg_rating = ComputeAverageRating(ratings);
@@ -110,7 +110,7 @@ class SearchServer {
 
    private:
     set<string> _stop_words;
-    map<string, map<int, double>> _word2doc_freqs;  // word: {docID: docRelevance}
+    map<string, map<int, double>> _word_docID_freqs;  // word: {docID: docRelevance}
     map<int, int> _doc_ratings;
     map<DocumentStatus, map<int, int>> _status_info;
 
@@ -177,26 +177,26 @@ class SearchServer {
 
     // Existence required
     double ComputeWordInverseDocumentFreq(const string& word) const {
-        return log(_doc_ratings.size() * 1.0 / _word2doc_freqs.at(word).size());
+        return log(_doc_ratings.size() * 1.0 / _word_docID_freqs.at(word).size());
     }
 
     vector<Document> FindAllDocuments(const Query& query, DocumentStatus status) const {
         map<int, double> doc2relevance;
         for (const string& word : query.plus_words) {
-            if (_word2doc_freqs.count(word) == 0) {
+            if (_word_docID_freqs.count(word) == 0) {
                 continue;
             }
             const double inverse_document_freq = ComputeWordInverseDocumentFreq(word);
-            for (const auto [document_id, term_freq] : _word2doc_freqs.at(word)) {
+            for (const auto [document_id, term_freq] : _word_docID_freqs.at(word)) {
                 doc2relevance[document_id] += term_freq * inverse_document_freq;
             }
         }
 
         for (const string& word : query.minus_words) {
-            if (_word2doc_freqs.count(word) == 0) {
+            if (_word_docID_freqs.count(word) == 0) {
                 continue;
             }
-            for (const auto [document_id, _] : _word2doc_freqs.at(word)) {
+            for (const auto [document_id, _] : _word_docID_freqs.at(word)) {
                 doc2relevance.erase(document_id);
             }
         }

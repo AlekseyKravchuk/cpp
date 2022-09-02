@@ -119,7 +119,12 @@ class SearchServer {
         auto matched_documents = FindAllDocuments(query, status);
 
         sort(matched_documents.begin(), matched_documents.end(),
-             [](const Document& lhs, const Document& rhs) {
+             [this](const Document& lhs, const Document& rhs) {
+                 const double diff = abs(lhs.relevance - rhs.relevance) / max(abs(lhs.relevance), abs(rhs.relevance));  // relative error
+                 if (diff < this->EPSILON) {
+                     // two relevances are concerned to be equal
+                     return lhs.rating > rhs.rating;
+                 }
                  return lhs.relevance > rhs.relevance;
              });
         if (matched_documents.size() > MAX_RESULT_DOCUMENT_COUNT) {
@@ -139,6 +144,7 @@ class SearchServer {
         set<string> minus_words;
     };
 
+    const double EPSILON = 1e-6;  // 10^(-6), constant to use when comparing two relevances
     set<string> _stop_words;
     map<string, map<int, double>> _word_docID_freqs;
     map<int, DocumentData> _documents;
@@ -224,15 +230,12 @@ class SearchServer {
     }
 };
 
-void PrintMatchDocumentResult(int document_id, const vector<string>& words, DocumentStatus status) {
+void PrintDocument(const Document& document) {
     cout << "{ "s
-         << "document_id = "s << document_id << ", "s
-         << "status = "s << static_cast<int>(status) << ", "s
-         << "words ="s;
-    for (const string& word : words) {
-        cout << ' ' << word;
-    }
-    cout << "}"s << endl;
+         << "document_id = "s << document.id << ", "s
+         << "relevance = "s << document.relevance << ", "s
+         << "rating = "s << document.rating
+         << " }"s << endl;
 }
 
 int main() {
@@ -241,10 +244,7 @@ int main() {
     search_server.AddDocument(0, "белый кот и модный ошейник"s, DocumentStatus::ACTUAL, {8, -3});
     search_server.AddDocument(1, "пушистый кот пушистый хвост"s, DocumentStatus::ACTUAL, {7, 2, 7});
     search_server.AddDocument(2, "ухоженный пёс выразительные глаза"s, DocumentStatus::ACTUAL, {5, -12, 2, 1});
-    search_server.AddDocument(3, "ухоженный скворец евгений"s, DocumentStatus::BANNED, {9});
-    const int document_count = search_server.GetDocumentCount();
-    for (int document_id = 0; document_id < document_count; ++document_id) {
-        const auto [words, status] = search_server.MatchDocument("пушистый кот"s, document_id);
-        PrintMatchDocumentResult(document_id, words, status);
+    for (const Document& document : search_server.FindTopDocuments("ухоженный кот"s)) {
+        PrintDocument(document);
     }
 }

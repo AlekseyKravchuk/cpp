@@ -15,10 +15,19 @@ enum class TaskStatus {
 };
 
 int main() {
-    TaskStatus t = TaskStatus::IN_PROGRESS;
-    ++t;
+    TaskStatus ts = TaskStatus::IN_PROGRESS;
+    switch (ts) {
+        case TaskStatus::NEW:
+            cout << "status NEW" << endl;
+            break;
+        case TaskStatus::IN_PROGRESS:
+            cout << "status IN_PROGRESS" << endl;
+            break;
 
-    cout << t << endl;
+        default:
+            break;
+    }
+    cout << static_cast<int>(ts) << endl;
 
     return 0;
 }

@@ -37,28 +37,34 @@ class TeamTasks {
     }
 
     // Обновить статусы по данному количеству задач конкретного разработчика
-    tuple<TasksInfo, TasksInfo> PerformPersonTasks(const string& person, int tasksToProcess) {
+    tuple<TasksInfo, TasksInfo> PerformPersonTasks(const string& person, int numTasksToPerform) {
         // if person with name "person" doesn't exist
         if (_task_mgr.count(person) == 0) {
             return {TasksInfo(), TasksInfo()};
         }
 
-        int availableTasks = std::accumulate(_task_mgr[person].begin(), _task_mgr[person].end(), 0,
-                                             [](int value, const std::map<TaskStatus, int>::value_type& p) {
-                                                 return value + p.second;
-                                             }) -
-                             _task_mgr[person][TaskStatus::DONE];
+        int totalNumTasks = std::accumulate(_task_mgr[person].begin(), _task_mgr[person].end(), 0,
+                                            [](int value, const std::map<TaskStatus, int>::value_type& p) {
+                                                return value + p.second;
+                                            });
+        int availableTasks = 0;
 
-        if (tasksToProcess > availableTasks) {
-            tasksToProcess = availableTasks;
+        if (_task_mgr.at(person).count(TaskStatus::DONE)) {
+            availableTasks = totalNumTasks - _task_mgr.at(person).at(TaskStatus::DONE);
+        } else {
+            availableTasks = totalNumTasks;
         }
 
-        TasksInfo updatedTasksPerStatus = _task_mgr[person];  // начальное количество задач по каждому статусу
-        TasksInfo changesPerStatus;                           // количество обновившихся задач по каждому статусу
-        TasksInfo notChangedPerStatus;                        // количество задач, статус которых не DONE и не изменился (по каждому статусу)
+        if (numTasksToPerform > availableTasks) {
+            numTasksToPerform = availableTasks;
+        }
+
+        TasksInfo updated_task_mgr = _task_mgr[person];  // начальное количество задач по каждому статусу
+        TasksInfo updated_tasks;                         // количество обновившихся задач по каждому статусу
+        TasksInfo untouched_tasks;                       // количество задач, статус которых не DONE и не изменился (по каждому статусу)
 
         for (const auto [status, N_tasks] : _task_mgr[person]) {
-            if (tasksToProcess <= 0) {
+            if (numTasksToPerform <= 0) {
                 break;
             }
 
@@ -70,17 +76,24 @@ class TeamTasks {
                 case TaskStatus::NEW:
                 case TaskStatus::IN_PROGRESS:
                 case TaskStatus::TESTING:
-                    if (N_tasks < tasksToProcess) {
-                        changesPerStatus[status] += N_tasks;
-                        tasksToProcess -= N_tasks;
-                        updatedTasksPerStatus[status] = 0;  // обнулить количество задач с текущим статусом
+                    if (N_tasks < numTasksToPerform) {
+                        updated_tasks[status] += N_tasks;
+                        numTasksToPerform -= N_tasks;
+                        updated_task_mgr[status] = 0;  // обнулить количество задач с текущим статусом
 
                         // перевести N_tasks в следующий статус (в порядке следования: NEW → IN_PROGRESS → TESTING → DONE)
-                        updatedTasksPerStatus[static_cast<TaskStatus>(static_cast<int>(status) + 1)] += N_tasks;
-                    } else {
-                        changesPerStatus[status] += tasksToProcess;
-                        tasksToProcess = 0;
-                        updatedTasksPerStatus[status] -= tasksToProcess;
+                        updated_task_mgr[static_cast<TaskStatus>(static_cast<int>(status) + 1)] += N_tasks;
+                    } else if (N_tasks == numTasksToPerform) {
+                        updated_tasks[status] += numTasksToPerform;
+                        numTasksToPerform = 0;
+                        updated_task_mgr[status] = 0;
+
+                        // перевести N_tasks в следующий статус (в порядке следования: NEW → IN_PROGRESS → TESTING → DONE)
+                        updated_task_mgr[static_cast<TaskStatus>(static_cast<int>(status) + 1)] += N_tasks;
+                    } else {  // N_tasks > numTasksToPerform
+                        updated_tasks[status] = numTasksToPerform;
+                        numTasksToPerform = 0;
+                        updated_task_mgr[status] -= numTasksToPerform;
                     }
                     break;
                 case TaskStatus::DONE:
@@ -96,13 +109,13 @@ class TeamTasks {
                 continue;
             }
 
-            notChangedPerStatus[status] = N_tasks - changesPerStatus[status];
+            untouched_tasks[status] = N_tasks - updated_tasks[status];
         }
 
         // update task manager according to processed tasks per certain status
-        _task_mgr[person] = updatedTasksPerStatus;
+        _task_mgr[person] = updated_task_mgr;
 
-        return {changesPerStatus, notChangedPerStatus};
+        return {updated_tasks, untouched_tasks};
     }
 };
 
@@ -142,7 +155,6 @@ int main() {
     cout << "Untouched Ivan's tasks: ";
     PrintTasksInfo(untouched_tasks);
 }
-
 
 /*
 Ilia's tasks: 1 new tasks, 0 tasks in progress, 0 tasks are being tested, 0 tasks are done

@@ -27,98 +27,137 @@ class TeamTasks {
 
    public:
     // Получить статистику по статусам задач конкретного разработчика
-    const TasksInfo& GetPersonTasksInfo(const string& person) const;
+    const TasksInfo& GetPersonTasksInfo(const string& person) const {
+        return _task_mgr.at(person);
+    }
 
     // Добавить новую задачу (в статусе NEW) для конкретного разработчитка
     void AddNewTask(const string& person) {
         ++_task_mgr[person][TaskStatus::NEW];
     }
 
-    // Обновить статусы по данному количеству задач конкретного разработчика,
-    // подробности см. ниже
-    tuple<TasksInfo, TasksInfo> PerformPersonTasks(const string& person, int task_count) {
+    // Обновить статусы по данному количеству задач конкретного разработчика
+    tuple<TasksInfo, TasksInfo> PerformPersonTasks(const string& person, int tasksToProcess) {
         // if person with name "person" doesn't exist
         if (_task_mgr.count(person) == 0) {
             return {TasksInfo(), TasksInfo()};
         }
 
-        int real_task_count = std::accumulate(_task_mgr[person].begin(), _task_mgr[person].end(), 0,
-                                              [](int value, const std::map<TaskStatus, int>::value_type& p) {
-                                                  return value + p.second;
-                                              });
+        int availableTasks = std::accumulate(_task_mgr[person].begin(), _task_mgr[person].end(), 0,
+                                             [](int value, const std::map<TaskStatus, int>::value_type& p) {
+                                                 return value + p.second;
+                                             }) -
+                             _task_mgr[person][TaskStatus::DONE];
 
-        if (task_count > real_task_count) {
-            task_count = real_task_count;
+        if (tasksToProcess > availableTasks) {
+            tasksToProcess = availableTasks;
         }
 
-        TasksInfo tasks_per_status = _task_mgr[person];  // temporary holder for "_task_mgr" map
-        TasksInfo changes;
+        TasksInfo updatedTasksPerStatus = _task_mgr[person];  // начальное количество задач по каждому статусу
+        TasksInfo changesPerStatus;                           // количество обновившихся задач по каждому статусу
+        TasksInfo notChangedPerStatus;                        // количество задач, статус которых не DONE и не изменился (по каждому статусу)
 
         for (const auto [status, N_tasks] : _task_mgr[person]) {
-            if (task_count <= 0) {
+            if (tasksToProcess <= 0) {
                 break;
+            }
+
+            if (N_tasks == 0) {
+                continue;
             }
 
             switch (status) {
                 case TaskStatus::NEW:
                 case TaskStatus::IN_PROGRESS:
                 case TaskStatus::TESTING:
-                    if (N_tasks < task_count) {
-                        task_count -= N_tasks;
-                        tasks_per_status[status] = 0;
-                        tasks_per_status[static_cast<TaskStatus>(static_cast<int>(status) + 1)] += N_tasks;
+                    if (N_tasks < tasksToProcess) {
+                        changesPerStatus[status] += N_tasks;
+                        tasksToProcess -= N_tasks;
+                        updatedTasksPerStatus[status] = 0;  // обнулить количество задач с текущим статусом
+
+                        // перевести N_tasks в следующий статус (в порядке следования: NEW → IN_PROGRESS → TESTING → DONE)
+                        updatedTasksPerStatus[static_cast<TaskStatus>(static_cast<int>(status) + 1)] += N_tasks;
+                    } else {
+                        changesPerStatus[status] += tasksToProcess;
+                        tasksToProcess = 0;
+                        updatedTasksPerStatus[status] -= tasksToProcess;
                     }
                     break;
                 case TaskStatus::DONE:
-                    //
                     break;
                 default:
                     cout << "Unknown request"s << endl;
             }
         }
 
-        while (task_count > 0) {
-            // TODO
+        // get statistics about all the tasks which are NOT DONE and whose status didn't change
+        for (const auto& [status, N_tasks] : _task_mgr[person]) {
+            if (status == TaskStatus::DONE || N_tasks == 0) {
+                continue;
+            }
+
+            notChangedPerStatus[status] = N_tasks - changesPerStatus[status];
         }
 
-        return {TasksInfo(), TasksInfo()};
+        // update task manager according to processed tasks per certain status
+        _task_mgr[person] = updatedTasksPerStatus;
+
+        return {changesPerStatus, notChangedPerStatus};
     }
 };
 
 // Принимаем словарь по значению, чтобы иметь возможность
 // обращаться к отсутствующим ключам с помощью [] и получать 0,
-// не меняя при этом исходный словарь.
+// не меняя при этом исходный словарь
 void PrintTasksInfo(TasksInfo tasks_info) {
-    cout << tasks_info[TaskStatus::NEW] << " new tasks"s
-         << ", "s << tasks_info[TaskStatus::IN_PROGRESS] << " tasks in progress"s
-         << ", "s << tasks_info[TaskStatus::TESTING] << " tasks are being tested"s
-         << ", "s << tasks_info[TaskStatus::DONE] << " tasks are done"s << endl;
+    cout << tasks_info[TaskStatus::NEW] << " new tasks"
+         << ", " << tasks_info[TaskStatus::IN_PROGRESS] << " tasks in progress"
+         << ", " << tasks_info[TaskStatus::TESTING] << " tasks are being tested"
+         << ", " << tasks_info[TaskStatus::DONE] << " tasks are done" << endl;
 }
-
 int main() {
     TeamTasks tasks;
-    // tasks.AddNewTask("Ilia"s);
 
-    // for (int i = 0; i < 3; ++i) {
-    //     tasks.AddNewTask("Ivan"s);
-    // }
+    tasks.AddNewTask("Ilia");
 
-    // cout << "Ilia's tasks: "s;
-    // PrintTasksInfo(tasks.GetPersonTasksInfo("Ilia"s));
-    // cout << "Ivan's tasks: "s;
-    // PrintTasksInfo(tasks.GetPersonTasksInfo("Ivan"s));
+    for (int i = 0; i < 3; ++i) {
+        tasks.AddNewTask("Ivan");
+    }
+    cout << "Ilia's tasks: ";
+    PrintTasksInfo(tasks.GetPersonTasksInfo("Ilia"));
+    cout << "Ivan's tasks: ";
+    PrintTasksInfo(tasks.GetPersonTasksInfo("Ivan"));
 
-    // TasksInfo updated_tasks, untouched_tasks;
+    TasksInfo updated_tasks, untouched_tasks;
 
-    // tie(updated_tasks, untouched_tasks) = tasks.PerformPersonTasks("Ivan"s, 2);
-    // cout << "Updated Ivan's tasks: "s;
-    // PrintTasksInfo(updated_tasks);
-    // cout << "Untouched Ivan's tasks: "s;
-    // PrintTasksInfo(untouched_tasks);
+    tie(updated_tasks, untouched_tasks) = tasks.PerformPersonTasks("Ivan", 2);
+    cout << "Updated Ivan's tasks: ";
+    PrintTasksInfo(updated_tasks);
+    cout << "Untouched Ivan's tasks: ";
+    PrintTasksInfo(untouched_tasks);
 
-    // tie(updated_tasks, untouched_tasks) = tasks.PerformPersonTasks("Ivan"s, 2);
-    // cout << "Updated Ivan's tasks: "s;
-    // PrintTasksInfo(updated_tasks);
-    // cout << "Untouched Ivan's tasks: "s;
-    // PrintTasksInfo(untouched_tasks);
+    tie(updated_tasks, untouched_tasks) = tasks.PerformPersonTasks("Ivan", 2);
+    cout << "Updated Ivan's tasks: ";
+    PrintTasksInfo(updated_tasks);
+    cout << "Untouched Ivan's tasks: ";
+    PrintTasksInfo(untouched_tasks);
 }
+
+
+/*
+Ilia's tasks: 1 new tasks, 0 tasks in progress, 0 tasks are being tested, 0 tasks are done
+Ivan's tasks: 3 new tasks, 0 tasks in progress, 0 tasks are being tested, 0 tasks are done
+BUG ==>>>> Updated Ivan's tasks: 2 new tasks, 0 tasks in progress, 0 tasks are being tested, 0 tasks are done
+Untouched Ivan's tasks: 1 new tasks, 0 tasks in progress, 0 tasks are being tested, 0 tasks are done
+Updated Ivan's tasks: 2 new tasks, 0 tasks in progress, 0 tasks are being tested, 0 tasks are done
+Untouched Ivan's tasks: 1 new tasks, 0 tasks in progress, 0 tasks are being tested, 0 tasks are done
+
+
+
+Ilia's tasks: 1 new tasks, 0 tasks in progress, 0 tasks are being tested, 0 tasks are done
+Ivan's tasks: 3 new tasks, 0 tasks in progress, 0 tasks are being tested, 0 tasks are done
+Updated Ivan's tasks: 0 new tasks, 2 tasks in progress, 0 tasks are being tested, 0 tasks are done
+Untouched Ivan's tasks: 1 new tasks, 0 tasks in progress, 0 tasks are being tested, 0 tasks are done
+Updated Ivan's tasks: 0 new tasks, 1 tasks in progress, 1 tasks are being tested, 0 tasks are done
+Untouched Ivan's tasks: 0 new tasks, 1 tasks in progress, 0 tasks are being tested, 0 tasks are done 
+*/

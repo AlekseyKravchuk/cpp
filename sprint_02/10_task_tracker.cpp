@@ -26,6 +26,15 @@ class TeamTasks {
     map<string, map<TaskStatus, int> > _task_mgr;
 
    public:
+    int getRealNumOfUnprocessedTasks(const string& person) {
+        int totalNumTasks = std::accumulate(_task_mgr[person].begin(), _task_mgr[person].end(), 0,
+                                            [](int value, const std::map<TaskStatus, int>::value_type& p) {
+                                                return value + p.second;
+                                            });
+        int performedTasksNum = _task_mgr.at(person).count(TaskStatus::DONE) ? _task_mgr.at(person).at(TaskStatus::DONE) : 0;
+        return totalNumTasks - performedTasksNum;
+    }
+
     // Получить статистику по статусам задач конкретного разработчика
     const TasksInfo& GetPersonTasksInfo(const string& person) const {
         return _task_mgr.at(person);
@@ -37,139 +46,199 @@ class TeamTasks {
     }
 
     // Обновить статусы по данному количеству задач конкретного разработчика
-    tuple<TasksInfo, TasksInfo> PerformPersonTasks(const string& person, int numTasksToPerform) {
+    tuple<TasksInfo, TasksInfo> PerformPersonTasks(const string& person, int taskCntr) {
         // if person with name "person" doesn't exist
         if (_task_mgr.count(person) == 0) {
             return {TasksInfo(), TasksInfo()};
         }
 
-        int totalNumTasks = std::accumulate(_task_mgr[person].begin(), _task_mgr[person].end(), 0,
-                                            [](int value, const std::map<TaskStatus, int>::value_type& p) {
-                                                return value + p.second;
-                                            });
-        int availableTasks = 0;
+        int realNumOfUnprocessedTasks = getRealNumOfUnprocessedTasks(person);
+        taskCntr = (taskCntr <= realNumOfUnprocessedTasks) ? taskCntr : realNumOfUnprocessedTasks;
 
-        if (_task_mgr.at(person).count(TaskStatus::DONE)) {
-            availableTasks = totalNumTasks - _task_mgr.at(person).at(TaskStatus::DONE);
-        } else {
-            availableTasks = totalNumTasks;
-        }
+        TasksInfo updated;                  // статистика по обновившимся задачам по каждому статусу
+        TasksInfo untouched;                // статистика по задачам, статус которых не DONE и не изменился (по каждому статусу)
+        TasksInfo tmp = _task_mgr[person];  // временное хранилище мапы для текущего разраба, здесь фиксируются все изменения
 
-        if (numTasksToPerform > availableTasks) {
-            numTasksToPerform = availableTasks;
-        }
-
-        TasksInfo updated_task_mgr = _task_mgr[person];  // начальное количество задач по каждому статусу
-        TasksInfo updated_tasks;                         // количество обновившихся задач по каждому статусу
-        TasksInfo untouched_tasks;                       // количество задач, статус которых не DONE и не изменился (по каждому статусу)
-
-        for (const auto [status, N_tasks] : _task_mgr[person]) {
-            if (numTasksToPerform <= 0) {
+        for (const auto [status, N] : _task_mgr[person]) {
+            if (taskCntr <= 0 || status == TaskStatus::DONE) {
                 break;
             }
 
-            if (N_tasks == 0) {
+            if (N == 0) {
                 continue;
             }
+            TaskStatus nextStatus = static_cast<TaskStatus>(static_cast<int>(status) + 1);
 
             switch (status) {
                 case TaskStatus::NEW:
                 case TaskStatus::IN_PROGRESS:
                 case TaskStatus::TESTING:
-                    if (N_tasks < numTasksToPerform) {
-                        updated_tasks[status] += N_tasks;
-                        numTasksToPerform -= N_tasks;
-                        updated_task_mgr[status] = 0;  // обнулить количество задач с текущим статусом
+                    if (N <= taskCntr) {
+                        // все задачи из текущего статуса были переведены в следующий статус
+                        // => невыполненных задач с этим статусом нет => старых задач не добавилось
+                        updated[nextStatus] += N;
 
-                        // перевести N_tasks в следующий статус (в порядке следования: NEW → IN_PROGRESS → TESTING → DONE)
-                        updated_task_mgr[static_cast<TaskStatus>(static_cast<int>(status) + 1)] += N_tasks;
-                    } else if (N_tasks == numTasksToPerform) {
-                        updated_tasks[status] += numTasksToPerform;
-                        numTasksToPerform = 0;
-                        updated_task_mgr[status] = 0;
+                        // но, возможно, ещё остались задачи, которые должны быть выполнены
+                        // если taskCntr обнулится, то на этом цикл закончится
+                        taskCntr -= N;
 
-                        // перевести N_tasks в следующий статус (в порядке следования: NEW → IN_PROGRESS → TESTING → DONE)
-                        updated_task_mgr[static_cast<TaskStatus>(static_cast<int>(status) + 1)] += N_tasks;
-                    } else {  // N_tasks > numTasksToPerform
-                        updated_tasks[status] = numTasksToPerform;
-                        numTasksToPerform = 0;
-                        updated_task_mgr[status] -= numTasksToPerform;
+                        // вносим соответствующие изменения в хранилище изменений
+                        tmp[status] -= N;
+                        tmp[nextStatus] += N;
+                    } else {  // N > numTasksToPerform
+                        // из текущего статуса НЕ все задачи перекочевали в следующий статус
+                        updated[nextStatus] += taskCntr;
+
+                        // => нужно учесть те задачи, которые остались необработанными
+                        int n_untouched = N - taskCntr;
+                        untouched[status] = n_untouched;
+
+                        // вносим соответствующие изменения в хранилище изменений
+                        tmp[status] -= taskCntr;
+                        tmp[nextStatus] += taskCntr;
+
+                        // зануляем taskCntr, поскольку обработаны все задачи, поступившие на вход
+                        taskCntr = 0;
                     }
-                    break;
-                case TaskStatus::DONE:
                     break;
                 default:
                     cout << "Unknown request"s << endl;
             }
         }
 
-        // get statistics about all the tasks which are NOT DONE and whose status didn't change
-        for (const auto& [status, N_tasks] : _task_mgr[person]) {
-            if (status == TaskStatus::DONE || N_tasks == 0) {
-                continue;
-            }
+        // update task manager according to the changes
+        _task_mgr[person] = tmp;
 
-            untouched_tasks[status] = N_tasks - updated_tasks[status];
-        }
-
-        // update task manager according to processed tasks per certain status
-        _task_mgr[person] = updated_task_mgr;
-
-        return {updated_tasks, untouched_tasks};
+        return {updated, untouched};
     }
 };
 
 // Принимаем словарь по значению, чтобы иметь возможность
 // обращаться к отсутствующим ключам с помощью [] и получать 0,
 // не меняя при этом исходный словарь
-void PrintTasksInfo(TasksInfo tasks_info) {
+/* void PrintTasksInfo(TasksInfo tasks_info) {
     cout << tasks_info[TaskStatus::NEW] << " new tasks"
          << ", " << tasks_info[TaskStatus::IN_PROGRESS] << " tasks in progress"
          << ", " << tasks_info[TaskStatus::TESTING] << " tasks are being tested"
          << ", " << tasks_info[TaskStatus::DONE] << " tasks are done" << endl;
+} */
+
+void PrintTasksInfo(const TasksInfo& tasks_info) {
+    if (tasks_info.count(TaskStatus::NEW)) {
+        std::cout << "NEW: " << tasks_info.at(TaskStatus::NEW) << " ";
+    }
+    if (tasks_info.count(TaskStatus::IN_PROGRESS)) {
+        std::cout << "IN_PROGRESS: " << tasks_info.at(TaskStatus::IN_PROGRESS) << " ";
+    }
+    if (tasks_info.count(TaskStatus::TESTING)) {
+        std::cout << "TESTING: " << tasks_info.at(TaskStatus::TESTING) << " ";
+    }
+    if (tasks_info.count(TaskStatus::DONE)) {
+        std::cout << "DONE: " << tasks_info.at(TaskStatus::DONE) << " ";
+    }
 }
+
+void PrintTasksInfo(const TasksInfo& updated_tasks, const TasksInfo& untouched_tasks) {
+    std::cout << "Updated: [";
+    PrintTasksInfo(updated_tasks);
+    std::cout << "] ";
+ 
+    std::cout << "Untouched: [";
+    PrintTasksInfo(untouched_tasks);
+    std::cout << "] ";
+ 
+    std::cout << std::endl;
+}  
+
 int main() {
     TeamTasks tasks;
-
-    tasks.AddNewTask("Ilia");
-
-    for (int i = 0; i < 3; ++i) {
-        tasks.AddNewTask("Ivan");
+    TasksInfo updated_tasks;
+    TasksInfo untouched_tasks;
+ 
+ 
+    /* TEST 3 */
+    std::cout << "\nLisa" << std::endl;
+ 
+    for (auto i = 0; i < 5; ++i) {
+        tasks.AddNewTask("Lisa");
     }
-    cout << "Ilia's tasks: ";
-    PrintTasksInfo(tasks.GetPersonTasksInfo("Ilia"));
-    cout << "Ivan's tasks: ";
-    PrintTasksInfo(tasks.GetPersonTasksInfo("Ivan"));
-
-    TasksInfo updated_tasks, untouched_tasks;
-
-    tie(updated_tasks, untouched_tasks) = tasks.PerformPersonTasks("Ivan", 2);
-    cout << "Updated Ivan's tasks: ";
-    PrintTasksInfo(updated_tasks);
-    cout << "Untouched Ivan's tasks: ";
-    PrintTasksInfo(untouched_tasks);
-
-    tie(updated_tasks, untouched_tasks) = tasks.PerformPersonTasks("Ivan", 2);
-    cout << "Updated Ivan's tasks: ";
-    PrintTasksInfo(updated_tasks);
-    cout << "Untouched Ivan's tasks: ";
-    PrintTasksInfo(untouched_tasks);
+ 
+    tie(updated_tasks, untouched_tasks) = tasks.PerformPersonTasks("Lisa", 5);
+    PrintTasksInfo(updated_tasks, untouched_tasks);  // [{"IN_PROGRESS": 5}, {}]
+ 
+    tie(updated_tasks, untouched_tasks) = tasks.PerformPersonTasks("Lisa", 5);
+    PrintTasksInfo(updated_tasks, untouched_tasks);  // [{"TESTING": 5}, {}]
+ 
+    tie(updated_tasks, untouched_tasks) = tasks.PerformPersonTasks("Lisa", 1);
+    PrintTasksInfo(updated_tasks, untouched_tasks);  // [{"DONE": 1}, {"TESTING": 4}]
+ 
+    for (auto i = 0; i < 5; ++i) {
+        tasks.AddNewTask("Lisa");
+    }
+ 
+    tie(updated_tasks, untouched_tasks) = tasks.PerformPersonTasks("Lisa", 2);
+    PrintTasksInfo(updated_tasks, untouched_tasks);  // [{"IN_PROGRESS": 2}, {"NEW": 3, "TESTING": 4}]
+ 
+    PrintTasksInfo(tasks.GetPersonTasksInfo("Lisa"));  // {"NEW": 3, "IN_PROGRESS": 2, "TESTING": 4, "DONE": 1}
+    std::cout << std::endl;
+ 
+    tie(updated_tasks, untouched_tasks) = tasks.PerformPersonTasks("Lisa", 4);
+    PrintTasksInfo(updated_tasks, untouched_tasks);  // [{"IN_PROGRESS": 3, "TESTING": 1}, {"IN_PROGRESS": 1, "TESTING": 4}]
+ 
+    PrintTasksInfo(tasks.GetPersonTasksInfo("Lisa"));  // {"IN_PROGRESS": 4, "TESTING": 5, "DONE": 1}
+    std::cout << std::endl;
+ 
+    tie(updated_tasks, untouched_tasks) = tasks.PerformPersonTasks("Lisa", 5);
+    PrintTasksInfo(updated_tasks, untouched_tasks);  // [{"TESTING": 4, "DONE": 1}, {"TESTING": 4}]
+ 
+    PrintTasksInfo(tasks.GetPersonTasksInfo("Lisa"));  // {"TESTING": 8, "DONE": 2}
+    std::cout << std::endl;
+ 
+    tie(updated_tasks, untouched_tasks) = tasks.PerformPersonTasks("Lisa", 10);
+    PrintTasksInfo(updated_tasks, untouched_tasks);  // [{"DONE": 8}, {}]
+ 
+    PrintTasksInfo(tasks.GetPersonTasksInfo("Lisa"));  // {"DONE": 10}
+    std::cout << std::endl;
+ 
+    tie(updated_tasks, untouched_tasks) = tasks.PerformPersonTasks("Lisa", 10);
+    PrintTasksInfo(updated_tasks, untouched_tasks);  // [{}, {}]
+ 
+    PrintTasksInfo(tasks.GetPersonTasksInfo("Lisa"));  // {"DONE": 10}
+    std::cout << std::endl;
+ 
+    tasks.AddNewTask("Lisa");
+ 
+    PrintTasksInfo(tasks.GetPersonTasksInfo("Lisa"));  // {"NEW": 1, "DONE": 10}
+    std::cout << std::endl;
+ 
+    tie(updated_tasks, untouched_tasks) = tasks.PerformPersonTasks("Lisa", 2);
+    PrintTasksInfo(updated_tasks, untouched_tasks);  // [{"IN_PROGRESS": 1}, {}]
+ 
+    PrintTasksInfo(tasks.GetPersonTasksInfo("Lisa"));  // {"IN_PROGRESS": 1, "DONE": 10}
+    std::cout << std::endl;
+ 
+    tie(updated_tasks, untouched_tasks) = tasks.PerformPersonTasks("Bob", 3);
+    PrintTasksInfo(updated_tasks, untouched_tasks);  // [{}, {}]
+ 
+    return 0;
 }
-
-/*
-Ilia's tasks: 1 new tasks, 0 tasks in progress, 0 tasks are being tested, 0 tasks are done
-Ivan's tasks: 3 new tasks, 0 tasks in progress, 0 tasks are being tested, 0 tasks are done
-BUG ==>>>> Updated Ivan's tasks: 2 new tasks, 0 tasks in progress, 0 tasks are being tested, 0 tasks are done
-Untouched Ivan's tasks: 1 new tasks, 0 tasks in progress, 0 tasks are being tested, 0 tasks are done
-Updated Ivan's tasks: 2 new tasks, 0 tasks in progress, 0 tasks are being tested, 0 tasks are done
-Untouched Ivan's tasks: 1 new tasks, 0 tasks in progress, 0 tasks are being tested, 0 tasks are done
-
-
-
-Ilia's tasks: 1 new tasks, 0 tasks in progress, 0 tasks are being tested, 0 tasks are done
-Ivan's tasks: 3 new tasks, 0 tasks in progress, 0 tasks are being tested, 0 tasks are done
-Updated Ivan's tasks: 0 new tasks, 2 tasks in progress, 0 tasks are being tested, 0 tasks are done
-Untouched Ivan's tasks: 1 new tasks, 0 tasks in progress, 0 tasks are being tested, 0 tasks are done
-Updated Ivan's tasks: 0 new tasks, 1 tasks in progress, 1 tasks are being tested, 0 tasks are done
-Untouched Ivan's tasks: 0 new tasks, 1 tasks in progress, 0 tasks are being tested, 0 tasks are done 
-*/
+ 
+// Правильный ответ
+/* Lisa
+Updated: [IN_PROGRESS: 5 ] Untouched: [] 
+Updated: [TESTING: 5 ] Untouched: [] 
+Updated: [DONE: 1 ] Untouched: [TESTING: 4 ] 
+Updated: [IN_PROGRESS: 2 ] Untouched: [NEW: 3 TESTING: 4 ] 
+NEW: 3 IN_PROGRESS: 2 TESTING: 4 DONE: 1 
+Updated: [IN_PROGRESS: 3 TESTING: 1 ] Untouched: [IN_PROGRESS: 1 TESTING: 4 ] 
+IN_PROGRESS: 4 TESTING: 5 DONE: 1 
+Updated: [TESTING: 4 DONE: 1 ] Untouched: [TESTING: 4 ] 
+TESTING: 8 DONE: 2 
+Updated: [DONE: 8 ] Untouched: [] 
+DONE: 10 
+Updated: [] Untouched: [] 
+DONE: 10 
+NEW: 1 DONE: 10 
+Updated: [IN_PROGRESS: 1 ] Untouched: [] 
+IN_PROGRESS: 1 DONE: 10 
+Updated: [] Untouched: []  */

@@ -15,7 +15,7 @@ enum class TaskStatus {
 };
 
 int main() {
-    TaskStatus ts = TaskStatus::IN_PROGRESS;
+/*     TaskStatus ts = TaskStatus::IN_PROGRESS;
     switch (ts) {
         case TaskStatus::NEW:
             cout << "status NEW" << endl;
@@ -27,7 +27,11 @@ int main() {
         default:
             break;
     }
-    cout << static_cast<int>(ts) << endl;
+    cout << static_cast<int>(ts) << endl; */
+
+    for (TaskStatus status = TaskStatus::NEW; status != TaskStatus::DONE; status = Next()) {
+
+    }
 
     return 0;
 }

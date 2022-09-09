@@ -64,10 +64,6 @@ class TeamTasks {
                 break;
             }
 
-            if (N == 0) {
-                continue;
-            }
-
             TaskStatus nextStatus = static_cast<TaskStatus>(static_cast<int>(status) + 1);
 
             switch (status) {
@@ -87,18 +83,10 @@ class TeamTasks {
                         tmp[status] -= N;
                         tmp[nextStatus] += N;
 
-                        // при этом избавляемся от пар [key : value], в которых value = 0
-                        // if ((tmp[status] - N) == 0) {
-                        //     tmp.erase(status);
-                        // } else {
-                        //     tmp[status] -= N;
-                        //     tmp[nextStatus] += N;
-                        // }
-
                     } else {  // N > taskCntr, в том числе когда taskCntr уже равен 0
                         if (taskCntr == 0) {
                             untouched[status] = N;
-                        } else {
+                        } else {  // taskCntr != 0
                             // из текущего статуса НЕ все задачи перекочевали в следующий статус
                             updated[nextStatus] += taskCntr;
 
@@ -110,14 +98,6 @@ class TeamTasks {
                             tmp[status] -= taskCntr;
                             tmp[nextStatus] += taskCntr;
 
-                            // при этом избавляемся от пар [key : value], в которых value = 0
-                            // if ((tmp[status] - taskCntr) == 0) {
-                            //     tmp.erase(status);
-                            // } else {
-                            //     tmp[status] -= taskCntr;
-                            //     tmp[nextStatus] += taskCntr;
-                            // }
-
                             // зануляем taskCntr, поскольку обработаны все задачи, поступившие на вход
                             taskCntr = 0;
                         }
@@ -128,8 +108,13 @@ class TeamTasks {
             }
         }
 
-        // update task manager according to the changes
-        _task_mgr[person] = tmp;
+        // обновляем _task_mgr[person]/ lj, добавляем из tmp только ключи с ненулевыми значениями
+        _task_mgr[person].clear();
+        for (auto [status, N_tasks] : tmp) {
+            if (N_tasks) {
+                _task_mgr[person].insert({status, N_tasks});
+            }
+        }
 
         return {updated, untouched};
     }
@@ -177,7 +162,7 @@ int main() {
     TasksInfo updated_tasks;
     TasksInfo untouched_tasks;
 
-    /* TEST 3 */
+    /* ========================= TEST 3 =========================*/
     std::cout << "\nLisa" << std::endl;
 
     for (auto i = 0; i < 5; ++i) {
@@ -244,7 +229,7 @@ int main() {
     return 0;
 }
 
-// ========= CORRECT ANSWER =========
+// ========= CORRECT ANSWER for TEST 3 =========
 /* Lisa
 Updated: [IN_PROGRESS: 5 ] Untouched: [] 
 Updated: [TESTING: 5 ] Untouched: [] 

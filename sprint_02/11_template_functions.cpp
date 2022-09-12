@@ -1,3 +1,4 @@
+#include <cmath>
 #include <iostream>
 #include <map>
 #include <string>
@@ -5,31 +6,40 @@
 
 using namespace std;
 
-template <typename Term>
-map<Term, int> ComputeTermFreqs(const vector<Term>& terms) {
-    map<Term, int> term_freqs;
-    for (const Term& term : terms) {
-        ++term_freqs[term];
-    }
-    return term_freqs;
-}
-
-pair<string, int> FindMaxFreqAnimal(const vector<pair<string, int>>& animals) {
-    // верните животного с максимальной частотой
-    map<pair<string, int>, int> animal_freq = ComputeTermFreqs(animals);
-    cout << "FindMaxFreqAnimal has been completed." << endl;
+template <typename T>
+vector<double> ComputeTfIdfs(const vector<vector<T>>& documents, const T& word) {
+    map<int, double> term_freqs;
+    vector<double> res;
+    int docID = 0;
     
-    return {"", 0};
+    for (const auto& doc : documents) {
+        for (const auto& term : doc) {
+            if (term == word) {
+                term_freqs[docID] += 1.0 / static_cast<double>(doc.size());
+            }
+        }
+        ++docID;
+    }
+    int docCounter = docID;
+    double IDF = log((docCounter) / static_cast<double>(term_freqs.size()));
+    
+    for (int docID = 0; docID < docCounter; ++docID) {
+        res.push_back(term_freqs[docID] * IDF);
+    }
+
+    return res;
 }
 
 int main() {
-    const vector<pair<string, int>> animals = {
-        {"Murka"s, 5},
-        {"Belka"s, 6},
-        {"Murka"s, 7},
-        {"Murka"s, 5},
-        {"Belka"s, 6},
+    const vector<vector<string>> documents = {
+        {"белый"s, "кот"s, "и"s, "модный"s, "ошейник"s},
+        {"пушистый"s, "кот"s, "пушистый"s, "хвост"s},
+        {"ухоженный"s, "пёс"s, "выразительные"s, "глаза"s},
     };
-    const pair<string, int> max_freq_animal = FindMaxFreqAnimal(animals);
-    cout << max_freq_animal.first << " "s << max_freq_animal.second << endl;
+    const auto& tf_idfs = ComputeTfIdfs(documents, "кот"s);
+    for (const double tf_idf : tf_idfs) {
+        cout << tf_idf << " "s;
+    }
+    cout << endl;
+    return 0;
 }

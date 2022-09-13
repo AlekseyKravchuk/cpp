@@ -6,12 +6,12 @@
 
 using namespace std;
 
-template <typename T>
-vector<double> ComputeTfIdfs(const vector<vector<T>>& documents, const T& word) {
+template <template <typename> class containerType1, template <typename> class containerType2, typename containerElemType, typename elemTypeTerm>
+vector<double> ComputeTfIdfs(const containerType1<containerType2<containerElemType>>& documents, const elemTypeTerm& word) {
     map<int, double> term_freqs;
     vector<double> res;
     int docID = 0;
-    
+
     for (const auto& doc : documents) {
         for (const auto& term : doc) {
             if (term == word) {
@@ -22,7 +22,7 @@ vector<double> ComputeTfIdfs(const vector<vector<T>>& documents, const T& word) 
     }
     int docCounter = docID;
     double IDF = log((docCounter) / static_cast<double>(term_freqs.size()));
-    
+
     for (int docID = 0; docID < docCounter; ++docID) {
         res.push_back(term_freqs[docID] * IDF);
     }

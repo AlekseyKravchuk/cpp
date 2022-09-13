@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cmath>
 #include <iostream>
 #include <map>
@@ -6,10 +7,11 @@
 
 using namespace std;
 
+// My version of function
 template <template <typename> class containerType1, template <typename> class containerType2, typename containerElemType, typename elemTypeTerm>
 vector<double> ComputeTfIdfs(const containerType1<containerType2<containerElemType>>& documents, const elemTypeTerm& word) {
     map<int, double> term_freqs;
-    vector<double> res;
+    vector<double> tf_idfs;
     int docID = 0;
 
     for (const auto& doc : documents) {
@@ -24,11 +26,33 @@ vector<double> ComputeTfIdfs(const containerType1<containerType2<containerElemTy
     double IDF = log((docCounter) / static_cast<double>(term_freqs.size()));
 
     for (int docID = 0; docID < docCounter; ++docID) {
-        res.push_back(term_freqs[docID] * IDF);
+        tf_idfs.push_back(term_freqs[docID] * IDF);
     }
 
-    return res;
+    return tf_idfs;
 }
+
+// Yandex version of function
+/* template <typename Documents, typename Term>
+vector<double> ComputeTfIdfs(const Documents& documents, const Term& term) {
+    vector<double> tf_idfs;
+
+    int document_freq = 0;
+    for (const auto& document : documents) {
+        const int freq =  
+        if (freq > 0) {
+            ++document_freq;
+        }
+        tf_idfs.push_back(static_cast<double>(freq) / document.size());
+    }
+
+    const double idf = log(static_cast<double>(documents.size()) / document_freq);
+    for (double& tf_idf : tf_idfs) {
+        tf_idf *= idf;
+    }
+
+    return tf_idfs;
+} */
 
 int main() {
     const vector<vector<string>> documents = {

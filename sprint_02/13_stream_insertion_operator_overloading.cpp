@@ -1,12 +1,19 @@
 #include <iostream>
 #include <map>
 #include <set>
+#include <utility>
 #include <vector>
 
 using namespace std;
 
-// TO DO!!!!!!!!!!!!!!!
-// задание 6/6
+// overload insertion operator "<<" for std::pair
+template <typename firstType, typename secondType>
+ostream& operator<<(ostream& out, const pair<firstType, secondType>& p) {
+    out << "("s << p.first << ", "s << p.second << ")"s;
+
+    return out;
+}
+
 template <typename ContainerType>
 void Print(ostream& out, const ContainerType& container) {
     for (auto it = container.begin(); it != container.end(); ++it) {
@@ -60,12 +67,6 @@ ostream& operator<<(ostream& out, const vector<Element>& container) {
 } */
 
 int main() {
-    // const vector<int> ages = {10, 5, 2, 12, 17};
-    // cout << ages << endl;
-
-    // const set<string> cats = {"Мурка"s, "Белка"s, "Георгий"s, "Рюрик"s};
-    // cout << cats << endl;
-
     const set<string> cats = {"Мурка"s, "Белка"s, "Георгий"s, "Рюрик"s};
     cout << cats << endl;
     const vector<int> ages = {10, 5, 2, 12};

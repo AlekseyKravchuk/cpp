@@ -11,6 +11,19 @@ using namespace std;
 
 const int MAX_RESULT_DOCUMENT_COUNT = 5;
 
+struct Document {
+    int id;
+    double relevance;
+    int rating;
+};
+
+enum class DocumentStatus {
+    ACTUAL,
+    IRRELEVANT,
+    BANNED,
+    REMOVED,
+};
+
 string ReadLine() {
     string s;
     getline(cin, s);
@@ -44,24 +57,15 @@ vector<string> SplitIntoWords(const string& text) {
     return words;
 }
 
-struct Document {
-    int id;
-    double relevance;
-    int rating;
-};
-
-enum class DocumentStatus {
-    ACTUAL,
-    IRRELEVANT,
-    BANNED,
-    REMOVED,
-};
-
 class SearchServer {
    public:
+    int GetDocumentCount() const {
+        return _documents.size();
+    }
+
     void SetStopWords(const string& text) {
         for (const string& word : SplitIntoWords(text)) {
-            stop_words_.insert(word);
+            _stop_words.insert(word);
         }
     }
 
@@ -78,22 +82,15 @@ class SearchServer {
         _documents.emplace(docID, DocumentData{ComputeAverageRating(ratings), status});
     }
 
-    // #1) FindTopDocuments: non-template version of function
-    vector<Document> FindTopDocuments(const string& raw_query,
-                                      DocumentStatus ext_status) const {
-        return FindTopDocuments(raw_query, [ext_status](int document_id, DocumentStatus status, int rating) { return ext_status == status; });
-    }
-
-    // #2) FindTopDocuments: TEMPLATE version of function with PREDICATE
+    // #1) FindTopDocuments, base function: TEMPLATE version of function with PREDICATE specified when calling from main
     template <typename Predicate>
-    vector<Document> FindTopDocuments(const string& raw_query,
-                                      Predicate pred) const {
+    vector<Document> FindTopDocuments(const string& raw_query, Predicate pred) const {
         const Query query = ParseQuery(raw_query);
         auto matched_documents = FindAllDocuments(query, pred);
 
         sort(matched_documents.begin(), matched_documents.end(),
-             [](const Document& lhs, const Document& rhs) {
-                 if (abs(lhs.relevance - rhs.relevance) < 1e-6) {
+             [this](const Document& lhs, const Document& rhs) {
+                 if (abs(lhs.relevance - rhs.relevance) < this->_REASONABLE_ERROR) {
                      return lhs.rating > rhs.rating;
                  } else {
                      return lhs.relevance > rhs.relevance;
@@ -105,13 +102,15 @@ class SearchServer {
         return matched_documents;
     }
 
-    // #3) FindTopDocuments: wrapper, ACTUAL by default
-    vector<Document> FindTopDocuments(const string& raw_query) const {
-        return FindTopDocuments(raw_query, DocumentStatus::ACTUAL);
+    // #2) FindTopDocuments, WRAPPER: converts STATUS-based to Predicate-based logic
+    vector<Document> FindTopDocuments(const string& raw_query,
+                                      DocumentStatus ext_status) const {
+        return FindTopDocuments(raw_query, [ext_status](int document_id, DocumentStatus status, int rating) { return ext_status == status; });
     }
 
-    int GetDocumentCount() const {
-        return _documents.size();
+    // #3) FindTopDocuments, WRAPPER: check for ACTUAL status by default
+    vector<Document> FindTopDocuments(const string& raw_query) const {
+        return FindTopDocuments(raw_query, DocumentStatus::ACTUAL);
     }
 
     tuple<vector<string>, DocumentStatus> MatchDocument(const string& raw_query,
@@ -143,13 +142,16 @@ class SearchServer {
         int rating;
         DocumentStatus status;
     };
+    
+    // 10^(-6); constant used when comparing two document relevances (of type "double")
+    const double _REASONABLE_ERROR = 1e-6;
 
-    set<string> stop_words_;
+    set<string> _stop_words;
     map<string, map<int, double>> _word2doc_freqs;
     map<int, DocumentData> _documents;
 
     bool IsStopWord(const string& word) const {
-        return stop_words_.count(word) > 0;
+        return _stop_words.count(word) > 0;
     }
 
     vector<string> SplitIntoWordsNoStop(const string& text) const {
@@ -222,6 +224,7 @@ class SearchServer {
             if (_word2doc_freqs.count(word) == 0) {
                 continue;
             }
+
             const double inverse_document_freq = ComputeWordInverseDocumentFreq(word);
             for (const auto [docID, term_freq] : _word2doc_freqs.at(word)) {
                 if (pred(docID, _documents.at(docID).status, _documents.at(docID).rating)) {
@@ -276,7 +279,7 @@ int main() {
     }
 
     cout << "Even ids:"s << endl;
-    for (const Document &document : search_server.FindTopDocuments("пушистый ухоженный кот"s, [](int document_id, DocumentStatus status, int rating) { return document_id % 2 == 0; })) {
+    for (const Document& document : search_server.FindTopDocuments("пушистый ухоженный кот"s, [](int document_id, DocumentStatus status, int rating) { return document_id % 2 == 0; })) {
         PrintDocument(document);
     }
 

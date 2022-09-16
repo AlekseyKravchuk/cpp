@@ -121,7 +121,7 @@ class SearchServer {
         sort(matched_documents.begin(), matched_documents.end(),
              [this](const Document& lhs, const Document& rhs) {
                  const double diff = abs(lhs.relevance - rhs.relevance) / max(abs(lhs.relevance), abs(rhs.relevance));  // relative error
-                 if (diff < this->EPSILON) {
+                 if (diff < this->_REASONABLE_ERROR) {
                      // two relevances are concerned to be equal
                      return lhs.rating > rhs.rating;
                  }
@@ -144,7 +144,7 @@ class SearchServer {
         set<string> minus_words;
     };
 
-    const double EPSILON = 1e-6;  // 10^(-6), constant to use when comparing two relevances
+    const double _REASONABLE_ERROR = 1e-6;  // 10^(-6), constant to use when comparing two relevances
     set<string> _stop_words;
     map<string, map<int, double>> _word_docID_freqs;
     map<int, DocumentData> _documents;

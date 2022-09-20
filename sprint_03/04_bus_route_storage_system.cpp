@@ -21,13 +21,42 @@ enum class QueryType {
 
 struct Query {
     QueryType type;
-    string bus;
+    string bus ;
     string stop;
     vector<string> stops;
+
+    void Clear() {
+        type = QueryType::AllBuses;
+        bus = ""s;
+        stop = ""s;
+        stops.clear();
+    }
+};
+
+struct BusesForStopResponse {
+    string busStopName;
+    vector<string> busRouteNamesThroughStop;
+
+    bool isEmpty() const {
+        if (busStopName.empty()) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+};
+
+struct StopsForBusResponse {
+    map<string, string> stop2BusesThrough;
+};
+
+struct AllBusesResponse {
+    map<string, vector<string>> busRoutes;
 };
 
 istream& operator>>(istream& is, Query& q) {
-    map<string, QueryType> QueryToTypeMapping = {
+    q.Clear();
+    map<string, QueryType> queryToTypeMapping = {
         {"NEW_BUS"s, QueryType::NewBus},
         {"BUSES_FOR_STOP"s, QueryType::BusesForStop},
         {"STOPS_FOR_BUS"s, QueryType::StopsForBus},
@@ -35,7 +64,7 @@ istream& operator>>(istream& is, Query& q) {
 
     string query_as_str;
     is >> query_as_str;
-    q.type = QueryToTypeMapping[query_as_str];
+    q.type = queryToTypeMapping[query_as_str];
 
     switch (q.type) {
         case QueryType::NewBus: {
@@ -62,29 +91,6 @@ istream& operator>>(istream& is, Query& q) {
     return is;
 }
 
-struct BusesForStopResponse {
-    string busStopName;
-    vector<string> busRouteNamesThroughStop;
-
-    bool isEmpty() {
-        if (busStopName.empty()) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-};
-
-bool operator==(const BusesForStopResponse& lhs, const BusesForStopResponse& rhs) {
-    if (lhs.busStopName == rhs.busStopName && lhs.busRouteNamesThroughStop == rhs.busRouteNamesThroughStop) {
-        return true;
-    } else {
-        return false;
-    }
-}
-
-
-// TO DO !!!!
 ostream& operator<<(ostream& os, const BusesForStopResponse& r) {
     if (r.isEmpty()) {
         os << "No stop";
@@ -98,31 +104,13 @@ ostream& operator<<(ostream& os, const BusesForStopResponse& r) {
     return os;
 }
 
-struct StopsForBusResponse {
-    string busRouteName;
-    vector<string> stop_names;
-};
-
-bool operator==(const StopsForBusResponse& lhs, const StopsForBusResponse& rhs) {
-    if (lhs.busRouteName == rhs.busRouteName && lhs.stop_names == rhs.stop_names) {
-        return true;
-    } else {
-        return false;
-    }
-}
-
 ostream& operator<<(ostream& os, const StopsForBusResponse& r) {
-    os << "Bus "s << r.busRouteName << ":";
-    for (const auto& name : r.stop_names) {
-        os << " " << name;
+    for (const auto& [stopName, busesThroughStop] : r.stop2BusesThrough) {
+        os << "Stop "s << stopName << ":" << busesThroughStop << endl;
     }
 
     return os;
 }
-
-struct AllBusesResponse {
-    map<string, vector<string>> busRoutes;
-};
 
 ostream& operator<<(ostream& os, const AllBusesResponse& r) {
     if (r.busRoutes.empty()) {
@@ -152,8 +140,6 @@ class BusManager {
         for (int i = 0; i < num_queries; ++i) {
             cin >> _queries[i];
         }
-
-        // cout << "Queries have been read." << endl;
     }
 
     void ProcessAllQueries() {
@@ -172,19 +158,39 @@ class BusManager {
 
     BusesForStopResponse GetBusesForStop(const string& stopName) const {
         if (_stopsToBuses.count(stopName)) {
-            BusesForStopResponse tmp = {stopName, _stopsToBuses.at(stopName)};
-            // return BusesForStopResponse({stopName, _stopsToBuses.at(stopName)});
-            return tmp;
+            return BusesForStopResponse({stopName, _stopsToBuses.at(stopName)});
         } else {
             return BusesForStopResponse({});
         }
     }
 
-    StopsForBusResponse GetStopsForBus(const string& busRouteName) const {
-        if (_busesToStops.count(busRouteName)) {
-            return StopsForBusResponse({busRouteName, _busesToStops.at(busRouteName)});
+    // TO DO !!!!!!!!!!!!!
+    // Переделать логику обработки с map <string, string> на vector<pair<string, string>>,
+    // т.к. нужно сохранить первоначальный порядок следования
+    StopsForBusResponse GetStopsForBus(const string& bus) const {
+        map <string, string> dict;
+        vector<pair<string, string>> interchangesPerStop;
+        string s;
+
+        if (_busesToStops.count(bus)) {
+            for (const auto& stopName: _busesToStops.at(bus)) {
+                if (_stopsToBuses.count(stopName)) {
+
+                    for(const auto& busAtStop : _stopsToBuses.at(stopName)) {
+                        if (bus != busAtStop) {
+                            dict[stopName] += " " + busAtStop;
+                            interchangesPerStop.emplace_back(stopName, );
+                        }
+                    }
+
+                    if (dict[stopName].empty()) {
+                        dict[stopName] = " no interchange";
+                    }
+                }
+            }  
+            return StopsForBusResponse{dict};
         } else {
-            return StopsForBusResponse({});
+            return StopsForBusResponse{};
         }
     }
 
@@ -216,48 +222,41 @@ class BusManager {
     }
 };
 
-void TestBusesForStopQuery() {
-    BusManager bm;
-    bm.AddBus("32"s, {"Tolstopaltsevo"s, "Marushkino"s, "Vnukovo"s});
-    bm.AddBus("32K"s, {"Tolstopaltsevo"s, "Marushkino"s, "Vnukovo"s, "Peredelkino"s, "Solntsevo"s, "Skolkovo"s});
-    bm.AddBus("24"s, {"Vnukovo"s, "Solntsevo"s, "Dno"s});
-    const string stopToCheck = "Vnukovo"s;
-
-    BusesForStopResponse bfsr = bm.GetBusesForStop(stopToCheck);
-    BusesForStopResponse bfsrSample = {stopToCheck, {"32"s, "32K"s, "24"s}};
-
-    assert(bfsr == bfsrSample);
-
-    cout << "Test \"TestBusesForStopQuery\" successfully passed." << endl;
-}
-
-void TestStopsForBusQuery() {
-    BusManager bm;
-
-    bm.AddBus("32"s, {"Tolstopaltsevo"s, "Marushkino"s, "Vnukovo"s});
-
-    StopsForBusResponse sfbr = bm.GetStopsForBus("32"s);
-    StopsForBusResponse sfbrSample{"32"s, {"Tolstopaltsevo"s, "Marushkino"s, "Vnukovo"s}};
-
-    assert(sfbr == sfbrSample);
-
-    cout << "Test \"TestStopsForBusQuery\" successfully passed." << endl;
-}
-
 void testAllBusesQuery() {
     BusManager bm;
     bm.ReadQueries();
     bm.ProcessAllQueries();
 }
 
-void TestBusManager() {
-    TestBusesForStopQuery();
-    TestStopsForBusQuery();
-}
-
 int main() {
-    // TestBusManager();
-    testAllBusesQuery();
+    int query_count;
+    Query q;
 
-    return 0;
+    cin >> query_count;
+
+    BusManager bm;
+    for (int i = 0; i < query_count; ++i) {
+        cin >> q;
+
+        switch (q.type) {
+            case QueryType::NewBus:
+                bm.AddBus(q.bus, q.stops);
+                break;
+            case QueryType::BusesForStop:
+                cout << bm.GetBusesForStop(q.stop) << endl;
+                break;
+            case QueryType::StopsForBus:
+                cout << bm.GetStopsForBus(q.bus) << endl;
+                break;
+            case QueryType::AllBuses:
+                cout << bm.GetAllBuses() << endl;
+                break;
+        }
+    }
 }
+
+// int main() {
+//     testAllBusesQuery();
+
+//     return 0;
+// }

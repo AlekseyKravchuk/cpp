@@ -131,14 +131,19 @@ ostream& operator<<(ostream& os, const AllBusesResponse& r) {
     if (r.busRoutes.empty()) {
         os << "No buses";
     } else {
-        for (const auto& [busRouteName, stopNames] : r.busRoutes) {
-            os << "Bus "s << busRouteName << ":";
+        bool first_iterated = false;
+        for (const auto& [bus, stopNames] : r.busRoutes) {
+            if (first_iterated) {
+                os << endl << "Bus "s << bus << ":";
+            } else {
+                os << "Bus "s << bus << ":";
+            }
+            first_iterated = true;
+            
 
             for (const auto& name : stopNames) {
                 os << " " << name;
             }
-
-            os << endl;
         }
     }
 
@@ -266,3 +271,10 @@ int main() {
     }
 }
 
+// int main() {
+//     BusManager bm;
+//     bm.ReadQueries();
+//     bm.ProcessAllQueries();
+
+//     return 0;
+// }

@@ -40,3 +40,6 @@ sprint_01/bin/
 
 # VSCode congiguration
 .idea/
+
+# my folder for storing some tests and notes
+tests_and_notes/

@@ -21,7 +21,7 @@ enum class QueryType {
 
 struct Query {
     QueryType type;
-    string bus ;
+    string bus;
     string stop;
     vector<string> stops;
 
@@ -35,7 +35,7 @@ struct Query {
 
 struct BusesForStopResponse {
     string busStopName;
-    vector<string> busRouteNamesThroughStop;
+    vector<string> busesThroughStop;
 
     bool isEmpty() const {
         if (busStopName.empty()) {
@@ -47,7 +47,11 @@ struct BusesForStopResponse {
 };
 
 struct StopsForBusResponse {
-    map<string, string> stop2BusesThrough;
+    vector<pair<string, string>> stop2BusesThrough;
+
+    bool isEmpty() const {
+        return (stop2BusesThrough.empty()) ? true : false;
+    }
 };
 
 struct AllBusesResponse {
@@ -95,9 +99,12 @@ ostream& operator<<(ostream& os, const BusesForStopResponse& r) {
     if (r.isEmpty()) {
         os << "No stop";
     } else {
-        os << "Stop "s << r.busStopName << ":";
-        for (const auto& stopName : r.busRouteNamesThroughStop) {
-            os << " " << stopName;
+        for (vector<string>::const_iterator it = r.busesThroughStop.begin(); it != r.busesThroughStop.end(); ++it) {
+            if (next(it) != r.busesThroughStop.end()) {
+                os << *it << " ";
+            } else {
+                os << *it;
+            }
         }
     }
 
@@ -105,8 +112,16 @@ ostream& operator<<(ostream& os, const BusesForStopResponse& r) {
 }
 
 ostream& operator<<(ostream& os, const StopsForBusResponse& r) {
-    for (const auto& [stopName, busesThroughStop] : r.stop2BusesThrough) {
-        os << "Stop "s << stopName << ":" << busesThroughStop << endl;
+    if (r.isEmpty()) {
+        os << "No bus";
+    } else {
+        for (vector<pair<string, string>>::const_iterator it = r.stop2BusesThrough.begin(); it != r.stop2BusesThrough.end(); ++it) {
+            if (next(it) != r.stop2BusesThrough.end()) {
+                os << "Stop "s << (*it).first << ":" << (*it).second << endl;
+            } else {
+                os << "Stop "s << (*it).first << ":" << (*it).second;
+            }
+        }
     }
 
     return os;
@@ -149,59 +164,55 @@ class BusManager {
     }
 
     void AddBus(const string& bus, const vector<string>& stopNames) {
-        _busesToStops[bus] = stopNames;
+        _busToStops[bus] = stopNames;
 
         for (const auto& stopName : stopNames) {
-            _stopsToBuses[stopName].push_back(bus);
+            _stopToBuses[stopName].push_back(bus);
         }
     }
 
     BusesForStopResponse GetBusesForStop(const string& stopName) const {
-        if (_stopsToBuses.count(stopName)) {
-            return BusesForStopResponse({stopName, _stopsToBuses.at(stopName)});
+        if (_stopToBuses.count(stopName)) {
+            return BusesForStopResponse({stopName, _stopToBuses.at(stopName)});
         } else {
             return BusesForStopResponse({});
         }
     }
 
-    // TO DO !!!!!!!!!!!!!
-    // Переделать логику обработки с map <string, string> на vector<pair<string, string>>,
-    // т.к. нужно сохранить первоначальный порядок следования
     StopsForBusResponse GetStopsForBus(const string& bus) const {
-        map <string, string> dict;
         vector<pair<string, string>> interchangesPerStop;
-        string s;
 
-        if (_busesToStops.count(bus)) {
-            for (const auto& stopName: _busesToStops.at(bus)) {
-                if (_stopsToBuses.count(stopName)) {
+        if (_busToStops.count(bus)) {
+            for (const auto& stopName : _busToStops.at(bus)) {  // итерируемся по всем остановкам данного автобусного маршрута "bus"
 
-                    for(const auto& busAtStop : _stopsToBuses.at(stopName)) {
+                if (_stopToBuses.count(stopName)) {
+                    string interchangesHolder = ""s;
+
+                    for (const auto& busAtStop : _stopToBuses.at(stopName)) {  // итерируемся по всем автобусным маршрутам, проходящим ч/з данную остановку
                         if (bus != busAtStop) {
-                            dict[stopName] += " " + busAtStop;
-                            interchangesPerStop.emplace_back(stopName, );
+                            interchangesHolder += " " + busAtStop;
                         }
                     }
-
-                    if (dict[stopName].empty()) {
-                        dict[stopName] = " no interchange";
+                    if (interchangesHolder.empty()) {
+                        interchangesHolder = " no interchange";
                     }
+                    interchangesPerStop.emplace_back(stopName, interchangesHolder);
                 }
-            }  
-            return StopsForBusResponse{dict};
+            }
+            return StopsForBusResponse{interchangesPerStop};
         } else {
             return StopsForBusResponse{};
         }
     }
 
     AllBusesResponse GetAllBuses() const {
-        return {_busesToStops};
+        return {_busToStops};
     }
 
    private:
-    map<string, vector<string>> _busesToStops;  // bus routes to stop names mapping: {busRouteName: [stopName1, ..., stopNameN]}
-    map<string, vector<string>> _stopsToBuses;  // stop names to bus routes mapping: {stopName1: [busRouteName3, busRouteName5, ... busRouteName_i]}
-    vector<Query> _queries;                     // storage of queries to process
+    map<string, vector<string>> _busToStops;   // bus routes to stop names mapping: {busRouteName: [stopName1, ..., stopNameN]}
+    map<string, vector<string>> _stopToBuses;  // stop names to bus routes mapping: {stopName1: [busRouteName3, busRouteName5, ... busRouteName_i]}
+    vector<Query> _queries;                    // storage of queries to process
 
     void ProcessQuery(const Query& q) {
         switch (q.type) {
@@ -255,8 +266,3 @@ int main() {
     }
 }
 
-// int main() {
-//     testAllBusesQuery();
-
-//     return 0;
-// }

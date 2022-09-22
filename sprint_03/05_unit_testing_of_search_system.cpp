@@ -3,6 +3,7 @@
 #include <cmath>
 #include <iostream>
 #include <map>
+#include <numeric>
 #include <set>
 #include <string>
 #include <utility>
@@ -16,6 +17,14 @@ struct Document {
     int id;
     double relevance;
     int rating;
+
+    bool operator==(const Document& doc) {
+        if (doc.id == id && doc.relevance == relevance && doc.rating == rating) {
+            return true;
+        } else {
+            return false;
+        }
+    }
 };
 
 enum class DocumentStatus {
@@ -165,15 +174,19 @@ class SearchServer {
         return words;
     }
 
+    // static int ComputeAverageRating(const vector<int>& ratings) {
+    //     if (ratings.empty()) {
+    //         return 0;
+    //     }
+    //     int rating_sum = 0;
+    //     for (const int rating : ratings) {
+    //         rating_sum += rating;
+    //     }
+    //     return rating_sum / static_cast<int>(ratings.size());
+    // }
+
     static int ComputeAverageRating(const vector<int>& ratings) {
-        if (ratings.empty()) {
-            return 0;
-        }
-        int rating_sum = 0;
-        for (const int rating : ratings) {
-            rating_sum += rating;
-        }
-        return rating_sum / static_cast<int>(ratings.size());
+        return (ratings.empty()) ? 0 : reduce(ratings.begin(), ratings.end(), 0.0) / static_cast<double>(ratings.size());
     }
 
     struct QueryWord {
@@ -277,6 +290,58 @@ void TestExcludeStopWordsFromAddedDocumentContent() {
         server.SetStopWords("in the"s);
         server.AddDocument(doc_id, content, DocumentStatus::ACTUAL, ratings);
         assert(server.FindTopDocuments("in"s).empty());
+    }
+}
+
+void TestSearchAddedDocumentByQueryContainingWordsFromDocument() {
+    vector<string> contents = {
+        "cats in the city"s,
+        "some incident occured in the city regarding famous cats"s,
+        "cats live in a house near the mountains, these cats are very pleasant"s,
+        "my father teaches mathematics"s,
+        "there are different breeds of dogs"s,
+        "cats make their owners happy"s,
+        "the tanks full of water have fish and turtles in them"s,
+        "my family always eats breakfast and dinner together"s,
+        "in my city, there is a post office where people mail letters"s,
+        "I am happy to live in my city"s};
+
+    const vector<vector<int>> ratings_vec = {
+        {1, 2, 3, 2},
+        {4, 5, 3},
+        {5, 5, 5},
+        {4, 4, 5},
+        {3, 5, 4},
+        {3, 2, 3},
+        {3, 4, 3},
+        {4, 5, 3, 4},
+        {3, 5, 5},
+        {5, 5, 3}};
+
+    const string wordsToSearchFor = "city happy"s;
+
+    // добавляем документы в базу данных
+    {
+        SearchServer server;
+        int numCounter = static_cast<int>(contents.size());
+        for (int id = 0; id < numCounter; ++id) {
+            server.AddDocument(id, contents[id], DocumentStatus::ACTUAL, ratings_vec[id]);
+        }
+
+        const auto found_docs = server.FindTopDocuments(wordsToSearchFor);
+        cout << "Found documents returned."s << endl;
+        // assert(found_docs.size() == 1);
+        // const Document& doc0 = found_docs[0];
+        // assert(doc0.id == doc_id);
+    }
+
+    // Затем убеждаемся, что поиск этого же слова, входящего в список стоп-слов,
+    // возвращает пустой результат
+    {
+        // SearchServer server;
+        // server.SetStopWords("in the"s);
+        // server.AddDocument(doc_id, content, DocumentStatus::ACTUAL, ratings);
+        // assert(server.FindTopDocuments("in"s).empty());
     }
 }
 

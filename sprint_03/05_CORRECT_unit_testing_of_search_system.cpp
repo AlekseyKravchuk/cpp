@@ -3,7 +3,6 @@
 #include <cmath>
 #include <iostream>
 #include <map>
-#include <numeric>
 #include <set>
 #include <string>
 #include <utility>
@@ -289,63 +288,140 @@ void TestExcludeStopWordsFromAddedDocumentContent() {
         SearchServer server;
         server.SetStopWords("in the"s);
         server.AddDocument(doc_id, content, DocumentStatus::ACTUAL, ratings);
-        assert(server.FindTopDocuments("in"s).empty());
+        assert(server.FindTopDocuments("in"s).size() == 0);
     }
 }
 
-void TestSearchAddedDocumentByQueryContainingWordsFromDocument() {
-    vector<string> contents = {
-        /* 0 */"cats in the city"s,
-        /* 1 */"some incident occured in the city regarding famous cats"s,
-        /* 2 */"cats live in a house near the mountains, these cats are very pleasant"s,
-        /* 3 */"my father teaches mathematics"s,
-        /* 4 */"there are different breeds of dogs"s,
-        /* 5 */"cats make their owners happy"s,
-        /* 6 */"the tanks full of water have fish and turtles in them"s,
-        /* 7 */"my family always eats breakfast and dinner together"s,
-        /* 8 */"in my city, there is a post office where people mail letters"s,
-        /* 9 */"I am happy to live in my city"s};
-
-    const vector<vector<int>> ratings_vec = {
-        {1, 2, 3, 2, 4},
-        {4, 5, 3},
-        {5, 5, 5},
-        {4, 4, 5},
-        {3, 5, 4},
-        {3, 2, 3},
-        {3, 4, 3},
-        {4, 5, 3, 4},
-        {3, 5, 5},
-        {5, 5, 3}};
-
-    const string wordsToSearchFor = "city happy"s;
-
-    // добавляем документы в базу данных
+void TestAddDocument() {
+    const int doc_id = 42;
+    const string content = "cat in the city"s;
+    const vector<int> ratings = {1, 2, 3};
+    // Сначала убеждаемся, что поиск слова, не входящего в список стоп-слов,
+    // находит нужный документ
     {
         SearchServer server;
-        int numCounter = static_cast<int>(contents.size());
-        
-        for (int id = 0; id < numCounter; ++id) {
-            server.AddDocument(id, contents[id], DocumentStatus::ACTUAL, ratings_vec[id]);
-        }
-
-        const auto found_docs = server.FindTopDocuments(wordsToSearchFor);
-        cout << "Found documents returned."s << endl;
-        // assert(found_docs.size() == 1);
-        // const Document& doc0 = found_docs[0];
-        // assert(doc0.id == doc_id);
+        server.AddDocument(doc_id, content, DocumentStatus::ACTUAL, ratings);
+        const auto found_docs = server.FindTopDocuments("cat"s);
+        assert(found_docs.size() == 1);
+        const Document& doc0 = found_docs[0];
+        assert(doc0.id == doc_id);
+        server.AddDocument(33, "cat into door"s, DocumentStatus::ACTUAL, {2, 3, 4});
+        const auto found_docs1 = server.FindTopDocuments("cat"s);
+        assert(found_docs1.size() == 2);
+        const Document& doc01 = found_docs1[0];
+        assert(doc01.id == 33);
     }
 
     // Затем убеждаемся, что поиск этого же слова, входящего в список стоп-слов,
     // возвращает пустой результат
     {
-        // SearchServer server;
-        // server.SetStopWords("in the"s);
-        // server.AddDocument(doc_id, content, DocumentStatus::ACTUAL, ratings);
-        // assert(server.FindTopDocuments("in"s).empty());
+        SearchServer server;
+        server.SetStopWords("in the"s);
+        server.AddDocument(doc_id, content, DocumentStatus::ACTUAL, ratings);
+        assert(server.FindTopDocuments("in"s).empty());
     }
 }
 
+void TestMinusWords() {
+    {
+        SearchServer server;
+        server.AddDocument(2, "красная синяя кошка за окном"s, DocumentStatus::ACTUAL, {1, 2, 3});
+        server.AddDocument(34, "красная черная кошка за окном"s, DocumentStatus::ACTUAL, {1, 2, 3});
+        const auto found_docs = server.FindTopDocuments("красная кошка черная"s);
+        assert(found_docs.size() == 2);
+        const Document& doc0 = found_docs[0];
+        assert(doc0.id == 34);
+        const auto found_docs1 = server.FindTopDocuments("красная кошка -черная"s);
+        assert(found_docs1.size() == 1);
+        const Document& doc1 = found_docs1[0];
+        assert(doc1.id == 2);
+    }
+}
+
+void TestMatchDocument() {
+    SearchServer server;
+    server.AddDocument(1, "красный белый синий"s, DocumentStatus::ACTUAL, {1, 2, 3});
+    vector<string> found_doc;
+    DocumentStatus status;
+    tie(found_doc, status) = server.MatchDocument("белый синий"s, 1);
+    assert(found_doc.size() == 2);
+    vector<string> found_doc1;
+    DocumentStatus status1;
+    tie(found_doc1, status1) = server.MatchDocument("красный -синий"s, 1);
+    assert(found_doc1.size() == 0);
+    vector<string> found_doc2;
+    DocumentStatus status2;
+    tie(found_doc2, status2) = server.MatchDocument("коричневый кот"s, 1);
+    assert(found_doc2.size() == 0);
+}
+
+void TestSortDocument() {
+    SearchServer server;
+    {
+        server.AddDocument(2, "красный оранжевый белый"s, DocumentStatus::ACTUAL, {1, 2, 3});
+        server.AddDocument(1, "красный синий кот"s, DocumentStatus::ACTUAL, {1, 2, 3});
+        server.AddDocument(3, "красный оранжевый олигарх"s, DocumentStatus::ACTUAL, {1, 2, 3});
+        const auto found_docs = server.FindTopDocuments("красная кот оранжевый"s);
+        const Document& doc0 = found_docs[0];
+        assert(doc0.id == 1);
+    }
+    {
+        server.AddDocument(2, "красный синий белый кот"s, DocumentStatus::ACTUAL, {1, 2, 3});
+        server.AddDocument(1, "красный синий синий кот"s, DocumentStatus::ACTUAL, {1, 2, 3});
+        const auto found_docs = server.FindTopDocuments("красная кот синий"s);
+        const Document& doc0 = found_docs[0];
+        assert(doc0.id == 1);
+    }
+}
+
+void TestRating() {
+    SearchServer server;
+    server.AddDocument(1, "red cat under roof"s, DocumentStatus::ACTUAL, {1, 2, 3});
+    server.AddDocument(2, "black cat is running"s, DocumentStatus::ACTUAL, {1, 2, 3, 9});
+    const auto found_docs = server.FindTopDocuments("cat"s);
+    assert(found_docs[0].rating == 3);
+    assert(found_docs[1].rating == 2);
+}
+
+void TestPredicate() {
+    SearchServer server;
+    server.AddDocument(22, "red cat under roof"s, DocumentStatus::ACTUAL, {1, 2, 3});
+    server.AddDocument(23, "black cat is running"s, DocumentStatus::IRRELEVANT, {1, 2, 3});
+    server.AddDocument(24, "black cat in runnings"s, DocumentStatus::BANNED, {1, 2, 3});
+    server.AddDocument(25, "orange cat after runnings"s, DocumentStatus::REMOVED, {1, 2, 3});
+    const auto found_docs = server.FindTopDocuments("cat"s, DocumentStatus::ACTUAL);
+    assert(found_docs.size() == 1);
+    const Document& doc0 = found_docs[0];
+    assert(doc0.id == 22);
+    const auto found_docs1 = server.FindTopDocuments("cat"s, DocumentStatus::IRRELEVANT);
+    assert(found_docs1.size() == 1);
+    const Document& doc01 = found_docs1[0];
+    assert(doc01.id == 23);
+    const auto found_docs2 = server.FindTopDocuments("cat"s, DocumentStatus::BANNED);
+    assert(found_docs2.size() == 1);
+    const Document& doc02 = found_docs2[0];
+    assert(doc02.id == 24);
+    const auto found_docs3 = server.FindTopDocuments("cat"s, DocumentStatus::REMOVED);
+    assert(found_docs3.size() == 1);
+    const Document& doc03 = found_docs3[0];
+    assert(doc03.id == 25);
+}
+
+void TestCorrectRelevance() {
+    SearchServer server;
+    server.AddDocument(22, "house cristall and gold"s, DocumentStatus::ACTUAL, {1, 2, 3});
+    server.AddDocument(23, "car green sky house"s, DocumentStatus::ACTUAL, {1, 2, 3});
+    server.AddDocument(24, "yellow black white house"s, DocumentStatus::ACTUAL, {1, 2, 3});
+    const auto found_docs = server.FindTopDocuments("cristall house gold"s);
+    double ans1, ans2, ans3;
+    ans1 = 2.0 * log(3.0) * (0.25) + log(1.0) * (0.25);
+    ans2 = log(1.0) * (0.25);
+    ans3 = log(3.0) * (0.25) + log(1.0) * (0.25);
+    assert(found_docs[0].relevance == ans1);
+    assert(found_docs[1].relevance == ans2);
+    const auto found_docs1 = server.FindTopDocuments("house green"s);
+    assert(found_docs1[0].relevance == ans3);
+}
 /*
 Разместите код остальных тестов здесь
 */
@@ -353,16 +429,19 @@ void TestSearchAddedDocumentByQueryContainingWordsFromDocument() {
 // Функция TestSearchServer является точкой входа для запуска тестов
 void TestSearchServer() {
     TestExcludeStopWordsFromAddedDocumentContent();
-    // Не забудьте вызывать остальные тесты здесь
+    TestAddDocument();
+    TestMinusWords();
+    TestSortDocument();
+    TestMatchDocument();
+    TestRating();
+    TestPredicate();
+    TestCorrectRelevance();
 }
 
 // --------- Окончание модульных тестов поисковой системы -----------
 
 int main() {
-    // TestSearchServer();
+    TestSearchServer();
     // Если вы видите эту строку, значит все тесты прошли успешно
-
-    TestSearchAddedDocumentByQueryContainingWordsFromDocument();
-
     cout << "Search server testing finished"s << endl;
 }

@@ -105,6 +105,18 @@ void AssertImpl(bool expr, const string& exprAsStr,
 }
 
 void TestConvertFractionToIrreducibleForm() {
+    Rational zero_0(0);
+    ASSERT(zero_0.Numerator() == 0);
+    ASSERT(zero_0.Denominator() == 1);
+
+    Rational zero;  // дробь 0/1 = 0
+    ASSERT(zero.Numerator() == 0);
+    ASSERT(zero.Denominator() == 1);
+
+    const Rational seven(7);  // дробь 7/1 = 7
+    ASSERT(seven.Numerator() == 7);
+    ASSERT(seven.Denominator() == 1);
+
     Rational two_sixths(2, 6);  // дробь 2/6
     ASSERT(two_sixths.Numerator() == 1);
     ASSERT(two_sixths.Denominator() == 3);
@@ -113,14 +125,12 @@ void TestConvertFractionToIrreducibleForm() {
     ASSERT(two_sixths.Numerator() == 1);
     ASSERT(two_sixths.Denominator() == 3);
 
-    Rational zero;  // дробь 0/1 = 0
-    ASSERT(zero.Numerator() == 0);
-    ASSERT(zero.Denominator() == 1);
-
-    Rational three_twelfths(3, 12);  // дробь 3/12
+    Rational three_twelfths(3, 12);                         // дробь 3/12
     Rational res1 = Add(three_twelfths, minus_two_sixths);  // 3/12 + (-2/6)
     ASSERT(res1.Numerator() == 7);
     ASSERT(res1.Denominator() == 12);
+
+    Rational six_fifteens
 }
 
 // Функция TestFractions является точкой входа для запуска тестов
@@ -148,6 +158,3 @@ void main_part_1() {
 int main() {
     TestFractions();
 }
-
-
-

@@ -20,7 +20,7 @@ class Rational {
         int GCD = gcd(numerator, denominator);
         if (GCD) {
             _numerator = abs(numerator / GCD);
-            _denominator = (denominator / GCD);
+            _denominator = abs(denominator / GCD);
         } else {
             Rational();
         }
@@ -105,9 +105,9 @@ void AssertImpl(bool expr, const string& exprAsStr,
 }
 
 void TestConvertFractionToIrreducibleForm() {
-    Rational zero_0(0);
+    Rational zero_0(0, 0);
     ASSERT(zero_0.Numerator() == 0);
-    ASSERT(zero_0.Denominator() == 1);
+    ASSERT(zero_0.Denominator() == 0);
 
     Rational zero;  // дробь 0/1 = 0
     ASSERT(zero.Numerator() == 0);
@@ -130,7 +130,9 @@ void TestConvertFractionToIrreducibleForm() {
     ASSERT(res1.Numerator() == 7);
     ASSERT(res1.Denominator() == 12);
 
-    Rational six_fifteens
+    Rational six_fifteens(6, 15);
+    ASSERT(six_fifteens.Numerator() == 2);
+    ASSERT(six_fifteens.Denominator() == 5);
 }
 
 // Функция TestFractions является точкой входа для запуска тестов

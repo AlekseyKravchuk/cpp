@@ -73,7 +73,7 @@ class SearchServer {
         const double inv_word_count = 1.0 / words.size();
 
         for (const string& word : words) {
-            _word2doc_freqs[word][document_id] += inv_word_count;
+            _word2doc2freqs[word][document_id] += inv_word_count;
         }
         _documents.emplace(document_id, DocumentData{ComputeAverageRating(ratings), status});
     }
@@ -112,18 +112,18 @@ class SearchServer {
         const Query query = ParseQuery(raw_query);
         vector<string> matched_words;
         for (const string& word : query.plus_words) {
-            if (_word2doc_freqs.count(word) == 0) {
+            if (_word2doc2freqs.count(word) == 0) {
                 continue;
             }
-            if (_word2doc_freqs.at(word).count(document_id)) {
+            if (_word2doc2freqs.at(word).count(document_id)) {
                 matched_words.push_back(word);
             }
         }
         for (const string& word : query.minus_words) {
-            if (_word2doc_freqs.count(word) == 0) {
+            if (_word2doc2freqs.count(word) == 0) {
                 continue;
             }
-            if (_word2doc_freqs.at(word).count(document_id)) {
+            if (_word2doc2freqs.at(word).count(document_id)) {
                 matched_words.clear();
                 break;
             }
@@ -138,7 +138,7 @@ class SearchServer {
     };
 
     set<string> stop_words_;
-    map<string, map<int, double>> _word2doc_freqs;
+    map<string, map<int, double>> _word2doc2freqs;
     map<int, DocumentData> _documents;
 
     bool IsStopWord(const string& word) const {
@@ -204,7 +204,7 @@ class SearchServer {
 
     // Existence required
     double ComputeWordInverseDocumentFreq(const string& word) const {
-        return log(GetDocumentCount() * 1.0 / _word2doc_freqs.at(word).size());
+        return log(GetDocumentCount() * 1.0 / _word2doc2freqs.at(word).size());
     }
 
     template <typename Predicate>
@@ -212,11 +212,11 @@ class SearchServer {
         map<int, double> doc2relevance;
 
         for (const string& word : query.plus_words) {
-            if (_word2doc_freqs.count(word) == 0) {
+            if (_word2doc2freqs.count(word) == 0) {
                 continue;
             }
             const double inverse_document_freq = ComputeWordInverseDocumentFreq(word);
-            for (const auto [docID, term_freq] : _word2doc_freqs.at(word)) {
+            for (const auto [docID, term_freq] : _word2doc2freqs.at(word)) {
                 if (pred(docID, _documents.at(docID).status, _documents.at(docID).rating)) {
                     doc2relevance[docID] += term_freq * inverse_document_freq;
                 }
@@ -224,10 +224,10 @@ class SearchServer {
         }
 
         for (const string& word : query.minus_words) {
-            if (_word2doc_freqs.count(word) == 0) {
+            if (_word2doc2freqs.count(word) == 0) {
                 continue;
             }
-            for (const auto [document_id, _] : _word2doc_freqs.at(word)) {
+            for (const auto [document_id, _] : _word2doc2freqs.at(word)) {
                 doc2relevance.erase(document_id);
             }
         }

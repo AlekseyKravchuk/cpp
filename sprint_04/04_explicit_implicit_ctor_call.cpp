@@ -7,7 +7,8 @@ class Rational {
    public:
     Rational() = default;
 
-    Rational(int numerator) : _numerator(numerator), _denominator(1) {}
+    // Конвертирующий конструктор, создающий дробь из целого числа
+    /* explicit */ Rational(int numerator) : _numerator(numerator), _denominator(1) {}
 
     Rational(int numerator, int denominator) : _numerator(numerator), _denominator(denominator) {
         Normalize();
@@ -46,5 +47,5 @@ Rational AddRationals(Rational r1, Rational r2) {
 int main() {
     Rational sum = AddRationals(Rational{1, 6}, 5);
     // выведет 31/6
-    cout << sum.Numerator() << "/"s << sum.GetDenominator() << endl;
+    cout << sum.Numerator() << "/"s << sum.Denominator() << endl;
 }

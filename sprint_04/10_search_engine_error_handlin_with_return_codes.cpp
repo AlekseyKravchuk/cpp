@@ -3,6 +3,7 @@
 #include <iostream>
 #include <map>
 #include <set>
+#include <sstream>  // for std::istringstream()
 #include <string>
 #include <utility>
 #include <vector>
@@ -24,68 +25,41 @@ int ReadLineWithNumber() {
     return result;
 }
 
-// struct StopW {
-//     string stp_word_;
-
-//     template <typename Word>
-//     explicit StopW(const Word& w) {
-//         stp_word_ = w;
-//     }
-
-//     string ReturnStr() {
-//         return stp_word_;
-//     }
-// };
-
+// converts space-separated string "text" into vector of strings
 vector<string> SplitIntoWords(const string& text) {
+    istringstream iss(text);
     vector<string> words;
     string word;
-    for (const auto& c : text) {
-        if (c == ' ') {
-            if (!word.empty()) {
-                words.push_back(word);
-                word.clear();
-            }
-        } else {
-            word += c;
-        }
-    }
-    if (!word.empty()) {
+
+    while (iss >> word) {
         words.push_back(word);
     }
 
     return words;
 }
 
-template <typename Mass>
-vector<string> SplitIntoWords(const Mass& text) {
-    string temp;
-
-    for (const string& word : text) {
-        temp += word;
-        temp += " "s;
-    }
-
-    return SplitIntoWords(temp);
-}
-
 struct Document {
-    Document()
-        : id(0),
-          relevance(0),
-          rating(0) {
+    Document() = default;
+
+    Document(int id, double relevance, int rating)
+        : id(id), relevance(relevance), rating(rating) {
     }
 
-    Document(int id_, double relevance_, int rating_)
-        : id(id_),
-          relevance(relevance_),
-          rating(rating_) {
-    }
-
-    int id;
-    double relevance;
-    int rating;
+    int id = 0;
+    double relevance = 0.0;
+    int rating = 0;
 };
+
+template <typename StringContainer>
+set<string> MakeUniqueNonEmptyStrings(const StringContainer& strings) {
+    set<string> non_empty_strings;
+    for (const string& str : strings) {
+        if (!str.empty()) {
+            non_empty_strings.insert(str);
+        }
+    }
+    return non_empty_strings;
+}
 
 enum class DocumentStatus {
     ACTUAL,
@@ -96,20 +70,19 @@ enum class DocumentStatus {
 
 class SearchServer {
    public:
-    template <typename Strings>
-    explicit SearchServer(const Strings& stop_words) {
-        for (const auto& word : SplitIntoWords(stop_words)) {
-            stop_words_.insert(word);
-        }
+    template <typename StringContainer>
+    explicit SearchServer(const StringContainer& stop_words)
+        : stop_words_(MakeUniqueNonEmptyStrings(stop_words)) {
     }
 
-    explicit SearchServer(const string& stop_words) {
-        for (const auto& word : SplitIntoWords(stop_words)) {
-            stop_words_.insert(word);
-        }
-    }
+    // Invoke delegating constructor from string container
+    explicit SearchServer(const string& stop_words_text)
+        : SearchServer(SplitIntoWords(stop_words_text)) {}
 
-    void AddDocument(int document_id, const string& document, DocumentStatus status,
+    // TO DO: реализовать новый интерфейс
+    bool AddDocument(int document_id,
+                     const string& document,
+                     DocumentStatus status,
                      const vector<int>& ratings) {
         const vector<string> words = SplitIntoWordsNoStop(document);
         const double inv_word_count = 1.0 / words.size();
@@ -119,13 +92,16 @@ class SearchServer {
         documents_.emplace(document_id, DocumentData{ComputeAverageRating(ratings), status});
     }
 
-    template <typename StatMApper>
-    vector<Document> FindTopDocuments(const string& raw_query, StatMApper stat_mapper) const {
+    // TO DO: реализовать новый интерфейс
+    template <typename DocumentPredicate>
+    [[nodiscard]] bool FindTopDocuments(const string& raw_query,
+                                        DocumentPredicate document_predicate,
+                                        vector<Document>& result) const {
         const Query query = ParseQuery(raw_query);
-        auto matched_documents = FindAllDocuments(query, stat_mapper);
+        auto matched_documents = FindAllDocuments(query, document_predicate);
 
         sort(matched_documents.begin(), matched_documents.end(),
-             [](const auto& lhs, const auto& rhs) {
+             [](const Document& lhs, const Document& rhs) {
                  if (abs(lhs.relevance - rhs.relevance) < 1e-6) {
                      return lhs.rating > rhs.rating;
                  } else {
@@ -138,11 +114,19 @@ class SearchServer {
         return matched_documents;
     }
 
-    vector<Document> FindTopDocuments(const string& raw_query, DocumentStatus status) const {
-        return FindTopDocuments(raw_query, [status](int document_id, DocumentStatus doc_status, int rating) { return doc_status == status; });
+    // TO DO: реализовать новый интерфейс
+    [[nodiscard]] bool FindTopDocuments(const string& raw_query,
+                                        DocumentStatus status,
+                                        vector<Document>& result) const {
+        return FindTopDocuments(raw_query,
+                                [status](int document_id, DocumentStatus document_status, int rating) {
+                                    return document_status == status;
+                                });
     }
 
-    vector<Document> FindTopDocuments(const string& raw_query) const {
+    // TO DO: реализовать новый интерфейс
+    [[nodiscard]] bool FindTopDocuments(const string& raw_query,
+                                        vector<Document>& result) const {
         return FindTopDocuments(raw_query, DocumentStatus::ACTUAL);
     }
 
@@ -150,8 +134,10 @@ class SearchServer {
         return documents_.size();
     }
 
-    tuple<vector<string>, DocumentStatus> MatchDocument(const string& raw_query,
-                                                        int document_id) const {
+    // TO DO: реализовать новый интерфейс
+    [[nodiscard]] bool MatchDocument(const string& raw_query,
+                                     int document_id,
+                                     tuple<vector<string>, DocumentStatus>& result) const {
         const Query query = ParseQuery(raw_query);
         vector<string> matched_words;
         for (const string& word : query.plus_words) {
@@ -174,13 +160,16 @@ class SearchServer {
         return {matched_words, documents_.at(document_id).status};
     }
 
+    int GetDocumentId(int index) const {
+        // ...
+    }
+
    private:
     struct DocumentData {
         int rating;
         DocumentStatus status;
     };
-
-    set<string> stop_words_;
+    const set<string> stop_words_;
     map<string, map<int, double>> word_to_document_freqs_;
     map<int, DocumentData> documents_;
 
@@ -250,8 +239,9 @@ class SearchServer {
         return log(GetDocumentCount() * 1.0 / word_to_document_freqs_.at(word).size());
     }
 
-    template <typename Predicate>
-    vector<Document> FindAllDocuments(const Query& query, Predicate predicate) const {
+    template <typename DocumentPredicate>
+    vector<Document> FindAllDocuments(const Query& query,
+                                      DocumentPredicate document_predicate) const {
         map<int, double> document_to_relevance;
         for (const string& word : query.plus_words) {
             if (word_to_document_freqs_.count(word) == 0) {
@@ -259,7 +249,8 @@ class SearchServer {
             }
             const double inverse_document_freq = ComputeWordInverseDocumentFreq(word);
             for (const auto [document_id, term_freq] : word_to_document_freqs_.at(word)) {
-                if (predicate(document_id, documents_.at(document_id).status, documents_.at(document_id).rating)) {
+                const auto& document_data = documents_.at(document_id);
+                if (document_predicate(document_id, document_data.status, document_data.rating)) {
                     document_to_relevance[document_id] += term_freq * inverse_document_freq;
                 }
             }
@@ -289,14 +280,11 @@ void PrintDocument(const Document& document) {
     cout << "{ "s
          << "document_id = "s << document.id << ", "s
          << "relevance = "s << document.relevance << ", "s
-         << "rating = "s << document.rating
-         << " }"s << endl;
+         << "rating = "s << document.rating << " }"s << endl;
 }
 
 int main() {
-    //search_server.SetStopWords("и в на"s);
-    const vector<string> stop_words_vector = {"и"s, "в"s, "на"s, ""s, "в"s};
-    SearchServer search_server(stop_words_vector);
+    SearchServer search_server("и в на"s);
 
     search_server.AddDocument(0, "белый кот и модный ошейник"s, DocumentStatus::ACTUAL, {8, -3});
     search_server.AddDocument(1, "пушистый кот пушистый хвост"s, DocumentStatus::ACTUAL, {7, 2, 7});
@@ -309,14 +297,19 @@ int main() {
     }
 
     cout << "BANNED:"s << endl;
-    for (const Document& document : search_server.FindTopDocuments("пушистый ухоженный кот"s, DocumentStatus::BANNED)) {
+    for (const Document& document :
+         search_server.FindTopDocuments("пушистый ухоженный кот"s, DocumentStatus::BANNED)) {
         PrintDocument(document);
     }
 
     cout << "Even ids:"s << endl;
-    for (const Document &document : search_server.FindTopDocuments("пушистый ухоженный кот"s, [](int document_id, DocumentStatus status, int rating) { return document_id % 2 == 0; })) {
+    for (const Document &document :
+         search_server.FindTopDocuments("пушистый ухоженный кот"s,
+                                        [](int document_id, DocumentStatus status, int rating) {
+                                            return document_id % 2 == 0;
+                                        }))  //
+    {
         PrintDocument(document);
     }
-
     return 0;
 }

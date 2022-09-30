@@ -6,7 +6,7 @@
 
 using namespace std;
 
-// overload insertion operator "<<" for std::pair
+// overloading of stream insertion operator "<<" for std::pair
 template <typename firstType, typename secondType>
 ostream& operator<<(ostream& out, const pair<firstType, secondType>& p) {
     out << "("s << p.first << ", "s << p.second << ")"s;

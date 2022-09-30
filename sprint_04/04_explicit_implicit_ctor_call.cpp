@@ -7,33 +7,33 @@ class Rational {
    public:
     Rational() = default;
 
-    Rational(int numerator) : numerator_(numerator), denominator_(1) {}
+    Rational(int numerator) : _numerator(numerator), _denominator(1) {}
 
-    Rational(int numerator, int denominator) : numerator_(numerator), denominator_(denominator) {
+    Rational(int numerator, int denominator) : _numerator(numerator), _denominator(denominator) {
         Normalize();
     }
 
     int Numerator() const {
-        return numerator_;
+        return _numerator;
     }
 
     int Denominator() const {
-        return denominator_;
+        return _denominator;
     }
 
    private:
     void Normalize() {
-        if (denominator_ < 0) {
-            numerator_ = -numerator_;
-            denominator_ = -denominator_;
+        if (_denominator < 0) {
+            _numerator = -_numerator;
+            _denominator = -_denominator;
         }
-        const int divisor = gcd(numerator_, denominator_);
-        numerator_ /= divisor;
-        denominator_ /= divisor;
+        const int divisor = gcd(_numerator, _denominator);
+        _numerator /= divisor;
+        _denominator /= divisor;
     }
 
-    int numerator_ = 0;
-    int denominator_ = 1;
+    int _numerator = 0;
+    int _denominator = 1;
 };
 
 Rational AddRationals(Rational r1, Rational r2) {

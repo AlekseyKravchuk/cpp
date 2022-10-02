@@ -299,7 +299,8 @@ class SearchServer {
     }
 
     template <typename DocumentPredicate>
-    [[nodiscard]] bool FindTopDocuments(const string& raw_query, DocumentPredicate document_predicate,
+    [[nodiscard]] bool FindTopDocuments(const string& raw_query,
+                                        DocumentPredicate document_predicate,
                                         vector<Document>& result) const {
         Query query;
         vector<Document> matched_documents;

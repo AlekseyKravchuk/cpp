@@ -21,5 +21,19 @@ optional<pair<double, double>> SolveQuadraticEquation(double a, double b, double
 }
 
 int main() {
-    return 0;
+    cout << "Введите коэффициенты уравнения a*x^2 + b*x + c = 0"s << endl;
+    double a, b, c;
+    cin >> a >> b >> c;
+    // Вместо const optional<pair<double, double>> roots используем auto,
+    //     позволяя компилятору вывести тип переменной roots самостоятельно
+    if (const auto roots = SolveQuadraticEquation(a, b, c);
+        roots.has_value()) {
+        cout << "Корни уравнения "s << a << "*x^2 + "s << b << "*x + "s << c << " = 0"s << endl;
+        // Доступ к значению можно получить при помощи метода roots.value() или (*roots)
+        // Если внутри хранится структура или класс, то доступ к его полям
+        //   можно получить при помощи ->
+        cout << "  x1="s << roots.value().first << "; x2="s << roots->second << endl;
+    } else {
+        cout << "Уравнение не имеет действительных корней"s << endl;
+    }
 }

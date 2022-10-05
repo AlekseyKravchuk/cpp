@@ -79,18 +79,18 @@ class SearchServer {
                      DocumentStatus status,
                      const vector<int>& ratings) {
         const vector<string> words = SplitIntoWordsNoStop(document);
-        const double inv_word_count = 1.0 / words.size();
+        const double invertedWordCount = 1.0 / words.size();
 
         for (const string& word : words) {
-            _word2docID2freqs[word][docID] += inv_word_count;
+            _word2docID2freqs[word][docID] += invertedWordCount;
         }
         _documents.emplace(docID, DocumentData{ComputeAverageRating(ratings), status});
     }
 
     // #1) FindTopDocuments, base function: TEMPLATE version of function with PREDICATE specified when calling from main
     template <typename Predicate>
-    vector<Document> FindTopDocuments(const string& raw_query, Predicate pred) const {
-        const Query query = ParseQuery(raw_query);
+    vector<Document> FindTopDocuments(const string& rawQuery, Predicate pred) const {
+        const Query query = ParseQuery(rawQuery);
         auto matched_documents = FindAllDocuments(query, pred);
 
         sort(matched_documents.begin(), matched_documents.end(),
@@ -108,38 +108,38 @@ class SearchServer {
     }
 
     // #2) FindTopDocuments, WRAPPER: converts STATUS-based to Predicate-based logic
-    vector<Document> FindTopDocuments(const string& raw_query,
-                                      DocumentStatus ext_status) const {
-        return FindTopDocuments(raw_query, [ext_status](int document_id, DocumentStatus status, int rating) { return ext_status == status; });
+    vector<Document> FindTopDocuments(const string& rawQuery,
+                                      DocumentStatus externalStatus) const {
+        return FindTopDocuments(rawQuery, [externalStatus](int document_id, DocumentStatus status, int rating) { return externalStatus == status; });
     }
 
     // #3) FindTopDocuments, WRAPPER: check for ACTUAL status by default
-    vector<Document> FindTopDocuments(const string& raw_query) const {
-        return FindTopDocuments(raw_query, DocumentStatus::ACTUAL);
+    vector<Document> FindTopDocuments(const string& rawQuery) const {
+        return FindTopDocuments(rawQuery, DocumentStatus::ACTUAL);
     }
 
-    tuple<vector<string>, DocumentStatus> MatchDocument(const string& raw_query,
+    tuple<vector<string>, DocumentStatus> MatchDocument(const string& rawQuery,
                                                         int document_id) const {
-        const Query query = ParseQuery(raw_query);
-        vector<string> matched_words;
-        for (const string& word : query.plus_words) {
+        const Query query = ParseQuery(rawQuery);
+        vector<string> matchedWords;
+        for (const string& word : query.plusWords) {
             if (_word2docID2freqs.count(word) == 0) {
                 continue;
             }
             if (_word2docID2freqs.at(word).count(document_id)) {
-                matched_words.push_back(word);
+                matchedWords.push_back(word);
             }
         }
-        for (const string& word : query.minus_words) {
+        for (const string& word : query.minusWords) {
             if (_word2docID2freqs.count(word) == 0) {
                 continue;
             }
             if (_word2docID2freqs.at(word).count(document_id)) {
-                matched_words.clear();
+                matchedWords.clear();
                 break;
             }
         }
-        return {matched_words, _documents.at(document_id).status};
+        return {matchedWords, _documents.at(document_id).status};
     }
 
    private:
@@ -175,34 +175,34 @@ class SearchServer {
 
     struct QueryWord {
         string data;
-        bool is_minus;
-        bool is_stop;
+        bool isMinusWord;
+        bool isStopWord;
     };
 
     QueryWord ParseQueryWord(string text) const {
-        bool is_minus = false;
+        bool isMinusWord = false;
         // Word shouldn't be empty
         if (text[0] == '-') {
-            is_minus = true;
+            isMinusWord = true;
             text = text.substr(1);
         }
-        return {text, is_minus, IsStopWord(text)};
+        return {text, isMinusWord, IsStopWord(text)};
     }
 
     struct Query {
-        set<string> plus_words;
-        set<string> minus_words;
+        set<string> plusWords;
+        set<string> minusWords;
     };
 
     Query ParseQuery(const string& text) const {
         Query query;
         for (const string& word : SplitIntoWords(text)) {
-            const QueryWord query_word = ParseQueryWord(word);
-            if (!query_word.is_stop) {
-                if (query_word.is_minus) {
-                    query.minus_words.insert(query_word.data);
+            const QueryWord queryWord = ParseQueryWord(word);
+            if (!queryWord.isStopWord) {
+                if (queryWord.isMinusWord) {
+                    query.minusWords.insert(queryWord.data);
                 } else {
-                    query.plus_words.insert(query_word.data);
+                    query.plusWords.insert(queryWord.data);
                 }
             }
         }
@@ -218,20 +218,20 @@ class SearchServer {
     vector<Document> FindAllDocuments(const Query& query, Predicate pred) const {
         map<int, double> doc2relevance;
 
-        for (const string& word : query.plus_words) {
+        for (const string& word : query.plusWords) {
             if (_word2docID2freqs.count(word) == 0) {
                 continue;
             }
 
-            const double inverse_document_freq = ComputeWordInverseDocumentFreq(word);
+            const double inverseDocumentFreq = ComputeWordInverseDocumentFreq(word);
             for (const auto [docID, term_freq] : _word2docID2freqs.at(word)) {
                 if (pred(docID, _documents.at(docID).status, _documents.at(docID).rating)) {
-                    doc2relevance[docID] += term_freq * inverse_document_freq;
+                    doc2relevance[docID] += term_freq * inverseDocumentFreq;
                 }
             }
         }
 
-        for (const string& word : query.minus_words) {
+        for (const string& word : query.minusWords) {
             if (_word2docID2freqs.count(word) == 0) {
                 continue;
             }
@@ -241,9 +241,9 @@ class SearchServer {
         }
 
         vector<Document> matched_documents;
-        for (const auto [document_id, relevance] : doc2relevance) {
+        for (const auto [docID, relevance] : doc2relevance) {
             matched_documents.push_back(
-                {document_id, relevance, _documents.at(document_id).rating});
+                {docID, relevance, _documents.at(docID).rating});
         }
         return matched_documents;
     }
@@ -266,6 +266,18 @@ class SearchServer {
         RunTestImpl(func);              \
         cerr << #func << " OK" << endl; \
     }
+
+ostream& operator<<(ostream& out, const vector<string>& container) {
+    bool is_first = true;
+    for (const auto& element : container) {
+        if (!is_first) {
+            out << ", "s;
+        }
+        is_first = false;
+        out << element;
+    }
+    return out;
+}
 
 template <typename FuntionType>
 void RunTestImpl(FuntionType func) {
@@ -370,42 +382,47 @@ void TestExcludeStopWordsFromAddedDocumentContent() {
 }
 // =============================================================================
 
-// ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ #3 TestMinusWords ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+// ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ #3 TestMinusWordsExcludedFromQuery ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 // Поддержка минус-слов. Документы, содержащие минус-слова из поискового запроса, не должны включаться в результаты поиска.
-void TestMinusWords() {
-    const std::string queryWithMinusWords = "dog -walking"s;
+void TestMinusWordsExcludedFromQuery() {
     SearchServer server;
     ComposeDocumentsFromContentsDB(server);
 
-    auto found_documents = server.FindTopDocuments(queryWithMinusWords);
+    auto found_documents = server.FindTopDocuments("dog -walking"s);
     ASSERT_EQUAL_HINT(found_documents.size(), 4, "Server returns ONLY the documents without minus words, which were in query"s);
 
+    // test case when PLUS-words and MINUS-words intersect
     found_documents = server.FindTopDocuments("dog walking -walking");
     ASSERT_EQUAL(found_documents.size(), 4);
+
+    found_documents = server.FindTopDocuments("dog walking -walking -likes -bed  -tail");
+    ASSERT_EQUAL(found_documents.size(), 1);
 }
 // =============================================================================
 
 // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ #4 TestMatching ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 // Соответствие документов поисковому запросу. При этом должны быть возвращены все слова из поискового запроса, присутствующие в документе.
-// Если есть соответствие хотя бы по одному минус-слову, должен возвращаться пустой список слов.
+// Если есть пересечение хотя бы по одному минус-слову, должен возвращаться пустой список слов.
 void TestMatching() {
     SearchServer server;
     ComposeDocumentsFromContentsDB(server);
 
     for (size_t docID = 0; docID < contentsDB.size(); ++docID) {
-        // проверка будет ли искать пустую строку
+        // check if empty string will be found
         auto [matching_words, _] = server.MatchDocument(""s, docID);
         ASSERT_HINT(matching_words.empty(), "matching empty word for docID"s);
 
-        // проверка будет ли искать слово не из документа
-        std::tie(matching_words, _) = server.MatchDocument("some extra words"s, docID);
-        ASSERT_HINT(matching_words.empty(), "matching na words for docid"s);
+        // check if MatchDocument finds words not present in the document
+        std::tie(matching_words, _) = server.MatchDocument("words not existing in document"s, docID);
+        ASSERT_HINT(matching_words.empty(), "words not present in the document was found"s);
 
-        // находит все слова
+        // check if MatchDocument finds all the intersection of PLUS-words and QUERY-words
         int docID2test = 4;
         if (docID == docID2test) {
             std::tie(matching_words, _) = server.MatchDocument("dog street master"s, docID2test);
             ASSERT_EQUAL_HINT(matching_words.size(), 3, "matching existing words for docid"s);
+            const vector<string> wordsIntersection1 = {"dog"s, "master"s, "street"s};
+            ASSERT_EQUAL_HINT(matching_words, wordsIntersection1, "matching existing words for docid"s);
 
             std::tie(matching_words, _) = server.MatchDocument("dog -walking"s, docID2test);
             ASSERT_EQUAL_HINT(matching_words.size(), 0, "no matching minus words for docid"s);
@@ -602,6 +619,7 @@ void TestCountingRelevants() {
 void TestSearchServer() {
     RUN_TEST(TestExcludeStopWordsFromAddedDocumentContent);
     RUN_TEST(TestAddingDocumentsToTheServer);
+    RUN_TEST(TestMinusWordsExcludedFromQuery);
     RUN_TEST(TestMatching);
     RUN_TEST(TestSortByRelevance);
     RUN_TEST(TestRatingCalculation);

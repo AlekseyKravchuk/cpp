@@ -169,7 +169,7 @@ class SearchServer {
     struct QueryWord {
         string data;
         bool is_minus;
-        bool is_stop;
+        bool isStopWord;
     };
 
     QueryWord ParseQueryWord(string text) const {
@@ -191,7 +191,7 @@ class SearchServer {
         Query query;
         for (const string& word : SplitIntoWords(text)) {
             const QueryWord query_word = ParseQueryWord(word);
-            if (!query_word.is_stop) {
+            if (!query_word.isStopWord) {
                 if (query_word.is_minus) {
                     query.minus_words.insert(query_word.data);
                 } else {

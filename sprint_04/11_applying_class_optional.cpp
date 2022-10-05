@@ -242,7 +242,7 @@ class SearchServer {
     struct QueryWord {
         string data;
         bool is_minus;
-        bool is_stop;
+        bool isStopWord;
     };
 
     struct Query {

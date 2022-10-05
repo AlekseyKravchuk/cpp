@@ -15,26 +15,49 @@ using namespace std;
 
 const int MAX_RESULT_DOCUMENT_COUNT = 5;
 
-struct Document {
-    int id;
-    double relevance;
-    int rating;
-
-    bool operator==(const Document& doc) {
-        if (doc.id == id && doc.relevance == relevance && doc.rating == rating) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-};
-
 enum class DocumentStatus {
     ACTUAL,
     IRRELEVANT,
     BANNED,
     REMOVED,
 };
+
+struct Document {
+    int id;
+    double relevance;
+    int rating;
+};
+
+bool isEqualRelevances(double relevance_1, double relevance_2) {
+    const double REASONABLE_ERROR = 1e-6;
+    if (abs(relevance_1 - relevance_2) < REASONABLE_ERROR) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+bool operator==(const Document& lhsDoc, const Document& rhsDoc) {
+    if (lhsDoc.id == rhsDoc.id && isEqualRelevances(lhsDoc.relevance, rhsDoc.relevance) && lhsDoc.rating == rhsDoc.rating) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+bool operator!=(const Document& lhsDoc, const Document& rhsDoc) {
+    return !(operator==(lhsDoc, rhsDoc));
+}
+
+ostream& operator<<(ostream& os, const Document& doc) {
+    os << "{"s;
+    os << "docID = "s << doc.id << "; "s;
+    os << "relevance = "s << doc.relevance << "; "s;
+    os << "rating = "s << doc.rating << ";"s;
+    os << "}"s;
+
+    return os;
+}
 
 string ReadLine() {
     string s;
@@ -64,13 +87,16 @@ vector<string> SplitIntoWords(const string& text) {
 
 class SearchServer {
    public:
+    // 10^(-6); constant used when comparing two document relevances (of type "double")
+    const double _REASONABLE_ERROR = 1e-6;
+
     int GetDocumentCount() const {
         return _documents.size();
     }
 
     void SetStopWords(const string& text) {
         for (const string& word : SplitIntoWords(text)) {
-            _stop_words.insert(word);
+            _stopWords.insert(word);
         }
     }
 
@@ -91,9 +117,9 @@ class SearchServer {
     template <typename Predicate>
     vector<Document> FindTopDocuments(const string& rawQuery, Predicate pred) const {
         const Query query = ParseQuery(rawQuery);
-        auto matched_documents = FindAllDocuments(query, pred);
+        auto matchedDocuments = FindAllDocuments(query, pred);
 
-        sort(matched_documents.begin(), matched_documents.end(),
+        sort(matchedDocuments.begin(), matchedDocuments.end(),
              [this](const Document& lhs, const Document& rhs) {
                  if (abs(lhs.relevance - rhs.relevance) < this->_REASONABLE_ERROR) {
                      return lhs.rating > rhs.rating;
@@ -101,16 +127,17 @@ class SearchServer {
                      return lhs.relevance > rhs.relevance;
                  }
              });
-        if (matched_documents.size() > MAX_RESULT_DOCUMENT_COUNT) {
-            matched_documents.resize(MAX_RESULT_DOCUMENT_COUNT);
+        if (matchedDocuments.size() > MAX_RESULT_DOCUMENT_COUNT) {
+            matchedDocuments.resize(MAX_RESULT_DOCUMENT_COUNT);
         }
-        return matched_documents;
+        return matchedDocuments;
     }
 
     // #2) FindTopDocuments, WRAPPER: converts STATUS-based to Predicate-based logic
     vector<Document> FindTopDocuments(const string& rawQuery,
                                       DocumentStatus externalStatus) const {
-        return FindTopDocuments(rawQuery, [externalStatus](int document_id, DocumentStatus status, int rating) { return externalStatus == status; });
+        return FindTopDocuments(rawQuery,
+                                [externalStatus](int document_id, DocumentStatus status, int rating) { return externalStatus == status; });
     }
 
     // #3) FindTopDocuments, WRAPPER: check for ACTUAL status by default
@@ -148,15 +175,12 @@ class SearchServer {
         DocumentStatus status;
     };
 
-    // 10^(-6); constant used when comparing two document relevances (of type "double")
-    const double _REASONABLE_ERROR = 1e-6;
-
-    set<string> _stop_words;
+    set<string> _stopWords;
     map<string, map<int, double>> _word2docID2freqs;
     map<int, DocumentData> _documents;
 
     bool IsStopWord(const string& word) const {
-        return _stop_words.count(word) > 0;
+        return _stopWords.count(word) > 0;
     }
 
     vector<string> SplitIntoWordsNoStop(const string& text) const {
@@ -235,8 +259,8 @@ class SearchServer {
             if (_word2docID2freqs.count(word) == 0) {
                 continue;
             }
-            for (const auto [document_id, _] : _word2docID2freqs.at(word)) {
-                doc2relevance.erase(document_id);
+            for (const auto [docID, _] : _word2docID2freqs.at(word)) {
+                doc2relevance.erase(docID);
             }
         }
 
@@ -323,20 +347,21 @@ const vector<string> contentsDB = {
     /* 00 */ "happy dog walking joyfully"s,
     /* 01 */ "dog likes walk and run"s,
     /* 02 */ "dog plays"s,
-    /* 03 */ "dog sits on bed",
-    /* 04 */ "dog was walking with his master at the street",
+    /* 03 */ "dog sits on bed"s,
+    /* 04 */ "dog was walking with his master at the street"s,
     /* 05 */ "lovely dog with big curly tail",
-    /* 06 */ "      "s
+    /* 06 */
+    "      "s
     /* 07 */ "earth worm"s
     /* ,"extra document to fail test"s */};
 
-const std::vector<int> test_ratings = {3, 0, 0, 0};
-constexpr int test_document_id = 1;
+const std::vector<int> testRatings = {3, 0, 0, 0};
+constexpr int testDocID = 1;
 
 // supplementaty funciton to compose documents DB from contentsDB
 void ComposeDocumentsFromContentsDB(SearchServer& server) {
     for (size_t docID = 0; docID < contentsDB.size(); ++docID) {
-        server.AddDocument(docID, contentsDB[docID], DocumentStatus::ACTUAL, test_ratings);
+        server.AddDocument(docID, contentsDB[docID], DocumentStatus::ACTUAL, testRatings);
     }
 }
 // ============================================================================================
@@ -352,8 +377,8 @@ void TestAddingDocumentsToTheServer() {
     ASSERT(server.GetDocumentCount() == 7);
 
     for (const auto& word : SplitIntoWords(contentsDB[0])) {
-        const auto found_documents = server.FindTopDocuments(word);
-        ASSERT(found_documents.size() > 0);
+        const auto foundDocuments = server.FindTopDocuments(word);
+        ASSERT(foundDocuments.size() > 0);
     }
 }
 
@@ -366,9 +391,9 @@ void TestExcludeStopWordsFromAddedDocumentContent() {
     {
         SearchServer server;
         server.AddDocument(doc_id, content, DocumentStatus::ACTUAL, ratings);
-        const auto found_docs = server.FindTopDocuments("in"s);
-        ASSERT_EQUAL(found_docs.size(), 1u);
-        const Document& doc0 = found_docs[0];
+        const auto foundDocuments = server.FindTopDocuments("in"s);
+        ASSERT_EQUAL(foundDocuments.size(), 1u);
+        const Document& doc0 = foundDocuments[0];
         ASSERT_EQUAL(doc0.id, doc_id);
     }
 
@@ -388,15 +413,15 @@ void TestMinusWordsExcludedFromQuery() {
     SearchServer server;
     ComposeDocumentsFromContentsDB(server);
 
-    auto found_documents = server.FindTopDocuments("dog -walking"s);
-    ASSERT_EQUAL_HINT(found_documents.size(), 4, "Server returns ONLY the documents without minus words, which were in query"s);
+    auto foundDocuments = server.FindTopDocuments("dog -walking"s);
+    ASSERT_EQUAL_HINT(foundDocuments.size(), 4, "Server returns ONLY the documents without minus words, which were in query"s);
 
     // test case when PLUS-words and MINUS-words intersect
-    found_documents = server.FindTopDocuments("dog walking -walking");
-    ASSERT_EQUAL(found_documents.size(), 4);
+    foundDocuments = server.FindTopDocuments("dog walking joyfully -walking -plays");
+    ASSERT_EQUAL(foundDocuments.size(), 3);
 
-    found_documents = server.FindTopDocuments("dog walking -walking -likes -bed  -tail");
-    ASSERT_EQUAL(found_documents.size(), 1);
+    foundDocuments = server.FindTopDocuments("dog walking -walking -likes -bed  -tail");
+    ASSERT_EQUAL(foundDocuments.size(), 1);
 }
 // =============================================================================
 
@@ -409,23 +434,25 @@ void TestMatching() {
 
     for (size_t docID = 0; docID < contentsDB.size(); ++docID) {
         // check if empty string will be found
-        auto [matching_words, _] = server.MatchDocument(""s, docID);
-        ASSERT_HINT(matching_words.empty(), "matching empty word for docID"s);
+        auto [wordsItersection, _] = server.MatchDocument(""s, docID);
+        ASSERT_HINT(wordsItersection.empty(), "matching empty word for docID"s);
 
         // check if MatchDocument finds words not present in the document
-        std::tie(matching_words, _) = server.MatchDocument("words not existing in document"s, docID);
-        ASSERT_HINT(matching_words.empty(), "words not present in the document was found"s);
+        std::tie(wordsItersection, _) = server.MatchDocument("words not existing in document"s, docID);
+        ASSERT_HINT(wordsItersection.empty(), "words not present in the document was found"s);
 
         // check if MatchDocument finds all the intersection of PLUS-words and QUERY-words
         int docID2test = 4;
         if (docID == docID2test) {
-            std::tie(matching_words, _) = server.MatchDocument("dog street master"s, docID2test);
-            ASSERT_EQUAL_HINT(matching_words.size(), 3, "matching existing words for docid"s);
+            std::tie(wordsItersection, _) = server.MatchDocument("dog street master"s, docID2test);
+            ASSERT_EQUAL_HINT(wordsItersection.size(), 3, "matching existing words for docid"s);
             const vector<string> wordsIntersection1 = {"dog"s, "master"s, "street"s};
-            ASSERT_EQUAL_HINT(matching_words, wordsIntersection1, "matching existing words for docid"s);
+            ASSERT_EQUAL_HINT(wordsItersection, wordsIntersection1, "matching existing words for docid"s);
 
-            std::tie(matching_words, _) = server.MatchDocument("dog -walking"s, docID2test);
-            ASSERT_EQUAL_HINT(matching_words.size(), 0, "no matching minus words for docid"s);
+            std::tie(wordsItersection, _) = server.MatchDocument("dog -walking"s, docID2test);
+            ASSERT_EQUAL_HINT(wordsItersection.size(), 0, "no matching minus words for docid"s);
+            const vector<string> wordsIntersection2 = {};
+            ASSERT_EQUAL_HINT(wordsItersection, wordsIntersection2, "matching existing words for docid"s);
         }
     }
 }
@@ -438,13 +465,13 @@ void TestSortByRelevance() {
     SearchServer server;
     vector<string> v = SplitIntoWords("dog was happy to walk in park"s);
 
-    server.AddDocument(0, "dog"s, DocumentStatus::ACTUAL, test_ratings);
-    server.AddDocument(1, "dog was"s, DocumentStatus::ACTUAL, test_ratings);
-    server.AddDocument(2, "dog was happy"s, DocumentStatus::ACTUAL, test_ratings);
-    server.AddDocument(3, "dog was happy to"s, DocumentStatus::ACTUAL, test_ratings);
-    server.AddDocument(4, "dog was happy to walk"s, DocumentStatus::ACTUAL, test_ratings);
-    server.AddDocument(5, "dog was happy to walk in"s, DocumentStatus::ACTUAL, test_ratings);
-    server.AddDocument(6, "dog was happy to walk in park"s, DocumentStatus::ACTUAL, test_ratings);
+    server.AddDocument(0, "dog"s, DocumentStatus::ACTUAL, testRatings);
+    server.AddDocument(1, "dog was"s, DocumentStatus::ACTUAL, testRatings);
+    server.AddDocument(2, "dog was happy"s, DocumentStatus::ACTUAL, testRatings);
+    server.AddDocument(3, "dog was happy to"s, DocumentStatus::ACTUAL, testRatings);
+    server.AddDocument(4, "dog was happy to walk"s, DocumentStatus::ACTUAL, testRatings);
+    server.AddDocument(5, "dog was happy to walk in"s, DocumentStatus::ACTUAL, testRatings);
+    server.AddDocument(6, "dog was happy to walk in park"s, DocumentStatus::ACTUAL, testRatings);
 
     const auto foundDocuments = server.FindTopDocuments("happy dog park walk"s);
     const std::vector<int> expectedDocumentIds = {6, 4, 5, 2, 0};
@@ -453,11 +480,11 @@ void TestSortByRelevance() {
 
     ASSERT_EQUAL(foundDocuments.size(), expectedDocumentIds.size());
 
-    bool is_sorted_by_relevance =
+    bool isSortedByRelevance =
         std::is_sorted(foundDocuments.begin(), foundDocuments.end(),
                        [](const Document& left, const Document& right) { return left.relevance > right.relevance; });
 
-    ASSERT_HINT(is_sorted_by_relevance, "sorted by relevance"s);
+    ASSERT_HINT(isSortedByRelevance, "sorted by relevance"s);
 }
 // =============================================================================
 
@@ -466,24 +493,30 @@ void TestSortByRelevance() {
 void TestRatingCalculation() {
     SearchServer server;
 
-    vector<int> test_ratings0 = {3, 0, 0, 0};
-    vector<int> test_ratings1 = {1, 2, 4};
-    vector<int> test_ratings2 = {1, 2, 5};
-    vector<int> test_ratings3 = {-1, -2, -4};
-    vector<int> test_ratings4 = {-1, -2, -5};
-    vector<int> test_ratings5 = {-1, 2, 5};
+    vector<int> testRatings0 = {3, 0, 0, 0};
+    vector<int> testRatings1 = {1, 2, 4};
+    vector<int> testRatings2 = {1, 2, 5};
+    vector<int> testRatings3 = {-1, -2, -4};
+    vector<int> testRatings4 = {-1, -2, -5};
 
-    vector<int> expected_rating_ = {2, 2, -2, -2, 2};
+    vector<int> expectedRating = {(3 + 0 + 0 + 0) / 4,
+                                  (1 + 2 + 4) / 3,
+                                  (1 + 2 + 5) / 3,
+                                  (-1 - 2 - 4) / 3,
+                                  (-1 - 2 - 5) / 3};
 
-    server.AddDocument(1, ""s, DocumentStatus::ACTUAL, test_ratings0);
-    server.AddDocument(2, contentsDB[0], DocumentStatus::ACTUAL, test_ratings1);
-    server.AddDocument(3, contentsDB[0], DocumentStatus::ACTUAL, test_ratings2);
-    server.AddDocument(4, contentsDB[0], DocumentStatus::ACTUAL, test_ratings3);
-    server.AddDocument(5, contentsDB[0], DocumentStatus::ACTUAL, test_ratings4);
-    server.AddDocument(6, contentsDB[0], DocumentStatus::ACTUAL, test_ratings5);
+    // contentsDB[0] equals to "happy dog walking joyfully"s;
+    server.AddDocument(0, contentsDB[0], DocumentStatus::ACTUAL, testRatings0);
+    server.AddDocument(1, contentsDB[0], DocumentStatus::ACTUAL, testRatings1);
+    server.AddDocument(2, contentsDB[0], DocumentStatus::ACTUAL, testRatings2);
+    server.AddDocument(3, contentsDB[0], DocumentStatus::ACTUAL, testRatings3);
+    server.AddDocument(4, contentsDB[0], DocumentStatus::ACTUAL, testRatings4);
 
-    for (const Document& document : server.FindTopDocuments(contentsDB[0])) {
-        ASSERT_EQUAL(document.rating, expected_rating_[document.id - 2]);
+    const auto foundDocuments = server.FindTopDocuments(contentsDB[0]);
+
+    for (size_t i; i < MAX_RESULT_DOCUMENT_COUNT; ++i) {
+        int correctIndex = foundDocuments[i].id;
+        ASSERT_EQUAL(foundDocuments[i].rating, expectedRating[correctIndex]);
     }
 }
 
@@ -495,16 +528,16 @@ void TestFindDocumentsWithCustomDocumentStatusFilterFunction() {
     static const int docCount = 3;
     SearchServer server;
 
-    for (int document_id = test_document_id; document_id < test_document_id + docCount; ++document_id) {
-        server.AddDocument(document_id, contentsDB[0], DocumentStatus::ACTUAL, test_ratings);
+    for (int docID = testDocID; docID < testDocID + docCount; ++docID) {
+        server.AddDocument(docID, contentsDB[0], DocumentStatus::ACTUAL, testRatings);
     }
 
-    auto custom_document_filter_function = [](int document_id, DocumentStatus status, int rating) {
-        return document_id > test_document_id;
+    auto customDocumentFilterFunction = [](int docID, DocumentStatus status, int rating) {
+        return docID > testDocID;
     };
 
-    const auto found_documents = server.FindTopDocuments(contentsDB[0], custom_document_filter_function);
-    ASSERT_EQUAL_HINT(found_documents.size(), docCount - 1, "Server found expected number of documents with custom document filter function"s);
+    const auto foundDocuments = server.FindTopDocuments(contentsDB[0], customDocumentFilterFunction);
+    ASSERT_EQUAL_HINT(foundDocuments.size(), docCount - 1, "Server found expected number of documents with custom document filter function"s);
 }
 // =============================================================================
 
@@ -512,127 +545,85 @@ void TestFindDocumentsWithCustomDocumentStatusFilterFunction() {
 // Поиск документов, имеющих заданный статус по умолчанию.
 void TestFindDocumentsWithDefaultDocumentStatusFilterFunction() {
     {
-        static const int docStatusCount = 4;
-        static const int docCount = 9;
-        std::map<DocumentStatus, std::vector<int>> expected_documents;
-
         SearchServer server;
+        server.AddDocument(0, "dog was walking with his master at the street"s, DocumentStatus::ACTUAL, {3, 0, 0, 0});
+        server.AddDocument(1, "dog likes walk and run"s, DocumentStatus::IRRELEVANT, {3, 0, 0, 0});
+        server.AddDocument(2, "happy dog walking joyfully"s, DocumentStatus::BANNED, {3, 0, 0, 0});
+        server.AddDocument(3, "happy dog walking joyfully"s, DocumentStatus::REMOVED, {3, 0, 0, 0});
+        server.AddDocument(4, "happy dog walking joyfully"s, DocumentStatus::IRRELEVANT, {3, 0, 0, 0});
+        server.AddDocument(5, "dog sits on bed"s, DocumentStatus::ACTUAL, {3, 0, 0, 0});
 
-        for (int document_id = 0; document_id < docCount; ++document_id) {
-            DocumentStatus status = static_cast<DocumentStatus>(document_id % docStatusCount);
-            server.AddDocument(document_id, contentsDB[0], status, test_ratings);
-            expected_documents[status].emplace_back(document_id);
-        }
-
-        auto check_status = [=](DocumentStatus status, const std::string& status_string,
-                                const std::vector<int>& expected_document_indexes) {
-            const auto documents = server.FindTopDocuments(contentsDB[0], status);
-
-            std::vector<int> actual_document_indexes;
-            std::transform(documents.begin(), documents.end(), std::back_inserter(actual_document_indexes),
-                           [](const Document& document) { return document.id; });
-            std::sort(actual_document_indexes.begin(), actual_document_indexes.end());
-
-            ASSERT_EQUAL_HINT(documents.size(), expected_document_indexes.size(), "Server found correct number of documents"s);
-
-            ASSERT_HINT(std::equal(actual_document_indexes.begin(), actual_document_indexes.end(), expected_document_indexes.begin()),
-                        "Server found correct document ID"s);
-        };
-
-        check_status(DocumentStatus::ACTUAL, "ACTUAL", expected_documents[DocumentStatus::ACTUAL]);
-        check_status(DocumentStatus::IRRELEVANT, "IRRELEVANT", expected_documents[DocumentStatus::IRRELEVANT]);
-        check_status(DocumentStatus::BANNED, "BANNED", expected_documents[DocumentStatus::BANNED]);
-        check_status(DocumentStatus::REMOVED, "REMOVED", expected_documents[DocumentStatus::REMOVED]);
-    }
-
-    {
-        SearchServer server;
-        server.AddDocument(test_document_id, contentsDB[0], DocumentStatus::ACTUAL, test_ratings);
-
-        const auto found_documents = server.FindTopDocuments(contentsDB[0]);
-        ASSERT_EQUAL(found_documents.size(), 1);
-
-        ASSERT_EQUAL_HINT(found_documents[0].id, test_document_id, "Server found correct document with ACTUAL status and IMPLICIT ACTUAL function argument"s);
+        const auto foundDocuments = server.FindTopDocuments("dog sits"s);
+        ASSERT_EQUAL(foundDocuments.size(), 2u);
+        ASSERT_EQUAL_HINT(foundDocuments[0].id, 5, "Server found correct document with ACTUAL status and IMPLICIT ACTUAL function argument"s);
+        ASSERT_EQUAL_HINT(foundDocuments[1].id, 0, "Server found correct document with ACTUAL status and IMPLICIT ACTUAL function argument"s);
     }
 }
 // =============================================================================
 
-// ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ #8 TestStatus ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+// ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ #9 TestStatus ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 // Поиск документов, имеющих заданный статус.
 void TestStatus() {
-    const int doc_id = 42;
-    const string content = "cat in the city"s;
-    const vector<int> ratings = {1, 2, 3};
-
-    const int doc_id2 = 43;
-    const string content2 = "cat and dog in the home"s;
-    const vector<int> ratings2 = {3, 3, 3};
-
-    const int doc_id3 = 44;
-    const string content3 = "cat and dog in the black box"s;
-    const vector<int> ratings3 = {4, 4, 4};
 
     {
         SearchServer server;
-        server.AddDocument(doc_id, content, DocumentStatus::ACTUAL, ratings);
-        server.AddDocument(doc_id2, content2, DocumentStatus::IRRELEVANT, ratings2);
-        server.AddDocument(doc_id3, content3, DocumentStatus::REMOVED, ratings3);
-        const auto found_docs = server.FindTopDocuments("cat"s, DocumentStatus::IRRELEVANT);
-        ASSERT_EQUAL(found_docs.size(), 1);
-        ASSERT_EQUAL(found_docs[0].id, 43);
-        const auto found_docs2 = server.FindTopDocuments("cat"s, DocumentStatus::REMOVED);
-        ASSERT_EQUAL(found_docs2.size(), 1);
-        ASSERT_EQUAL(found_docs2[0].id, 44);
+        server.AddDocument(42, "cat in the city"s,              DocumentStatus::ACTUAL,     {1, 2, 3});
+        server.AddDocument(43, "cat and dog in the home"s,      DocumentStatus::IRRELEVANT, {3, 3, 3});
+        server.AddDocument(44, "cat and dog in the black box"s, DocumentStatus::REMOVED,    {4, 4, 4});
+
+        const auto foundDocuments1 = server.FindTopDocuments("cat"s, DocumentStatus::IRRELEVANT);
+        ASSERT_EQUAL(foundDocuments1.size(), 1u);
+        ASSERT_EQUAL(foundDocuments1[0].id, 43);
+
+        const auto foundDocuments2 = server.FindTopDocuments("cat"s, DocumentStatus::REMOVED);
+        ASSERT_EQUAL(foundDocuments2.size(), 1);
+        ASSERT_EQUAL(foundDocuments2[0].id, 44);
     }
 }
 // =============================================================================
 
-// ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ #9 TestCountingRelevants ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+// ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ #10 TestRelevanceCalculation ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 // Корректное вычисление релевантности найденных документов
-void TestCountingRelevants() {
-    const int doc_id = 42;
-    const string content = "cat in the city"s;
-    const vector<int> ratings = {1, 2, 3};
-
-    const int doc_id2 = 43;
-    const string content2 = "cat and dog in the home"s;
-    const vector<int> ratings2 = {3, 3, 3};
-
-    const int doc_id3 = 44;
-    const string content3 = "cat and dog in the black box"s;
-    const vector<int> ratings3 = {4, 4, 4};
-
+void TestRelevanceCalculation() {
     {
         SearchServer server;
-        server.AddDocument(doc_id, content, DocumentStatus::ACTUAL, ratings);
-        server.AddDocument(doc_id2, content2, DocumentStatus::ACTUAL, ratings);
-        server.AddDocument(doc_id3, content3, DocumentStatus::ACTUAL, ratings);
-        const auto found_docs = server.FindTopDocuments("cat dog -city"s, DocumentStatus::ACTUAL);
-        ASSERT_EQUAL(found_docs.size(), 2);
-        ASSERT_EQUAL(found_docs[0].id, 43);
-        ASSERT_EQUAL(found_docs[1].id, 44);
+        server.AddDocument(42, "cat in the city"s, DocumentStatus::ACTUAL, {1, 2, 3});
+        server.AddDocument(43, "cat and dog in the home"s, DocumentStatus::ACTUAL, {3, 3, 3});
+        server.AddDocument(44, "cat and dog in the black box"s, DocumentStatus::ACTUAL, {4, 4, 4});
+        const auto foundDocuments = server.FindTopDocuments("cat dog -city"s, DocumentStatus::ACTUAL);
+        ASSERT_EQUAL(foundDocuments.size(), 2);
+
+        const Document doc0 = {43, 0.067577, 3};
+        const Document docFound0 = foundDocuments[0];
+
+        const Document doc1 = {44, 0.057923, 4};
+        const Document docFound1 = foundDocuments[1];
+
+        ASSERT_EQUAL(docFound0, doc0);
+        ASSERT_EQUAL(docFound1, doc1);
     }
 }
 // =============================================================================
 
 // Функция TestSearchServer является точкой входа для запуска тестов
 void TestSearchServer() {
-    RUN_TEST(TestExcludeStopWordsFromAddedDocumentContent);
-    RUN_TEST(TestAddingDocumentsToTheServer);
-    RUN_TEST(TestMinusWordsExcludedFromQuery);
-    RUN_TEST(TestMatching);
-    RUN_TEST(TestSortByRelevance);
-    RUN_TEST(TestRatingCalculation);
-    RUN_TEST(TestFindDocumentsWithCustomDocumentStatusFilterFunction);
-    RUN_TEST(TestFindDocumentsWithDefaultDocumentStatusFilterFunction);
-    RUN_TEST(TestStatus);
-    RUN_TEST(TestCountingRelevants);
+    /* 1 */ RUN_TEST(TestAddingDocumentsToTheServer);
+    /* 2 */ RUN_TEST(TestExcludeStopWordsFromAddedDocumentContent);
+    /* 3 */ RUN_TEST(TestMinusWordsExcludedFromQuery);
+    /* 4 */ RUN_TEST(TestMatching);
+    /* 5 */ RUN_TEST(TestSortByRelevance);
+    /* 6 */ RUN_TEST(TestRatingCalculation);
+    /* 7 */ RUN_TEST(TestFindDocumentsWithCustomDocumentStatusFilterFunction);
+    /* 8 */ RUN_TEST(TestFindDocumentsWithDefaultDocumentStatusFilterFunction);
+    /* 9 */ RUN_TEST(TestStatus);
+    /* 10 */ RUN_TEST(TestRelevanceCalculation);
 }
 
 // --------- Окончание модульных тестов поисковой системы -----------
 
 int main() {
     TestSearchServer();
+
     // Если вы видите эту строку, значит все тесты прошли успешно
     cout << "Search server testing finished"s << endl;
 }

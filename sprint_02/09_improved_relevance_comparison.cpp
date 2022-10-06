@@ -192,7 +192,7 @@ class SearchServer {
     }
 
     // Existence required
-    double ComputeWordInverseDocumentFreq(const string& word) const {
+    double ComputeInvertedDocumentFreq(const string& word) const {
         return log(_documents.size() * 1.0 / _word_docID_freqs.at(word).size());
     }
 
@@ -203,7 +203,7 @@ class SearchServer {
                 continue;
             }
 
-            const double inverse_document_freq = ComputeWordInverseDocumentFreq(word);
+            const double inverse_document_freq = ComputeInvertedDocumentFreq(word);
 
             for (const auto [document_id, term_freq] : _word_docID_freqs.at(word)) {
                 if (_documents.at(document_id).status == status) {

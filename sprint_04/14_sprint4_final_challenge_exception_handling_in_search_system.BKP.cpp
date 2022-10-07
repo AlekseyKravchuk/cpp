@@ -13,35 +13,56 @@ using namespace std;
 
 const int MAX_RESULT_DOCUMENT_COUNT = 5;
 
+// returns true if NONE OF (НИ ОДИН ИЗ) the characters of the checked word does not belong to the range [\0; "SPACE")
+bool IsWordWithoutSpecialChars(const string word2Check) {
+    return none_of(word2Check.begin(),
+                   word2Check.end(),
+                   [](char ch) { return ch >= '\0' && ch < ' '; });
+}
+
 template <typename StringContainer>
 set<string> MakeUniqueNonEmptyStrings(const StringContainer& strings) {
     set<string> nonEmptyStrings;
-
     for (const string& str : strings) {
         if (!str.empty()) {
-            nonEmptyStrings.insert(str);
+            if (IsWordWithoutSpecialChars(str)) {
+                nonEmptyStrings.insert(str);
+            } else {
+                string exceptionMessage =
+                    "some words passed to  MakeUniqueNonEmptyStrings(...) contain invalid characters,\
+                                           i.e., characters with codes from 0 to 31"s;
+                throw invalid_argument(exceptionMessage);
+            }
         }
     }
-
     return nonEmptyStrings;
 }
 
 vector<string> SplitIntoWords(const string& text) {
     vector<string> words;
     string word;
-    for (const char ch : text) {
-        if (ch == ' ') {
+    for (const char c : text) {
+        if (c == ' ') {
             if (!word.empty()) {
                 words.push_back(word);
                 word.clear();
             }
         } else {
-            word += ch;
+            word += c;
         }
     }
-    
+
     if (!word.empty()) {
-        words.push_back(word);
+        if (IsWordWithoutSpecialChars(word)) {
+            words.push_back(word);
+        } else {
+            string part1 = "some of the words passed to the function \""s;
+            string part2 = __func__;
+            string part3 = "(...)\" contain invalid characters,i.e. characters with codes from 0 to 31"s;
+            string exceptionMessage = part1 + part2 + part3;
+
+            throw invalid_argument(exceptionMessage);
+        }
     }
 
     return words;
@@ -241,13 +262,6 @@ class SearchServer {
     map<string, map<int, double>> _word_docID_freqs;
     map<int, DocumentData> _documents;
     vector<int> _numberingInOrder;
-
-    // returns true if NONE OF (НИ ОДИН ИЗ) the characters of the checked word does not belong to the range [\0; "SPACE")
-    static bool IsWordWithoutSpecialChars(const string word2Check) {
-        return none_of(word2Check.begin(),
-                       word2Check.end(),
-                       [](char ch) { return ch >= '\0' && ch < ' '; });
-    }
 
     void SetStopWords(const string& text) {
         for (const string& word : SplitIntoWords(text)) {

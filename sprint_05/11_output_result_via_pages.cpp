@@ -384,14 +384,13 @@ class SearchServer {
 template <typename Iterator>
 class IteratorRange {
    public:
-
     IteratorRange(Iterator pageBeginIt, Iterator pageEndIt) : _iteratorRange(pageBeginIt, pageEndIt) {}
 
-    auto begin() const {
+    Iterator begin() const {
         return _iteratorRange.first;
     }
 
-    auto end() const {
+    Iterator end() const {
         return _iteratorRange.second;
     }
 
@@ -404,7 +403,7 @@ class IteratorRange {
 };
 
 // должен работать с разными типами итераторов! distance и advance в помощь
-template <typename Iterator, typename Container>
+template <typename Iterator>
 class Paginator {
    public:
     // constructor
@@ -430,11 +429,13 @@ class Paginator {
         }
     }
 
-    Iterator begin(Container container) {
+    template <typename Container>
+    Iterator begin(Container container) const {
         return begin(container);
     }
 
-    Iterator end(Container container) {
+    template <typename Container>
+    Iterator end(Container container) const {
         return end(container);
     }
 
@@ -442,16 +443,24 @@ class Paginator {
         return _pages.size();
     }
 
+    auto begin() const {
+        return _pages.begin();
+    }
+
+    auto end() const {
+        return _pages.end();
+    }
+
    private:
-    std::vector<IteratorRange> _pages;
+    vector<IteratorRange<Iterator>> _pages;
 };
 
 template <typename Container>
 auto Paginate(const Container& container, size_t pageSize) {
-    return Paginator(container.begin(), container.end(), pageSize);
+    return Paginator(begin(container), end(container), pageSize);
 }
 
-ostream& operator<<(ostream& os, const Document& doc) {
+ostream& operator<<(ostream& os, Document& doc) {
     os << "{ document_id = "s << doc.id
        << ", relevance = " << doc.relevance
        << ", rating = " << doc.rating
@@ -459,14 +468,14 @@ ostream& operator<<(ostream& os, const Document& doc) {
     return os;
 }
 
-// =============== TO DO !!!!! ===============
-// ostream& operator<<(ostream& os, IteratorRange itRange) {
-//     for (const auto& iterator = itRange.begin(); iterator != itRange.end(); advance(iterator, 1)) {
-//         os << *iterator;
-//     }
-//     os << endl;
-//     return os;
-// }
+template <typename Iterator>
+ostream& operator<<(ostream& os, IteratorRange<Iterator> itRange) {
+    for (const auto& iterator = itRange.begin(); iterator != itRange.end(); advance(iterator, 1)) {
+        os << *iterator;
+    }
+    os << endl;
+    return os;
+}
 
 void PrintDocument(const Document& document) {
     cout << "{ "s
@@ -476,23 +485,18 @@ void PrintDocument(const Document& document) {
 }
 
 int main() {
-    SearchServer searchServer("и в на"s);
-
-    searchServer.AddDocument(0, "пушистый кот пушистый хвост"s, DocumentStatus::ACTUAL, {7, 2, 7});
-    searchServer.AddDocument(1, "пушистый пёс и модный ошейник"s, DocumentStatus::ACTUAL, {1, 2});
-    searchServer.AddDocument(2, "пушистый пёс и модный ошейник"s, DocumentStatus::ACTUAL, {1, 2});
-    searchServer.AddDocument(5, "большой пёс скворец"s, DocumentStatus::ACTUAL, {1, 3, 2});
-
-    // const auto foundDocs = searchServer.FindTopDocuments("пушистый -пёс"s);
-
-    // ================== Driver code resulting in throwing exceptions: ==================
-    searchServer.GetDocumentId(188);
-    searchServer.AddDocument(12, "большой пёс ск\bворец"s, DocumentStatus::ACTUAL, {1, 3, 2});
-    SearchServer searchServer2("и в н\tа"s);
-    searchServer.AddDocument(-5, "большой пёс скворец"s, DocumentStatus::ACTUAL, {1, 3, 2});
-    searchServer.AddDocument(5, "большой пёс скворец"s, DocumentStatus::ACTUAL, {1, 3, 2});
-    const auto foundDocs = searchServer.FindTopDocuments("пушистый -п\tёс"s);
-    // =============== End of driver code resulting in throwing exceptions: ==============
-
-    return 0;
-}
+    SearchServer search_server("and with"s);
+    search_server.AddDocument(1, "funny pet and nasty rat"s, DocumentStatus::ACTUAL, {7, 2, 7});
+    search_server.AddDocument(2, "funny pet with curly hair"s, DocumentStatus::ACTUAL, {1, 2, 3});
+    search_server.AddDocument(3, "big cat nasty hair"s, DocumentStatus::ACTUAL, {1, 2, 8});
+    search_server.AddDocument(4, "big dog cat Vladislav"s, DocumentStatus::ACTUAL, {1, 3, 2});
+    search_server.AddDocument(5, "big dog hamster Borya"s, DocumentStatus::ACTUAL, {1, 1, 1});
+    const auto search_results = search_server.FindTopDocuments("curly dog"s);
+    int page_size = 2;
+    const auto pages = Paginate(search_results, page_size);
+    // Выводим найденные документы по страницам
+    for (auto page = pages.begin(); page != pages.end(); ++page) {
+        cout << *page << endl;
+        cout << "Page break"s << endl;
+    }
+} 

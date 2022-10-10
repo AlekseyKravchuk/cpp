@@ -39,7 +39,7 @@ vector<string> SplitIntoWords(const string& text) {
             word += ch;
         }
     }
-    
+
     if (!word.empty()) {
         words.push_back(word);
     }
@@ -81,9 +81,17 @@ enum class DocumentStatus {
 
 class SearchServer {
    public:
+
     template <typename StringContainer>
-    explicit SearchServer(const StringContainer& stop_words)
-        : _stopWords(MakeUniqueNonEmptyStrings(stop_words)) {}
+    explicit SearchServer(const StringContainer& stopWords) : _stopWords(MakeUniqueNonEmptyStrings(stopWords)) {
+        // check stop words whether they contain special characters
+        for (auto& stopWord : stopWords) {
+            if (!IsValidWord(stopWord)) {
+                string exception_message = "stop word: \""s + stopWord + "\" is not valid"s;
+                throw invalid_argument(exception_message);
+            }
+        }
+    }
 
     // Invoke delegating constructor from string container: SearchServer(SplitIntoWords(stop_words_text))
     explicit SearchServer(const string& stopWordsRawText)
@@ -99,12 +107,12 @@ class SearchServer {
                      const string& rawDocument,
                      DocumentStatus status,
                      const vector<int>& ratings) {
-        bool documentAlreadyExists = _documents.find(docID) != _documents.end();
 
         if (docID < 0) {
             throw invalid_argument("passed document ID is negative"s);
         }
 
+        bool documentAlreadyExists = _documents.find(docID) != _documents.end();
         if (documentAlreadyExists) {
             string exceptionMessage = "document with ID = "s + std::to_string(docID) + " already exists"s;
             throw invalid_argument(exceptionMessage);
@@ -255,24 +263,24 @@ class SearchServer {
         }
     }
 
-    static bool IsValidQueryWord(const string& queryWord) {
+    static bool IsValidWord(const string& word) {
         size_t minusCounter = 0;
 
         // check for multiple '-' in the beginning of a word and for a word consisting from only one '-'
         // minuses in the middle of a word are allowed, for example: "иван-чай", "-иван-чай"
-        if (queryWord[0] == '-') {
-            if ((queryWord.size() == 1) || (queryWord[1] == '-')) {
+        if (word[0] == '-') {
+            if ((word.size() == 1) || (word[1] == '-')) {
                 return false;
             }
         }
 
         // check for "-" at the end of a word
-        if (queryWord.back() == '-') {
+        if (word.back() == '-') {
             return false;
         }
 
         // final check for the absence of special characters
-        return IsWordWithoutSpecialChars(queryWord);
+        return IsWordWithoutSpecialChars(word);
     }
 
     bool IsStopWord(const string& word) const {
@@ -302,7 +310,7 @@ class SearchServer {
             throw invalid_argument(exceptionMessage);
         }
 
-        if (!IsValidQueryWord(queryWord)) {
+        if (!IsValidWord(queryWord)) {
             string exception_message = "query word: \""s + queryWord + "\" is not valid"s;
             throw invalid_argument(exception_message);
         }

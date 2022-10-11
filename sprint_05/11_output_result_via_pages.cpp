@@ -402,7 +402,6 @@ class IteratorRange {
     pair<Iterator, Iterator> _iteratorRange;
 };
 
-// должен работать с разными типами итераторов! distance и advance в помощь
 template <typename Iterator>
 class Paginator {
    public:
@@ -429,16 +428,6 @@ class Paginator {
         }
     }
 
-    template <typename Container>
-    Iterator begin(Container container) const {
-        return begin(container);
-    }
-
-    template <typename Container>
-    Iterator end(Container container) const {
-        return end(container);
-    }
-
     size_t size() const {
         return _pages.size();
     }
@@ -460,7 +449,7 @@ auto Paginate(const Container& container, size_t pageSize) {
     return Paginator(begin(container), end(container), pageSize);
 }
 
-ostream& operator<<(ostream& os, Document& doc) {
+ostream& operator<<(ostream& os, const Document& doc) {
     os << "{ document_id = "s << doc.id
        << ", relevance = " << doc.relevance
        << ", rating = " << doc.rating
@@ -469,11 +458,10 @@ ostream& operator<<(ostream& os, Document& doc) {
 }
 
 template <typename Iterator>
-ostream& operator<<(ostream& os, IteratorRange<Iterator> itRange) {
-    for (const auto& iterator = itRange.begin(); iterator != itRange.end(); advance(iterator, 1)) {
-        os << *iterator;
+ostream& operator<<(ostream& os, const IteratorRange<Iterator>& range) {
+    for (auto it = range.begin(); it != range.end(); advance(it, 1)) {
+        os << *it;
     }
-    os << endl;
     return os;
 }
 

@@ -459,7 +459,7 @@ ostream& operator<<(ostream& os, const Document& doc) {
 
 template <typename Iterator>
 ostream& operator<<(ostream& os, const IteratorRange<Iterator>& range) {
-    for (auto it = range.begin(); it != range.end(); advance(it, 1)) {
+    for (auto it = range.begin(); it != range.end(); ++it) {
         os << *it;
     }
     return os;

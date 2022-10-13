@@ -1,4 +1,8 @@
+#include <algorithm>
 #include <iostream>
+#include <numeric>
+#include <queue>
+#include <set>
 #include <vector>
 
 using namespace std;
@@ -12,13 +16,16 @@ void PrintRange(It range_begin, It range_end) {
 }
 
 template <typename Type>
-class Stack {
+class StackMin {
    public:
     void Push(const Type& element) {
         elements_.push_back(element);
+        elementsMultiSet_.insert(element);
     }
     void Pop() {
+        auto elm = Peek();
         elements_.pop_back();
+        elementsMultiSet_.erase(elementsMultiSet_.lower_bound(elm));
     }
     const Type& Peek() const {
         return elements_.back();
@@ -26,6 +33,11 @@ class Stack {
     Type& Peek() {
         return elements_.back();
     }
+
+    const Type& PeekMin() const {
+        return *(elementsMultiSet_.begin());
+    }
+
     void Print() const {
         bool isFirstElement = true;
         for (auto elm : elements_) {
@@ -38,6 +50,7 @@ class Stack {
         }
         cout << endl;
     }
+
     uint64_t Size() const {
         return elements_.size();
     }
@@ -47,16 +60,25 @@ class Stack {
 
    private:
     vector<Type> elements_;
+    multiset<Type> elementsMultiSet_;
 };
 
 int main() {
-    Stack<int> stack;
-    for (uint32_t i = 0; i < 10; ++i) {
-        stack.Push(i);
-        stack.Print();
+    StackMin<int> stack;
+    vector<int> values(5);
+    // заполняем вектор для тестирования нашего стека
+    iota(values.begin(), values.end(), 1);
+    // перемешиваем значения
+    random_shuffle(values.begin(), values.end());
+    // заполняем стек
+    for (int i = 0; i < 5; ++i) {
+        stack.Push(values[i]);
     }
+    // печатаем стек и его минимум, постепенно убирая из стека элементы
     while (!stack.IsEmpty()) {
-        stack.Pop();
         stack.Print();
+        cout << "Минимум = "s << stack.PeekMin() << endl;
+        stack.Pop();
     }
+
 }

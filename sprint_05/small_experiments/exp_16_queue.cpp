@@ -1,22 +1,30 @@
 // queue::front
-#include <iostream>       // std::cout
-#include <queue>          // std::queue
+#include <iostream>  // std::cout
+#include <queue>     // std::queue
+#include <stack>
 
-int main ()
-{
-  std::queue<int> myqueue;
+using namespace std;
 
-  myqueue.push(77);
-  myqueue.push(16);
-  myqueue.push(88);
+template <typename It>
+void PrintRange(It range_begin, It range_end) {
+    for (auto it = range_begin; it != range_end; ++it) {
+        cout << *it << " "s;
+    }
+    cout << endl;
+}
 
-  auto c1 = myqueue.front();
-  auto c2 = myqueue.front();
+int main() {
+    std::stack<int> myStack1;
+    std::stack<int> myStack2;
 
-  myqueue.pop();
+    myStack1.push(77);
+    myStack1.push(16);
+    myStack1.push(88);
 
+    myStack2.push(myStack1.top());
+    myStack1.pop();
 
-  std::cout << "myqueue.front() is now " << myqueue.front() << '\n';
+    std::cout << "Finished." << endl;
 
-  return 0;
+    return 0;
 }

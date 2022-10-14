@@ -18,58 +18,67 @@ template <typename Type>
 class Queue {
    public:
     void Push(const Type& element) {
-        _inbox.push(element);
+        // просто вставим элемент в первый стек
+        stack1_.push(element);
     }
-
-    // pop all the elements from "_inbox" stack and push popped elements to "_outbox" stack
-    // ONLY in case if "_outbox" stack is empty
-    void MoveAllFromInboxToOutbox() {
-        if (_outbox.empty()) {
-            while (!_inbox.empty()) {
-                _outbox.push(_inbox.top());
-                _inbox.pop();
-            }
-        }
-    }
-
     void Pop() {
-        MoveAllFromInboxToOutbox();
-        _outbox.pop();
+        // переложим все элементы из первого стека во второй,
+        // так что первый элемент очереди окажется на вершине второго стека
+        MoveElements();
+        // вытащим верхний элемент второго стека
+        stack2_.pop();
     }
-
     Type& Front() {
-        MoveAllFromInboxToOutbox();
-        return _outbox.top();
+        // логика аналогична методу Pop
+        MoveElements();
+        return stack2_.top();
     }
-
     uint64_t Size() const {
-        return (_inbox.size() + _outbox.size());
+        return stack1_.size() + stack2_.size();
     }
     bool IsEmpty() const {
-        return Size() == 0;
+        return (stack1_.empty() && stack2_.empty());
     }
 
    private:
-    stack<Type> _inbox;
-    stack<Type> _outbox;
+    stack<Type> stack1_;
+    stack<Type> stack2_;
+
+    void MoveElements() {
+        // Перекладывать во второй стек из первого
+        // необходимо только тогда, когда во втором стеке
+        // элементов не осталось. Иначе порядок очереди будет нарушен.
+        if (stack2_.empty()) {
+            while (!stack1_.empty()) {
+                stack2_.push(stack1_.top());
+                stack1_.pop();
+            }
+        }
+    }
 };
 
 int main() {
     Queue<int> queue;
     vector<int> values(5);
+
     // заполняем вектор для тестирования очереди
     iota(values.begin(), values.end(), 1);
     // перемешиваем значения
     random_shuffle(values.begin(), values.end());
+
     PrintRange(values.begin(), values.end());
+
     cout << "Заполняем очередь"s << endl;
+
     // заполняем очередь и выводим элемент в начале очереди
     for (int i = 0; i < 5; ++i) {
         queue.Push(values[i]);
         cout << "Вставленный элемент "s << values[i] << endl;
         cout << "Первый элемент очереди "s << queue.Front() << endl;
     }
+
     cout << "Вынимаем элементы из очереди"s << endl;
+
     // выводим элемент в начале очереди и вытаскиваем элементы по одному
     while (!queue.IsEmpty()) {
         // сначала будем проверять начальный элемент, а потом вытаскивать,

@@ -119,6 +119,11 @@ class SearchServer {
 
         vector<string> wordsNoStop = SplitIntoWordsNoStop(rawDocument);
 
+        if (!std::all_of(wordsNoStop.begin(), wordsNoStop.end(), IsValidWord)) {
+            string exceptionMessage = "document with ID = "s + std::to_string(docID) + " contains invalid characters"s;
+            throw invalid_argument(exceptionMessage);
+        }
+
         const double invertedWordCount = 1.0 / wordsNoStop.size();
         for (const string& word : wordsNoStop) {
             _word_docID_freqs[word][docID] += invertedWordCount;
@@ -163,8 +168,8 @@ class SearchServer {
     vector<Document> FindTopDocuments(const string& rawQuery,
                                       DocumentStatus status) const {
         return FindTopDocuments(rawQuery,
-                                [status](int document_id, DocumentStatus document_status, int rating) {
-                                    return document_status == status;
+                                [status](int document_id, DocumentStatus documentStatus, int rating) {
+                                    return documentStatus == status;
                                 });
     }
 
@@ -263,8 +268,6 @@ class SearchServer {
     }
 
     static bool IsValidWord(const string& word) {
-        size_t minusCounter = 0;
-
         // check for multiple '-' in the beginning of a word and for a word consisting from only one '-'
         // minuses in the middle of a word are allowed, for example: "иван-чай", "-иван-чай"
         if (word[0] == '-') {
@@ -480,31 +483,46 @@ class RequestQueue {
     // сделаем "обёртки" для всех методов поиска, чтобы сохранять результаты для нашей статистики
     template <typename DocumentPredicate>
     vector<Document> AddFindRequest(const string& rawQuery, DocumentPredicate documentPredicate) {
-        // напишите реализацию
+        vector<Document> foundDocs = _searchServerRef.FindTopDocuments(rawQuery, documentPredicate);
+
+        if (_requests.size() == _minutesInDay) {
+            _requests.pop_front();
+        }
+
+        _requests.push_back({foundDocs, rawQuery, foundDocs.size() == 0});
+
+        return foundDocs;
     }
 
     vector<Document> AddFindRequest(const string& rawQuery, DocumentStatus status) {
-        // напишите реализацию
+        return AddFindRequest(rawQuery,
+                              [status](int document_id, DocumentStatus documentStatus, int rating) {
+                                  return documentStatus == status;
+                              });
     }
 
     vector<Document> AddFindRequest(const string& rawQuery) {
-        // напишите реализацию
+        return AddFindRequest(rawQuery, DocumentStatus::ACTUAL);
     }
 
     int GetNoResultRequests() const {
-        // напишите реализацию
+        return std::count_if(_requests.begin(),
+                             _requests.end(),
+                             [](const QueryResult& queryResult) {
+                                 return queryResult.isEmptyResult;
+                             });
     }
 
    private:
     struct QueryResult {
-        int queryArrivalTime; // in minutes; every minute new query is received
-        int queryNumber;
+        vector<Document> foundDocs;
+        const string rawQuery;
+        bool isEmptyResult;
     };
 
     deque<QueryResult> _requests;
     const static int _minutesInDay = 1440;
     const SearchServer& _searchServerRef;
-    int _numOfNoResultRequests;
 };
 
 int main() {

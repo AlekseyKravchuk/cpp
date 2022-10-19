@@ -26,26 +26,12 @@ std::vector<int> ReverseVector3(const std::vector<int>& sourceVector) {
     return {sourceVector.rbegin(), sourceVector.rend()};
 }
 
-
-// TO DO!!!
-/* Анализируем и компилируем ваше решение...
-Запускаем тесты...
-Задача прошла 7 из 8 проверок
-Не успех(
-
-
-
-Тест № 8 НЕ прошел проверку
-причина: Решение упало
-reverse_vector4 fail: Assertion failed: 0 != 1
-1 unit tests failed. Terminate
-подсказка: Неверная реализация функции ReverseVector4 */
 std::vector<int> ReverseVector4(const std::vector<int>& sourceVector) {
     std::vector<int> reversedBits(sourceVector.size());
 
-    int lastSourceIndex = sourceVector.size() - 1;
-    for (size_t i = 0; i < lastSourceIndex; ++i) {
-        reversedBits[lastSourceIndex - i] = sourceVector[i];
+    int i = static_cast<int>(sourceVector.size()) - 1;
+    for (auto it = sourceVector.begin(); it != sourceVector.end(); ++it) {
+        reversedBits[i--] = *it;
     }
 
     return reversedBits;
@@ -73,22 +59,9 @@ void Operate() {
     {
         int N;
         std::cin >> N;
-        // static const int N = 1 << 18;
 
         std::vector<int> randomBits(N);
         std::vector<int> reverseBits;
-
-        // LOG_DURATION("Total"s);
-
-        // "1 << 17" is equivalent to "2^17" = 131072
-        // static const int N = 1 << 17;
-        // static const int N = 1 << 20;
-
-        // {
-        //     LOG_DURATION("Append random v2"s);
-        //     // заполним вектор случайными числами 0 и 1
-        //     AppendRandom2(random_bits, N);
-        // }
 
         // заполним вектор случайными числами 0 и 1
         AppendRandom(randomBits);

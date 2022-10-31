@@ -53,8 +53,11 @@ class SearchServer {
     //                Second component is STATUS of document specified by docID
     std::tuple<std::vector<std::string>, DocumentStatus> MatchDocument(const std::string& rawQuery, int docID) const;
 
-    // return document identifier by its serial number
-    int GetDocumentId(int serial_number) const;
+    std::set<int>::const_iterator begin() const;
+    std::set<int>::const_iterator end() const;
+
+    //  метод получения частот слов по id документа
+    const map<string, double>& GetWordFrequencies(int docID) const;
 
    private:
     struct DocumentData {
@@ -75,8 +78,10 @@ class SearchServer {
 
     std::set<std::string> _stopWords;
     std::map<std::string, std::map<int, double>> _word_docID_freqs;
+    std::map<int, std::map<std::string, double>> _docID_words_freqs;
+
     std::map<int, DocumentData> _documents;
-    std::vector<int> _numberingInOrder;
+    std::set<int> _docsIdentifiers;
 
     // returns true if NONE OF (НИ ОДИН ИЗ) the characters of the checked word does not belong to the range [\0; "SPACE")
     static bool IsWordWithoutSpecialChars(const std::string word2Check);

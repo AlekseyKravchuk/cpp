@@ -32,10 +32,10 @@ void SearchServer::AddDocument(int docID,
     const double invertedWordCount = 1.0 / wordsNoStop.size();
     for (const std::string& word : wordsNoStop) {
         _word_docID_freqs[word][docID] += invertedWordCount;
+        _docID_words_freqs[docID][word] += invertedWordCount;
     }
 
     _documents.emplace(docID, DocumentData{ComputeAverageRating(ratings), status});
-    _numberingInOrder.push_back(docID);
 }
 
 // #2) FindTopDocuments, WRAPPER: converts STATUS-based to Predicate-based logic
@@ -96,13 +96,20 @@ std::tuple<std::vector<std::string>, DocumentStatus> SearchServer::MatchDocument
     return {intersectionWithPlusWords, status};
 }
 
-// return document identifier by its serial number
-int SearchServer::GetDocumentId(int serial_number) const {
-    if (serial_number < 0 || serial_number > static_cast<int>(_documents.size())) {
-        std::string exceptionMessage = __func__ + "(...): serial number of document is out of range"s;
-        throw std::out_of_range(exceptionMessage);
+std::set<int>::const_iterator SearchServer::begin() const {
+    return _docsIdentifiers.begin();
+}
+
+std::set<int>::const_iterator SearchServer::end() const {
+    return _docsIdentifiers.end();
+}
+
+//  метод получения частот слов по id документа
+const map<string, double>& SearchServer::GetWordFrequencies(int docID) const {
+    if (_docID_words_freqs.count(docID)) {
+        return _docID_words_freqs.at(docID);
     } else {
-        return _numberingInOrder[serial_number];
+        return {};  // use list initialization (since C++11)
     }
 }
 
@@ -196,4 +203,3 @@ SearchServer::Query SearchServer::ParseQuery(const std::string& rawQuery) const 
 double SearchServer::ComputeInvertedDocumentFreq(const std::string& word) const {
     return log(SearchServer::GetDocumentCount() * 1.0 / _word_docID_freqs.at(word).size());
 }
-

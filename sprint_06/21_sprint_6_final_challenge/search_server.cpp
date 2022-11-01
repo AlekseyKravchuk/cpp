@@ -1,5 +1,10 @@
 #include "search_server.h"
 
+// функция для поиска и удаления дубликатов
+void RemoveDuplicates(SearchServer& search_server) {
+
+}
+
 int SearchServer::GetDocumentCount() const {
     return _documents.size();
 }
@@ -30,12 +35,15 @@ void SearchServer::AddDocument(int docID,
     }
 
     const double invertedWordCount = 1.0 / wordsNoStop.size();
+    std::string strToBeHashed;
     for (const std::string& word : wordsNoStop) {
         _word_docID_freqs[word][docID] += invertedWordCount;
-        _docID_words_freqs[docID][word] += invertedWordCount;
+        _docID_words_freqs[docID][word] = _word_docID_freqs[word][docID];
+        strToBeHashed += word;
     }
 
     _documents.emplace(docID, DocumentData{ComputeAverageRating(ratings), status});
+    _docsIdentifiers.insert(docID);
 }
 
 // #2) FindTopDocuments, WRAPPER: converts STATUS-based to Predicate-based logic
@@ -109,8 +117,33 @@ const map<string, double>& SearchServer::GetWordFrequencies(int docID) const {
     if (_docID_words_freqs.count(docID)) {
         return _docID_words_freqs.at(docID);
     } else {
-        return {};  // use list initialization (since C++11)
+        static const std::map<string, double> emptyMap;
+        return emptyMap;
     }
+}
+
+// метод удаления документов из поискового сервера
+void SearchServer::RemoveDocument(int docID) {
+    if (!_docsIdentifiers.count(docID)) {
+        return;
+    }
+
+    // восстанавливаем информацию о том, из каких слов состоит документ
+    std::vector<std::string> wordsToCheck;
+    for (const auto& [word, _] : _docID_words_freqs[docID]) {
+        wordsToCheck.push_back(word);
+    }
+
+    // удаляем документ с данным "docID"
+    _docID_words_freqs.erase(docID);
+
+    // для каждого ключа-слова из "_word_docID_freqs" удаляем записи, содержащие удаляемый "docID" в качестве ключа
+    for (const auto& word : wordsToCheck) {
+        _word_docID_freqs[word].erase(docID);
+    }
+
+    // и, наконец, удаляем идентификатор документа
+    _docsIdentifiers.erase(docID);
 }
 
 // returns true if NONE OF (НИ ОДИН ИЗ) the characters of the checked word does not belong to the range [\0; "SPACE")

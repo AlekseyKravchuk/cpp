@@ -59,6 +59,12 @@ class SearchServer {
     //  метод получения частот слов по id документа
     const map<string, double>& GetWordFrequencies(int docID) const;
 
+    // метод удаления документов из поискового сервера
+    void RemoveDocument(int document_id);
+
+    // функция для поиска и удаления дубликатов
+    friend void RemoveDuplicates(SearchServer& search_server);
+
    private:
     struct DocumentData {
         int rating;

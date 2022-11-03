@@ -19,7 +19,7 @@ void AddDocument(SearchServer& search_server,
                  const std::string& rawDocument,
                  DocumentStatus status,
                  const std::vector<int>& ratings) {
-                    search_server.AddDocument(docID, rawDocument, status, ratings);
+    search_server.AddDocument(docID, rawDocument, status, ratings);
 }
 
 int main() {
@@ -31,11 +31,17 @@ int main() {
     // std::cout << "_DEBUG IS NOT defined\n";
     // #endif  // _DEBUG
 
+    // дубликат документа 2, будет удалён
+    AddDocument(search_server, 22, "funny pet with curly hair"s, DocumentStatus::ACTUAL, {1, 2});
+
     AddDocument(search_server, 1, "funny pet and nasty rat"s, DocumentStatus::ACTUAL, {7, 2, 7});
     AddDocument(search_server, 2, "funny pet with curly hair"s, DocumentStatus::ACTUAL, {1, 2});
 
     // дубликат документа 2, будет удалён
     AddDocument(search_server, 3, "funny pet with curly hair"s, DocumentStatus::ACTUAL, {1, 2});
+
+    // дубликат документа 2, будет удалён
+    AddDocument(search_server, 19, "funny pet with curly hair"s, DocumentStatus::ACTUAL, {1, 2});
 
     // отличие только в стоп-словах, считаем дубликатом
     AddDocument(search_server, 4, "funny pet and curly hair"s, DocumentStatus::ACTUAL, {1, 2});

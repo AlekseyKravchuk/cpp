@@ -1,8 +1,15 @@
 #include "search_server.h"
 
+// !!! TODO:
 // функция для поиска и удаления дубликатов
-void RemoveDuplicates(SearchServer& search_server) {
+void RemoveDuplicates(SearchServer& searchSrv) {
+    for (auto it = searchSrv._hash_docID.begin(); it != searchSrv._hash_docID.end();) {
+        size_t checkedHash = it->first;
+        auto [lower, upper] = searchSrv._hash_docID.equal_range(checkedHash);
 
+        for (auto it = lower; it != upper; ++it) {
+        }
+    }
 }
 
 int SearchServer::GetDocumentCount() const {
@@ -35,14 +42,22 @@ void SearchServer::AddDocument(int docID,
     }
 
     const double invertedWordCount = 1.0 / wordsNoStop.size();
+    std::set<string> uniqueWords;
     std::string strToBeHashed;
+
     for (const std::string& word : wordsNoStop) {
+        uniqueWords.insert(word);
         _word_docID_freqs[word][docID] += invertedWordCount;
         _docID_words_freqs[docID][word] = _word_docID_freqs[word][docID];
-        strToBeHashed += word;
     }
 
+    for (const auto& uniqueWord : uniqueWords) {
+        strToBeHashed += uniqueWord;
+    }
+    size_t strHash = std::hash<std::string>()(strToBeHashed);
+
     _documents.emplace(docID, DocumentData{ComputeAverageRating(ratings), status});
+    _hash_docID.emplace(strHash, docID);
     _docsIdentifiers.insert(docID);
 }
 

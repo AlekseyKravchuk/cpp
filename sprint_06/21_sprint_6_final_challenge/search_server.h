@@ -1,15 +1,14 @@
 #pragma once
-//#ifndef __SEARCH_SERVER__H__
-//#define __SEARCH_SERVER__H__
 
-#include <algorithm>  // std::all_of
-#include <map>        // std::map
-#include <numeric>    // std::reduce
-#include <set>        // std::set
-#include <stdexcept>  // std::invalid_argument, std::out_of_range
-#include <string>     // std::string
-#include <tuple>      // std::tuple
-#include <vector>     // std::vector
+#include <algorithm>   // std::all_of, std::equal_range
+#include <functional>  // std::hash
+#include <map>         // std::map, std::multimap
+#include <numeric>     // std::reduce
+#include <set>         // std::set
+#include <stdexcept>   // std::invalid_argument, std::out_of_range
+#include <string>      // std::string
+#include <tuple>       // std::tuple
+#include <vector>      // std::vector
 
 #include "document.h"
 #include "string_processing.h"
@@ -60,10 +59,10 @@ class SearchServer {
     const map<string, double>& GetWordFrequencies(int docID) const;
 
     // метод удаления документов из поискового сервера
-    void RemoveDocument(int document_id);
+    void RemoveDocument(int docID);
 
     // функция для поиска и удаления дубликатов
-    friend void RemoveDuplicates(SearchServer& search_server);
+    friend void RemoveDuplicates(SearchServer& searchServer);
 
    private:
     struct DocumentData {
@@ -83,10 +82,12 @@ class SearchServer {
     };
 
     std::set<std::string> _stopWords;
-    std::map<std::string, std::map<int, double>> _word_docID_freqs;
-    std::map<int, std::map<std::string, double>> _docID_words_freqs;
-
+    std::map<std::string, std::map<int, double>> _word_docID_freqs;  // inverted index
     std::map<int, DocumentData> _documents;
+
+    // supplementary members
+    std::map<int, std::map<std::string, double>> _docID_words_freqs;  // ordinary index
+    std::multimap<size_t, int> _hash_docID;
     std::set<int> _docsIdentifiers;
 
     // returns true if NONE OF (НИ ОДИН ИЗ) the characters of the checked word does not belong to the range [\0; "SPACE")
@@ -196,4 +197,3 @@ std::vector<Document> SearchServer::FindAllDocuments(const Query& query,
     return foundDocs;
 }
 
-//#endif  //!__SEARCH_SERVER__H__

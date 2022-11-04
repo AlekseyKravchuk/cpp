@@ -1,6 +1,4 @@
 #pragma once
-//#ifndef __DOCUMENT__H__
-//#define __DOCUMENT__H__
 
 #include <fstream>
 
@@ -29,5 +27,3 @@ enum class DocumentStatus {
 
 void PrintDocument(const Document& document);
 std::ostream& operator<<(std::ostream& os, const Document& doc);
-
-//#endif  //!__DOCUMENT__H__

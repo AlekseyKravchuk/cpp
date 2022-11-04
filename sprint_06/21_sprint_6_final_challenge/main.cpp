@@ -9,11 +9,12 @@
 #include "search_server.h"
 #include "string_processing.h"
 
-// #define _DEBUG 1
+#define _DEBUG 1
 
 // using namespace std::literals;
 using namespace std;
 
+// wrapper to call SearchServer::AddDocument method
 void AddDocument(SearchServer& search_server,
                  int docID,
                  const std::string& rawDocument,
@@ -25,23 +26,11 @@ void AddDocument(SearchServer& search_server,
 int main() {
     SearchServer search_server("and with"s);
 
-    // #if defined _DEBUG
-    // std::cout << "_DEBUG IS defined\n";
-    // #else
-    // std::cout << "_DEBUG IS NOT defined\n";
-    // #endif  // _DEBUG
-
-    // дубликат документа 2, будет удалён
-    AddDocument(search_server, 22, "funny pet with curly hair"s, DocumentStatus::ACTUAL, {1, 2});
-
     AddDocument(search_server, 1, "funny pet and nasty rat"s, DocumentStatus::ACTUAL, {7, 2, 7});
     AddDocument(search_server, 2, "funny pet with curly hair"s, DocumentStatus::ACTUAL, {1, 2});
 
     // дубликат документа 2, будет удалён
     AddDocument(search_server, 3, "funny pet with curly hair"s, DocumentStatus::ACTUAL, {1, 2});
-
-    // дубликат документа 2, будет удалён
-    AddDocument(search_server, 19, "funny pet with curly hair"s, DocumentStatus::ACTUAL, {1, 2});
 
     // отличие только в стоп-словах, считаем дубликатом
     AddDocument(search_server, 4, "funny pet and curly hair"s, DocumentStatus::ACTUAL, {1, 2});
@@ -61,9 +50,7 @@ int main() {
     // слова из разных документов, не является дубликатом
     AddDocument(search_server, 9, "nasty rat with curly hair"s, DocumentStatus::ACTUAL, {1, 2});
 
-    // cout << "Before duplicates removed: "s << search_server.GetDocumentCount() << endl;
-    // RemoveDuplicates(search_server);
-    // cout << "After duplicates removed: "s << search_server.GetDocumentCount() << endl;
-
-    std::cout << "FINISHED"s << std::endl;
+    cout << "Before duplicates removed: "s << search_server.GetDocumentCount() << endl;
+    RemoveDuplicates(search_server);
+    cout << "After duplicates removed: "s << search_server.GetDocumentCount() << endl;
 }

@@ -1,8 +1,5 @@
 #pragma once
 
-//#ifndef __REQUEST_QUEUE__H__
-//#define __REQUEST_QUEUE__H__
-
 #include <algorithm>
 #include <deque>
 #include <string>
@@ -47,4 +44,3 @@ std::vector<Document> RequestQueue::AddFindRequest(const std::string& rawQuery, 
     return foundDocs;
 }
 
-//#endif  //!__REQUEST_QUEUE__H__

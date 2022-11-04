@@ -1,6 +1,4 @@
 #pragma once
-//#ifndef __STRING_PROCESSING__H__
-//#define __STRING_PROCESSING__H__
 
 #include <iostream>
 #include <set>
@@ -22,4 +20,3 @@ std::set<std::string> MakeUniqueNonEmptyStrings(const StringContainer& strings) 
 
 std::vector<std::string> SplitIntoWords(const std::string& text);
 
-//#endif  //!__STRING_PROCESSING__H__

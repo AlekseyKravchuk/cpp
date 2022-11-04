@@ -1,6 +1,4 @@
 #pragma once
-//#ifndef __PAGINATOR__H__
-//#define __PAGINATOR__H__
 
 #include <cmath>     // std::abs
 #include <fstream>   // std::ostream
@@ -84,4 +82,4 @@ std::ostream& operator<<(std::ostream& os, const IteratorRange<Iterator>& range)
     }
     return os;
 }
-//#endif  //!__PAGINATOR__H__
+

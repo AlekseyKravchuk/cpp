@@ -82,7 +82,7 @@ class SearchServer {
     };
 
     std::set<std::string> _stopWords;
-    std::map<std::string, std::map<int, double>> _word_docID_freqs;  // inverted index
+    std::map<std::string, std::map<int, double>> _word_docID_freqs;   // inverted index
     std::map<int, DocumentData> _documents;
 
     // supplementary members

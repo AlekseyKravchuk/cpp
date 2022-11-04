@@ -1,17 +1,5 @@
 #include "search_server.h"
 
-// !!! TODO:
-// функция для поиска и удаления дубликатов
-void RemoveDuplicates(SearchServer& searchSrv) {
-    for (auto it = searchSrv._hash_docID.begin(); it != searchSrv._hash_docID.end();) {
-        size_t checkedHash = it->first;
-        auto [lower, upper] = searchSrv._hash_docID.equal_range(checkedHash);
-
-        for (auto it = lower; it != upper; ++it) {
-        }
-    }
-}
-
 int SearchServer::GetDocumentCount() const {
     return _documents.size();
 }
@@ -157,8 +145,11 @@ void SearchServer::RemoveDocument(int docID) {
         _word_docID_freqs[word].erase(docID);
     }
 
-    // и, наконец, удаляем идентификатор документа
+    // удаляем идентификатор документа
     _docsIdentifiers.erase(docID);
+
+    // и, наконец, удаляем из "_documents"
+    _documents.erase(docID);
 }
 
 // returns true if NONE OF (НИ ОДИН ИЗ) the characters of the checked word does not belong to the range [\0; "SPACE")

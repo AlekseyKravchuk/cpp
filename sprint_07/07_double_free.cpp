@@ -27,7 +27,7 @@ class Octopus {
         try {
             for (int i = 1; i <= 8; ++i) {
                 t = new Tentacle(i);      // Может выбросить исключение bad_alloc
-                tentacles_.push_back(t);  // Может выбросить исключение bad_alloc
+                _tentacles.push_back(t);  // Может выбросить исключение bad_alloc
 
                 // Обнуляем указатель на щупальце, которое уже добавили в tentacles_,
                 // чтобы не удалить его в обработчике catch повторно
@@ -46,11 +46,11 @@ class Octopus {
     }
 
     const Tentacle& GetTentacle(int index) const {
-        if (index < 0 || static_cast<size_t>(index) >= tentacles_.size()) {
+        if (index < 0 || static_cast<size_t>(index) >= _tentacles.size()) {
             throw out_of_range("Invalid tentacle index"s);
         }
         // Чтобы превратить указатель в ссылку, разыменовываем его
-        return *tentacles_[index];
+        return *_tentacles[index];
     }
 
     ~Octopus() {
@@ -63,15 +63,15 @@ class Octopus {
    private:
     void Cleanup() {
         // Удаляем щупальца осьминога из динамической памяти
-        for (Tentacle* t : tentacles_) {
+        for (Tentacle* t : _tentacles) {
             delete t;
         }
         // Очищаем массив указателей на щупальца
-        tentacles_.clear();
+        _tentacles.clear();
     }
 
     // Вектор хранит указатели на щупальца. Сами объекты щупалец находятся в куче
-    vector<Tentacle*> tentacles_;
+    vector<Tentacle*> _tentacles;
 };
 
 int main() {

@@ -1,4 +1,3 @@
-#include <cassert>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -7,34 +6,37 @@ using namespace std;
 
 // Щупальце
 class Tentacle {
-   public:
-    explicit Tentacle(int id) : id_(id) {}
+public:
+    explicit Tentacle(int id) : _id(id) { }
 
-    int GetId() const { return id_; }
+    int GetId() const {
+        return _id;
+    }
 
-   private:
-    int id_ = 0;
+private:
+    int _id = 0;
 };
 
 // Осьминог
 class Octopus {
-   public:
+public:
     Octopus() {
-        Tentacle* t = nullptr;
+        Tentacle* tentaclePtr = nullptr;
         try {
             for (int i = 1; i <= 8; ++i) {
-                t = new Tentacle(i);      // Может выбросить исключение bad_alloc
-                _tentacles.push_back(t);  // Может выбросить исключение bad_alloc
+                tentaclePtr = new Tentacle(i);      // Может выбросить исключение bad_alloc
+                _tentacles.push_back(tentaclePtr);  // Может выбросить исключение bad_alloc
 
-                // Обнуляем указатель на щупальце, которое уже добавили в tentacles_,
+                // Обнуляем указатель на щупальце, которое уже добавили в _tentacles,
                 // чтобы не удалить его в обработчике catch повторно
-                t = nullptr;
+                tentaclePtr = nullptr;
             }
         } catch (const bad_alloc&) {
-            // Удаляем щупальца, которые успели попасть в контейнер tentacles_
+            // Удаляем щупальца, которые успели попасть в контейнер _tentacles
             Cleanup();
-            // Удаляем щупальце, которое создали, но не добавили в tentacles_
-            delete t;
+
+            // Удаляем щупальце, которое создали, но не добавили в _tentacles
+            delete tentaclePtr;
             // Конструктор не смог создать осьминога с восемью щупальцами,
             // поэтому выбрасываем исключение, чтобы сообщить вызывающему коду об ошибке
             // throw без параметров внутри catch выполняет ПЕРЕВЫБРОС пойманного исключения
@@ -46,6 +48,7 @@ class Octopus {
         if (index < 0 || static_cast<size_t>(index) >= _tentacles.size()) {
             throw out_of_range("Invalid tentacle index"s);
         }
+
         // Чтобы превратить указатель в ссылку, разыменовываем его
         return *_tentacles[index];
     }
@@ -57,7 +60,7 @@ class Octopus {
         Cleanup();
     }
 
-   private:
+private:
     void Cleanup() {
         // Удаляем щупальца осьминога из динамической памяти
         for (Tentacle* t : _tentacles) {
@@ -71,9 +74,14 @@ class Octopus {
     vector<Tentacle*> _tentacles;
 };
 
-// Напишите функцию main, в ней создайте осьминога и несколько его копий
 int main() {
-    Octopus oct1;
-    Octopus oct2 = oct1;
-    return 0;
+    {
+        Octopus octopus;
+        
+        // Мы просто хотели ещё одного осьминога
+        Octopus octopus1 = octopus;
+        // Всё было хорошо и не предвещало беды...
+        // ... до этого момента
+    }
+    cout << "Congratulations. Everything is OK!"s << endl;
 }

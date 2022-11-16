@@ -9,18 +9,18 @@ class Tentacle {
     int GetId() const noexcept;
 
     Tentacle* GetLinkedTentacle() const noexcept {
-        return linked_tentacle_;
+        return _linkedTentacle;
     }
     void LinkTo(Tentacle& tentacle) noexcept {
-        linked_tentacle_ = &tentacle;
+        _linkedTentacle = &tentacle;
     }
     void Unlink() noexcept {
-        linked_tentacle_ = nullptr;
+        _linkedTentacle = nullptr;
     }
 
    private:
     int id_ = 0;
-    Tentacle* linked_tentacle_ = nullptr;
+    Tentacle* _linkedTentacle = nullptr;
 };
 
 class Octopus {
@@ -38,7 +38,7 @@ class Octopus {
    private:
     void Cleanup() noexcept;
 
-    vector<Tentacle*> tentacles_;
+    vector<Tentacle*> _tentacles;
 };
 
 int main() {

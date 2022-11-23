@@ -30,7 +30,7 @@ int main() {
     for (auto it = std::find(begin(s), end(s), ' ');
          it != s.end();
          it = std::find(std::next(it), end(s), ' ')) {
-        positions.push_back(it - begin(s));
+            positions.push_back(it - begin(s));
     }
 
     PrintRange(positions.begin(), positions.end());

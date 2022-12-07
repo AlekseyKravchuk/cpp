@@ -46,3 +46,6 @@ tests_and_notes/
 
 # CLion files
 cmake-build-debug/
+
+# Cmake-files
+build/

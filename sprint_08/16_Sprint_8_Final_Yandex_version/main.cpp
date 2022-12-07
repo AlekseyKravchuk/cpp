@@ -1,50 +1,36 @@
-// Это задание — итоговый проект седьмого спринта. Вы будете сдавать его на проверку через репозиторий на GitHub.
-// А пока сохраните решение в своей IDE. Улучшите свой вектор, добавив возможность перемещения.
-// Используйте предлагаемые тесты и допишите свои, чтобы удостовериться, что все нужные методы поддерживают не только копирование, но и перемещение.
-// Используйте знания, полученные в последних уроках, и разберитесь, какие методы добавить в уже существующие классы, чтобы поддержать возможность
-// перемещения.
+#include "simple_vector.h"
 
 #include <cassert>
 #include <iostream>
 #include <numeric>
 
-#include "simple_vector.h"
-
 using namespace std;
 
 class X {
-   public:
-    // X() : X(5) {}
+public:
+    X(): X(5) { }
 
-    // конструктор по умолчанию (default constructor)
-    X() : x_(5) { }
+    X(size_t num) : _x(num) { }
 
-    // конструктор с параметром
-    X(size_t num) : x_(num) {}
-
-    // конструктор копирования
     X(const X& other) = delete;
 
-    // оператор присваивания
     X& operator=(const X& other) = delete;
 
-    // конструктор ПЕРЕМЕЩЕНИЯ
     X(X&& other) {
-        x_ = exchange(other.x_, 0);
+        _x = exchange(other._x, 0);
     }
 
-    // перемещающий оператор присваивания
     X& operator=(X&& other) {
-        x_ = exchange(other.x_, 0);
+        _x = exchange(other._x, 0);
         return *this;
     }
-
+    
     size_t GetX() const {
-        return x_;
+        return _x;
     }
 
-   private:
-    size_t x_;
+private:
+    size_t _x;
 };
 
 SimpleVector<int> GenerateVector(size_t size) {
@@ -58,8 +44,7 @@ void TestTemporaryObjConstructor() {
     cout << "Test with temporary object, copy elision" << endl;
     SimpleVector<int> moved_vector(GenerateVector(size));
     assert(moved_vector.GetSize() == size);
-    cout << "Done!" << endl
-         << endl;
+    cout << "Done!" << endl << endl;
 }
 
 void TestTemporaryObjOperator() {
@@ -69,8 +54,7 @@ void TestTemporaryObjOperator() {
     assert(moved_vector.GetSize() == 0);
     moved_vector = GenerateVector(size);
     assert(moved_vector.GetSize() == size);
-    cout << "Done!" << endl
-         << endl;
+    cout << "Done!" << endl << endl;
 }
 
 void TestNamedMoveConstructor() {
@@ -82,8 +66,7 @@ void TestNamedMoveConstructor() {
     SimpleVector<int> moved_vector(move(vector_to_move));
     assert(moved_vector.GetSize() == size);
     assert(vector_to_move.GetSize() == 0);
-    cout << "Done!" << endl
-         << endl;
+    cout << "Done!" << endl << endl;
 }
 
 void TestNamedMoveOperator() {
@@ -95,8 +78,7 @@ void TestNamedMoveOperator() {
     SimpleVector<int> moved_vector = move(vector_to_move);
     assert(moved_vector.GetSize() == size);
     assert(vector_to_move.GetSize() == 0);
-    cout << "Done!" << endl
-         << endl;
+    cout << "Done!" << endl << endl;
 }
 
 void TestNoncopiableMoveConstructor() {
@@ -114,8 +96,7 @@ void TestNoncopiableMoveConstructor() {
     for (size_t i = 0; i < size; ++i) {
         assert(moved_vector[i].GetX() == i);
     }
-    cout << "Done!" << endl
-         << endl;
+    cout << "Done!" << endl << endl;
 }
 
 void TestNoncopiablePushBack() {
@@ -131,8 +112,7 @@ void TestNoncopiablePushBack() {
     for (size_t i = 0; i < size; ++i) {
         assert(v[i].GetX() == i);
     }
-    cout << "Done!" << endl
-         << endl;
+    cout << "Done!" << endl << endl;
 }
 
 void TestNoncopiableInsert() {
@@ -155,8 +135,7 @@ void TestNoncopiableInsert() {
     v.Insert(v.begin() + 3, X(size + 3));
     assert(v.GetSize() == size + 3);
     assert((v.begin() + 3)->GetX() == size + 3);
-    cout << "Done!" << endl
-         << endl;
+    cout << "Done!" << endl << endl;
 }
 
 void TestNoncopiableErase() {
@@ -169,8 +148,7 @@ void TestNoncopiableErase() {
 
     auto it = v.Erase(v.begin());
     assert(it->GetX() == 1);
-    cout << "Done!" << endl
-         << endl;
+    cout << "Done!" << endl << endl;
 }
 
 int main() {

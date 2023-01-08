@@ -11,20 +11,20 @@ using namespace std;
 // иначе - {false, 0}
 // обратите внимание - вектор принимаем по значению,
 // так как его придётся немного подпортить, чтобы вернуть ответ
-pair<bool, double> CalcMedian(vector<double> samples) {
+std::pair<bool, double> CalcMedian(std::vector<double> samples) {
     if (samples.empty()) {
-        return make_pair(false, 0.0);
+        return {};
     } else {
         double median;
         int len = samples.size();
         sort(samples.begin(), samples.end());
 
         if (len % 2 == 0) {
-            median = (samples[len / 2] + samples[len / 2]) / 2;
-            return make_pair(true, median);
+            median = (samples[(len / 2) - 1] + samples[len / 2]) / 2;
+            return {true, median};
         } else {
             median = samples[len / 2];
-            return make_pair(true, median);
+            return {true, median};
         }
     }
 }
@@ -47,3 +47,17 @@ int main() {
         cout << "Empty vector"s << endl;
     }
 }
+
+/*
+Test inputs:
+5
+12 4 2 9 7
+
+6
+2 4 7 9 12 14
+
+5
+2 4 7 9 12
+
+*/
+

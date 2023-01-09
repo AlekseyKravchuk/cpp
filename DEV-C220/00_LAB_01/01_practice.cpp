@@ -6,26 +6,31 @@
 //  lambda
 //  template variable
 
+#include "01_practice.h"
+
 #include <cctype>  // std::toupper
 #include <initializer_list>
 #include <iostream>
 #include <iterator>
 #include <list>
-#include <map>
+// #include <map>
 #include <string>
 #include <type_traits>  // std::is_same
 #include <vector>
-
-#include "../my_print.h"
+// #include <set>
 
 using namespace std::literals;
 
 int main() {
     // Задание 1.
     {
-        enum class months { January,
-                            February,
-                            March /*...*/ };
+        std::cout << "====================== Task #1 ======================"s << std::endl;
+
+        enum class months : unsigned char { January,
+                                            February,
+                                            March /*...*/
+        };
+
         enum class weekDays { Monday,
                               Tuesday,
                               Wednesday /*...*/ };
@@ -39,31 +44,35 @@ int main() {
         }
 
         // б) оптимизируйте использование памяти
-        // => НЕ ПОНЯЛ, что требуется сделать
-        // months year[] = {"January"s, "February"s, "March"s};
-        // size_t n = sizeof(year);
+
+        months year[] = {months::January, months::February, months::March};
+        size_t n = sizeof(year);
+        std::cout << "size of months year[]: " << n << std::endl;
+
+        std::cout << "=================== Task #1 ended ==================="s << std::endl
+                  << std::endl;
     }
 
     {
-        /**********************************************************/
         // Задание 2. Создайте и с помощью списка инициализации
         // заполните значениями вектор с элементами - string
         // С помощью range-based for преобразуйте все буквы в
         // верхний регистр а остальные символы должны остаться
         // неизменными
 
+        std::cout << "====================== Task #2 ======================"s << std::endl;
+
         std::vector<std::string> words = {"a-ba"s, "c=aba"s, "ba12ba"s};
         for (auto& word : words) {
             for (auto& ch : word) {
-                if (std::isalpha(ch)) {
-                    ch = std::toupper(ch);
-                }
+                ch = std::toupper(ch);
             }
         }
 
         PrintCollection(words);
 
-        /**********************************************************/
+        std::cout << "=================== Task #2 ended ==================="s << std::endl
+                  << std::endl;
     }
 
     {
@@ -76,15 +85,20 @@ int main() {
         // 3а. Проинициализируйте map "вручную" посредством списка инициализации
         // С помощью range-based for и structured binding
         // распечатайте содержимое, например: A: any, apple, away
-        std::map<char, std::vector<std::string>> mp = {
-            {'A', {"any"s, "apple"s, "away"s}},
-            {'B', {"some"s, "orange"s, "were"s, "eaten"s}},
-            {'C', {"other"s, "means"s, "of"s, "programming"s}}};
+
+        std::cout << "====================== Task #3a ======================"s << std::endl;
+        std::map<char, std::vector<std::string>> mp =
+            {
+                {'A', {"any"s, "apple"s, "away"s}},
+                {'B', {"book"s, "boom"s, "bottom"s}},
+                {'C', {"connection"s, "concise"s, "cesar"s}}};
 
         for (const auto& [character, words_collection] : mp) {
             std::cout << character << ": ";
             PrintCollection(words_collection);
         }
+        std::cout << "=================== Task #3a ended ==================="s << std::endl
+                  << std::endl;
     }
 
     {
@@ -94,14 +108,20 @@ int main() {
         // распечатайте содержимое, например: A: any, apple, away
 
         // дано (например):
-        const char* s[] = {"yong", "away", "bar", "any", "son", "apple"};
-        std::map<char, std::vector<std::string>> mp;
-        mp['A'] = std::vector<std::string>(s, s + std::size(s));
+        std::cout << "====================== Task #3b ======================"s << std::endl;
+        const char* words[] = { "yong", "away", "Bar", "any", "son", "Apple", "West", "home"};
+        std::map<char, std::set<std::string>> mp;
 
-        for (const auto& [ch, str_vector] : mp) {
-            std::cout << ch << ": "s;
-            PrintCollection(str_vector);
+        for (const auto& word : words) {
+            mp[std::toupper(word[0])].insert(word);
         }
+
+        for (const auto& [ch, words] : mp) {
+            std::cout << ch << ": "s;
+            PrintCollection(words);
+        }
+
+        std::cout << "=================== Task #3b ended ==================="s << std::endl;
     }
 
     {

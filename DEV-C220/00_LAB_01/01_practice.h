@@ -78,6 +78,17 @@ auto SumCont(Collection_1& col_1, Collection_2& col_2) {
                    [](auto val1, auto val2) {
                        return val1 + val2;
                    });
-    
+
     return target;
+}
+
+template <typename Collection_1, typename Collection_2, typename Collection_3, typename Predicate>
+void Separate(Collection_1& src, Collection_2& dst_1, Collection_3& dst_2, Predicate pred) {
+    std::copy_if(std::begin(src), std::end(src),
+                 std::inserter(dst_1, std::end(dst_1)),
+                 pred);
+
+    std::remove_copy_if(std::begin(src), std::end(src),
+                        std::inserter(dst_2, std::end(dst_2)),
+                        pred);
 }

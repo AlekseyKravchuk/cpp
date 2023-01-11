@@ -161,7 +161,7 @@ int main() {
         PrintCollection(vd, "vd after applying NegateAll(vd): "s);
         std::cout << std::endl;
 
-        std::list<std::string> ls{"aBc", "Qwerty", "n12"};
+        std::list<std::string> ls{"aBc"s, "Qwerty"s, "n12"s};
         PrintCollection(ls, "Initial ls: "s);
         NegateAll(ls);
         PrintCollection(ls, "ls after applying NegateAll(ls): "s);
@@ -246,6 +246,8 @@ int main() {
     }
 
     {
+        std::cout << std::endl
+                  << "******************** Task #8 ********************"s << std::endl;
         // Задание 8. Реализуйте функцию, которая принимает следующие параметры:
         // сформированную последовательность любого типа с элементами любого типа,
         // два (пустых) контейнера любого типа из vector, list, deque, set
@@ -258,6 +260,59 @@ int main() {
         std::vector<int> v{1, 2, 3, 4, 5};
         std::list<int> l;   // сюда четные
         std::deque<int> d;  // а сюда нечетные
-                            // Separate(v, l, d, <условие>);
+
+        Separate(v, l, d, [](auto val) {
+            return val % 2 == 0;
+        });
+
+        PrintCollection(l, "Even numbers: "s);
+        PrintCollection(d, "Odd numbers: "s);
+
+        std::cout << std::endl
+                  << "******************** Task #8 ********************"s << std::endl;
+    }
+
+    {
+        std::cout << std::endl
+                  << "******************** Task #9 ********************"s << std::endl;
+        // Задание 9. C помощью алгоритма for_each()!!!
+        //(а не count_if()) посчитать сколько букв в верхнем
+        // регистре.
+        //   Использовать лямбда функцию
+
+        char s[] = "Hello World and SoMe other UPPERCASES!";
+        int count = 0;
+        std::for_each(std::begin(s), std::end(s),
+                      [&count](char ch) {
+                          if (std::isupper(ch)) {
+                              ++count;
+                          }
+                      });
+        std::cout << "Букв в верхнем регистре: " << count << std::endl;
+
+        std::cout << std::endl
+                  << "******************** Task #9 ********************"s << std::endl;
+    }
+
+        {
+        std::cout << std::endl
+                  << "******************** Task #10 ********************"s << std::endl;
+        // Задание 9. C помощью алгоритма for_each()!!!
+        //(а не count_if()) посчитать сколько букв в верхнем
+        // регистре.
+        //   Использовать лямбда функцию
+
+        char s[] = "Hello World and SoMe other UPPERCASES!";
+        int count = 0;
+        std::for_each(std::begin(s), std::end(s),
+                      [&count](char ch) {
+                          if (std::isupper(ch)) {
+                              ++count;
+                          }
+                      });
+        std::cout << "Букв в верхнем регистре: " << count << std::endl;
+
+        std::cout << std::endl
+                  << "******************** Task #10 ********************"s << std::endl;
     }
 }

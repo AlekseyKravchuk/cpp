@@ -5,6 +5,7 @@
 // объявление класса
 template <typename T>
 class A {
+   private:
     T _t;
     static size_t _count;
 
@@ -24,6 +25,7 @@ class A {
         --_count;
     }
 
+    // поскольку статический член "_count" размещен в секции "private", нужен getter (соответственно, тоже статический)
     static size_t GetCount() {
         return _count;
     }
@@ -36,4 +38,5 @@ template <typename T>
 size_t A<T>::_count;
 
 // а это специализация для "int" шаблонного статического члена
-template<> size_t A<int>::_count = 33;
+// template <>
+size_t A<int>::_count = 33;

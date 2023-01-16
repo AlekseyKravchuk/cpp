@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <exception>
 #include <iostream>
 #include <iterator>
 #include <map>
@@ -91,4 +92,41 @@ void Separate(Collection_1& src, Collection_2& dst_1, Collection_3& dst_2, Predi
     std::remove_copy_if(std::begin(src), std::end(src),
                         std::inserter(dst_2, std::end(dst_2)),
                         pred);
+}
+
+// для задания 10
+
+// generic variable template
+enum class State : char { Idle,
+                          Fidget,
+                          Walk,
+                          Scan,
+                          Attack };
+
+template <typename T>
+std::map<std::string, T> myMap;
+
+template <>
+std::map<std::string, State> myMap<State> = {
+    {"Idle"s, State::Idle},
+    {"Fidget"s, State::Fidget},
+    {"Walk"s, State::Walk},
+    {"Scan"s, State::Scan},
+    {"Attack"s, State::Attack}};
+
+template <typename T>
+T stringToEnum(const std::string& str) {
+    return static_cast<T>(myMap<T>.at(str));
+}
+
+template <typename T>
+const std::string& enumToString(T eToFind) {
+    for (const auto [str, e] : myMap<T>) {
+        if (e == eToFind) {
+            return str;
+        }
+    }
+
+    // throw std::exception("Some exception occured."s);
+    throw std::exception();
 }

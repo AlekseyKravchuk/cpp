@@ -269,7 +269,7 @@ int main() {
         PrintCollection(d, "Odd numbers: "s);
 
         std::cout << std::endl
-                  << "******************** Task #8 ********************"s << std::endl;
+                  << "******************** Task #8 ended ********************"s << std::endl;
     }
 
     {
@@ -291,7 +291,7 @@ int main() {
         std::cout << "Букв в верхнем регистре: " << count << std::endl;
 
         std::cout << std::endl
-                  << "******************** Task #9 ********************"s << std::endl;
+                  << "******************** Task #9 ended ********************"s << std::endl;
     }
 
     {
@@ -320,33 +320,36 @@ int main() {
         //3. Чтобы действия с map<string, <значение> > не зависели от типа перечисления,
         // подумайте над использованием шаблонной переменной (в частности вспомните о возможности специализации шаблонной переменной)
 
-        enum class State : char { Idle,
-                                  Fidget,
-                                  Walk,
-                                  Scan,
-                                  Attack };
-        // static const char* StateStrings[] = {"Idle", "Fidget", "Walk", "Scan", "Attack"};
-        static std::map<State, const char*> enumToString = {
-            {State::Idle, "Idle"},
-            {State::Fidget, "Fidget"},
-            {State::Walk, "Walk"},
-            {State::Scan, "Scan"},
-            {State::Attack, "Attack"},
-        };
+        // enum class State : char { Idle,
+        //                           Fidget,
+        //                           Walk,
+        //                           Scan,
+        //                           Attack };
 
-        static std::map<const char*, State> stringToEnum = {
-            {"Idle", State::Idle},
-            {"Fidget", State::Fidget},
-            {"Walk", State::Walk},
-            {"Scan", State::Scan},
-            {"Attack", State::Attack},
-        };
+        // static std::map<State, const char*> enumToString = {
+        //     {State::Idle, "Idle"},
+        //     {State::Fidget, "Fidget"},
+        //     {State::Walk, "Walk"},
+        //     {State::Scan, "Scan"},
+        //     {State::Attack, "Attack"},
+        // };
 
-        std::cout << enumToString[State::Walk] << std::endl;
+        // static std::map<const char*, State> stringToEnum = {
+        //     {"Idle", State::Idle},
+        //     {"Fidget", State::Fidget},
+        //     {"Walk", State::Walk},
+        //     {"Scan", State::Scan},
+        //     {"Attack", State::Attack},
+        // };
 
-        std::cout << static_cast<int>(stringToEnum["Walk"]) << std::endl;
+        // std::cout << enumToString[State::Walk] << std::endl;
+        // std::cout << static_cast<int>(stringToEnum["Walk"]) << std::endl;
+
+        std::cout << static_cast<int>(stringToEnum<State>("Walk"s)) << std::endl;
+        std::cout << enumToString<State>(State::Scan) << std::endl;
+        // ==================== Вариант 2 ====================
 
         std::cout << std::endl
-                  << "******************** Task #10 ********************"s << std::endl;
+                  << "******************** Task #10 ended ********************"s << std::endl;
     }
 }

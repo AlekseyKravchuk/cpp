@@ -5,14 +5,13 @@
 
 using namespace std::literals;
 
+// как только в классе появляется чисто виртуальный метод, сам класс становится АБСТРАКТНЫМ
+// => компилятор не даст создавать объекты такого класса
 class Animal {
    public:
-    // перегруженные виртуальные методы должны иметь ОДИНАКОВУЮ сигнатуру
-    virtual void Voice() const {
-        std::cout << "\?\?\?!"s << std::endl;
-    }
+    virtual void Voice() const = 0;
 
-    ~Animal() {
+    virtual ~Animal() {
         std::cout << "Destructor Animal."s << std::endl;
     }
 };
@@ -24,7 +23,7 @@ class Cat : public Animal {
         std::cout << "Meow!"s << std::endl;
     }
 
-    ~Cat() {
+    virtual ~Cat() override {
         std::cout << "Destructor Cat."s << std::endl;
     }
 };
@@ -36,7 +35,7 @@ class Dog : public Animal {
         std::cout << "Whaf!"s << std::endl;
     }
 
-    ~Dog() {
+    virtual ~Dog() override {
         std::cout << "Destructor Dog."s << std::endl;
     }
 };
@@ -46,15 +45,9 @@ void MakeSound(Animal& animal) {
 }
 
 int main() {
-    std::vector<Animal*> zoo{new Animal(), new Cat(), new Dog(), new Cat()};
-    zoo[0]->Voice();
-
-    // error: deleting object of polymorphic class type ‘Animal’
-    // which has non-virtual destructor might cause undefined behavior [-Werror=delete-non-virtual-dtor]
-    // delete zoo[1];
-
-    zoo[1]->Voice();
-    zoo[2]->Voice();
+    Cat cat;
+    Animal* animalPtr = &cat;
+    animalPtr->Voice();
 
     return 0;
 }

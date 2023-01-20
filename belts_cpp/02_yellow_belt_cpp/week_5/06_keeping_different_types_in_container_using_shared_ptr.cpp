@@ -1,5 +1,7 @@
 #include <iostream>
+#include <memory>
 #include <string>
+#include <vector>
 
 using namespace std::literals;
 
@@ -21,6 +23,10 @@ class Animal {
     // делаем виртуальный метод Voice виртуальным (pure virtual, абстрактный)
     // тем самым в каждом классе-потомке мы ТРЕБУЕМ его обязательной реализации
     virtual void Voice() const = 0;
+
+    // virtual void Voice() const {
+    //     std::cout << _type << " is silent"s << std::endl;
+    // }
 
    private:
     const std::string _type{};
@@ -48,9 +54,9 @@ class Horse : public Animal {
    public:
     Horse() : Animal("horse"s) {}
 
-    // void Voice() const override {
-    //     std::cout << "Phrrrrrrrrrrrrr!"s << std::endl;
-    // }
+    void Voice() const override {
+        std::cout << "Phrrrrrrrrrrrrr!"s << std::endl;
+    }
 };
 
 class Parrot : public Animal {
@@ -69,16 +75,22 @@ void MakeSound(const Animal& animal) {
     animal.Voice();
 }
 
-int main() {
-    Cat c;
-    Dog d;
-    Parrot p("Kesha"s);
-    Horse h;
+// // в MakeSound передаем указатель на Animal
+// void MakeSound(const Animal* const animal) {
+//     animal->Voice();
+// }
 
-    MakeSound(c);
-    MakeSound(d);
-    MakeSound(p);
-    MakeSound(h);
+int main() {
+    std::vector<std::shared_ptr<Animal>> animals = {
+        std::make_shared<Dog>(),
+        std::make_shared<Cat>(),
+        std::make_shared<Horse>(),
+        std::make_shared<Parrot>("Kesha"s)
+    };
+
+    for (auto animal : animals) {
+        MakeSound(*animal);
+    }
 
     return 0;
 }

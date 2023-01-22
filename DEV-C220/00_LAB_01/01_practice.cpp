@@ -336,31 +336,6 @@ int main() {
         // 3. Чтобы действия с map<string, <значение> > не зависели от типа перечисления,
         // подумайте над использованием шаблонной переменной (в частности вспомните о возможности специализации шаблонной переменной)
 
-        // enum class State : char { Idle,
-        //                           Fidget,
-        //                           Walk,
-        //                           Scan,
-        //                           Attack };
-
-        // static std::map<State, const char*> enumToString = {
-        //     {State::Idle, "Idle"},
-        //     {State::Fidget, "Fidget"},
-        //     {State::Walk, "Walk"},
-        //     {State::Scan, "Scan"},
-        //     {State::Attack, "Attack"},
-        // };
-
-        // static std::map<const char*, State> stringToEnum = {
-        //     {"Idle", State::Idle},
-        //     {"Fidget", State::Fidget},
-        //     {"Walk", State::Walk},
-        //     {"Scan", State::Scan},
-        //     {"Attack", State::Attack},
-        // };
-
-        // std::cout << enumToString[State::Walk] << std::endl;
-        // std::cout << static_cast<int>(stringToEnum["Walk"]) << std::endl;
-
         std::cout << static_cast<int>(stringToEnum<State>("Walk"s)) << std::endl;
         std::cout << enumToString<State>(State::Scan) << std::endl;
         // ==================== Вариант 2 ====================

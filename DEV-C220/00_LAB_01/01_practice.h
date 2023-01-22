@@ -9,14 +9,11 @@
 #include <ostream>
 #include <set>
 #include <string>
+#include <type_traits>  // std::decay
 #include <utility>
 #include <vector>
 
 using namespace std::literals;
-
-// std::ostream& operator<<(std::ostream& os, std::pair<char, std::set<std::string>> p) {
-//     os << "{"s << p.first << ": " <<
-// }
 
 template <typename Collection>
 void PrintCollection(const Collection& collection, const std::string& message = ""s) {
@@ -63,9 +60,16 @@ void absSort(Collection& collection) {
 
 template <typename Collection_1, typename Collection_2>
 auto SumCont(Collection_1& col_1, Collection_2& col_2) {
+
     // выводим тип вектора с помощью decltype и хитроумного выражения
     // размер результирующего вектора задаем как самый большой среди "col_1" и "col_2"
-    std::vector<decltype(*std::begin(col_1) + *std::begin(col_2))> target(std::max(std::size(col_1), std::size(col_2)));
+    // std::vector<decltype(*std::begin(col_1) + *std::begin(col_2))> target(std::max(std::size(col_1), std::size(col_2)));
+
+    // упрощаем читаемость кода с помощью "using"
+    using RetType = decltype(*std::begin(col_1) + *std::begin(col_2));
+    const auto vecSize = std::max(std::size(col_1), std::size(col_2));
+    
+    std::vector<RetType> target(vecSize);
 
     // копируем все элементы из контейнера "col_1" (контейнер выбираем произвольно) в целевой контейнер "target"
     std::copy(std::begin(col_1), std::end(col_1), std::begin(target));

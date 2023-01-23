@@ -34,5 +34,9 @@ int main() {
     v_uniques.Sort([](int lhs, int rhs) { return std::abs(lhs) > std::abs(rhs); });
     PrintCollection(v_uniques, "After sorting by Absolute values in Descending order: ");
 
+    std::list<int> lst;
+    std::copy(v_uniques.begin(), v_uniques.end(), std::inserter(lst, lst.begin()));
+    PrintCollection(lst, "After copying collection from vector to list: "s);
+
     return 0;
 }

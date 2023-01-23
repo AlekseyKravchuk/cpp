@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <initializer_list>
 #include <iterator>
+#include <list>
 #include <set>
 #include <utility>
 #include <vector>
@@ -43,8 +44,7 @@ class VectorWithUniques : protected std::vector<T> {
         this->reserve(this->size() + std::size(values));
 
         for (const auto& val : values) {
-            if (isInRange(val)
-                    &&
+            if (isInRange(val) &&
                 std::find(this->begin(), this->end(), val) == this->end()) {
                 this->push_back(val);
             }

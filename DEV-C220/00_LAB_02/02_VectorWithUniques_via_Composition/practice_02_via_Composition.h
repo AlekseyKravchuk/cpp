@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <initializer_list>
 #include <iterator>
+#include <list>
 #include <set>
 #include <utility>
 #include <vector>
@@ -13,8 +14,6 @@ class VectorWithUniques {
 
    public:
     VectorWithUniques() = default;
-
-    // TODO!!!!!
     VectorWithUniques(const VectorWithUniques&) = default;
     VectorWithUniques& operator=(const VectorWithUniques&) = default;
 
@@ -22,13 +21,13 @@ class VectorWithUniques {
     VectorWithUniques& operator=(VectorWithUniques&&) = default;
 
     VectorWithUniques(const std::initializer_list<T>& values, const std::pair<T, T>& range) : _range(range) {
-        this->reserve(std::size(values));
+        _v.reserve(std::size(values));
 
         for (auto it = std::begin(values); it != std::end(values); ++it) {
             if (*it >= range.first &&
                 *it <= range.second &&
-                std::find(this->begin(), this->end(), *it) == this->end()) {
-                this->push_back(*it);
+                std::find(_v.begin(), _v.end(), *it) == _v.end()) {
+                _v.push_back(*it);
             }
         }
     }
@@ -43,13 +42,12 @@ class VectorWithUniques {
 
     // добавляем в вектор только те значения, которых ещё нет в векторе (уникальные значения)
     VectorWithUniques& Append(const std::initializer_list<T>& values) {
-        this->reserve(this->size() + std::size(values));
+        _v.reserve(this->size() + std::size(values));
 
         for (const auto& val : values) {
-            if (isInRange(val)
-                    &&
-                std::find(this->begin(), this->end(), val) == this->end()) {
-                this->push_back(val);
+            if (isInRange(val) &&
+                std::find(_v.begin(), _v.end(), val) == _v.end()) {
+                _v.push_back(val);
             }
         }
 
@@ -63,11 +61,11 @@ class VectorWithUniques {
                 continue;
             }
 
-            auto itToDelete = std::find(begin(), end(), val);
+            auto itToDelete = std::find(_v.begin(), _v.end(), val);
 
             // если значение найдено в веторе, удаляем его
-            if (itToDelete != end()) {
-                this->erase(itToDelete);
+            if (itToDelete != _v.end()) {
+                _v.erase(itToDelete);
             }
         }
 
@@ -77,12 +75,12 @@ class VectorWithUniques {
     void ChangeRange(const std::pair<T, T> new_range) {
         SetNewRange(new_range);
 
-        for (auto it = begin(); it != end();) {
+        for (auto it = _v.begin(); it != _v.end();) {
             // если текущее значение не попадает в новый диапазон, удаляем его из вектора
             if (!isInRange(*it)) {
                 // после этого итератор "it" станет невалидным, поэтому
                 // необходимо сохранить итератор, возвращаемый методом "std::vector::erase"
-                it = this->erase(it);
+                it = _v.erase(it);
             } else {
                 ++it;
             }
@@ -91,26 +89,26 @@ class VectorWithUniques {
 
     template <typename Pred>
     void Sort(Pred predicate) {
-        std::sort(begin(), end(), predicate);
+        std::sort(_v.begin(), _v.end(), predicate);
     }
 
     size_t size() const {
-        return this->std::vector<T>::size();
+        return _v.size();
     }
 
     auto begin() {
-        return this->std::vector<T>::begin();
+        return _v.begin();
     }
 
     auto begin() const {
-        return std::vector<T>::cbegin();
+        return _v.cbegin();
     }
 
     auto end() {
-        return std::vector<T>::end();
+        return _v.end();
     }
 
     auto end() const {
-        return std::vector<T>::cend();
+        return _v.cend();
     }
 };

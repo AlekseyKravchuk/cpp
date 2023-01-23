@@ -38,12 +38,13 @@ class VectorWithUniques : protected std::vector<T> {
         return (val >= _range.first && val <= _range.second);
     }
 
+    // добавляем в вектор только те значения, которых ещё нет в векторе (уникальные значения)
     VectorWithUniques& Append(const std::initializer_list<T>& values) {
         this->reserve(this->size() + std::size(values));
 
         for (const auto& val : values) {
-            if (val >= _range.first &&
-                val <= _range.second &&
+            if (isInRange(val)
+                    &&
                 std::find(this->begin(), this->end(), val) == this->end()) {
                 this->push_back(val);
             }
@@ -54,11 +55,14 @@ class VectorWithUniques : protected std::vector<T> {
 
     VectorWithUniques& Remove(const std::initializer_list<T>& values) {
         for (const auto& val : values) {
-            if (val < _range.first || val > _range.second) {
+            // если значение не попадает в допустимый диапазон, просто игнорируем его
+            if (!isInRange(val)) {
                 continue;
             }
 
             auto itToDelete = std::find(begin(), end(), val);
+
+            // если значение найдено в веторе, удаляем его
             if (itToDelete != end()) {
                 this->erase(itToDelete);
             }
@@ -71,7 +75,10 @@ class VectorWithUniques : protected std::vector<T> {
         SetNewRange(new_range);
 
         for (auto it = begin(); it != end();) {
+            // если текущее значение не попадает в новый диапазон, удаляем его из вектора
             if (!isInRange(*it)) {
+                // после этого итератор "it" станет невалидным, поэтому
+                // необходимо сохранить итератор, возвращаемый методом "std::vector::erase"
                 it = this->erase(it);
             } else {
                 ++it;
@@ -81,7 +88,7 @@ class VectorWithUniques : protected std::vector<T> {
 
     template <typename Pred>
     void Sort(Pred predicate) {
-        
+        std::sort(begin(), end(), predicate);
     }
 
     size_t size() const {

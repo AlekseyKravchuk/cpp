@@ -35,7 +35,7 @@ int main() {
     PrintCollection(v_uniques, "After sorting by Absolute values in Descending order: ");
 
     std::list<int> lst;
-    std::copy(v_uniques.begin(), v_uniques.end(), std::inserter(lst, lst.begin()));
+    std::copy(v_uniques.begin(), v_uniques.end(), std::back_inserter(lst));
     PrintCollection(lst, "After copying collection from vector to list: "s);
 
     return 0;

@@ -29,6 +29,7 @@ class MyUniquePTR {
 
     // разрешаем перемещающий конструктор копирования
     MyUniquePTR(MyUniquePTR&& other) {
+        std::cout << "\"Moving copy constructor\" working" << std::endl;
         std::swap(_rawPtr, other._rawPtr);
     }
 

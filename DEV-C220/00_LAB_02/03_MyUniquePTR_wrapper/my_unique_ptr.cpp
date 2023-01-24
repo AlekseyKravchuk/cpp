@@ -10,7 +10,8 @@ int main() {
     MyUniquePTR<std::string> p1(new std::string("abc"s));
     std::cout << p1->c_str() << std::endl;
 
-    std::string s2 = *p1;
+    // std::string s2 = *p1;
+    std::string s2(*p1);
     std::cout << "s2 = "s << s2 << std::endl;
 
     // error: use of deleted function ‘MyUniquePTR<T>::MyUniquePTR(const MyUniquePTR<T>&)

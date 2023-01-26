@@ -29,6 +29,8 @@ class ResourceManager {
 
         // затем обнуляем ресурсы в источнике
         other._resourcePtr = nullptr;
+
+        std::cout << "Move constructor for ResourceManager finished." << std::endl;
     }
 
     // разрешаем перемещающий оператор присваивания
@@ -75,6 +77,9 @@ int main() {
 
     // теперь создаем LifetimeLogger, используя "ResourceManager" - память больше не утекает
     ResourceManager<LifetimeLogger> life_logger_3(new LifetimeLogger(555));
+
+    // Исследуем работу MOVE-конструктора
+    ResourceManager<LifetimeLogger> life_logger_4(std::move(life_logger_3));
 
     return 0;
 }

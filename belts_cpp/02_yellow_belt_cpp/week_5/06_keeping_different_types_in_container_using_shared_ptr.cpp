@@ -1,6 +1,7 @@
 #include <iostream>
-#include <memory>
+#include <memory>  // std::shared_ptr
 #include <string>
+#include <type_traits>  // std::is_same_v
 #include <vector>
 
 using namespace std::literals;
@@ -81,14 +82,26 @@ void MakeSound(const Animal& animal) {
 // }
 
 int main() {
+    // объединить все объекты в один контейнер мы можем с помощью ссылок,
+    // поскольку для использования преимуществ полиморфизма нам нужно вызывать методы посредством адреса,
+    // но создать вектор из ссылок у нас не получится
+
+    // в таком случае будем хранить указатели на целевые объекты
     std::vector<std::shared_ptr<Animal>> animals = {
         std::make_shared<Dog>(),
         std::make_shared<Cat>(),
         std::make_shared<Horse>(),
-        std::make_shared<Parrot>("Kesha"s)
-    };
+        std::make_shared<Parrot>("Kesha"s)};
 
     for (auto animal : animals) {
+        // оператор разыменования возвращает ССЫЛКУ на объект Animal
+        // ПРОВЕРКА:
+        static_assert(std::is_same_v<decltype(*animal), Animal&>);
+
+        // используем преимущества полиморфизма
+        // animal - это ОБЪЕКТ класса "std::shared_ptr<Animal>"
+        // в общем случае разыменовывать объект нельзя, но в классе "std::shared_ptr<Animal>"
+        // перегружен оператор "*", поэтому "*animal" приводит к вызову перегруженного public-метода "operator*()"
         MakeSound(*animal);
     }
 

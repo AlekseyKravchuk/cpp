@@ -4,10 +4,12 @@
 #include <stdexcept>  // std::logic_error
 #include <utility>    // std::exchange
 
+// класс-обертка для голого указателя,
+// эмуляция std::unique_ptr, который предоставляет стандартная библиотека
 template <typename T>
 class MyUniquePTR {
    private:
-    T* _rawPtr{nullptr};
+    T* _rawPtr{nullptr};  // здесь храним голый указатель на динамически созданный объект
 
    public:
     // конструктор по умолчанию создает нулевой указатель,
@@ -17,9 +19,7 @@ class MyUniquePTR {
     // Создаёт указатель, хранящий адрес, переданный в "rawPtr".
     // "rawPtr" указывает либо на объект, созданный в куче при помощи new, либо является нулевым указателем
     // Спецификатор noexcept обозначает, что метод не бросает исключений
-    explicit MyUniquePTR(T* rawPtr) noexcept {
-        _rawPtr = rawPtr;
-    }
+    explicit MyUniquePTR(T* objPtr) noexcept : _rawPtr(objPtr) { }
 
     // Удаляем у класса "MyUniquePTR" конструктор копирования
     MyUniquePTR(const MyUniquePTR&) = delete;
@@ -73,6 +73,8 @@ class MyUniquePTR {
         std::swap(_rawPtr, other._rawPtr);
     }
 
+    // Как только мы делаем обертку для указателя, значит мы должны обеспечить новую функциональность
+    // точно такую же, как если бы мы пользовались голым указателем.
     const T* operator->() const {
         using namespace std::literals;
 

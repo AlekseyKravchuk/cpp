@@ -26,6 +26,7 @@ std::ostream& operator<<(std::ostream& os, const A& objRef) {
 
 int main() {
     std::vector<A> v = {A{15}, A{20}, A{35}};
+    
     // либо выписываем полностью
     // std::remove_reference<decltype(*v.begin())>::type x;
     std::remove_reference_t<decltype(*v.begin())> x;

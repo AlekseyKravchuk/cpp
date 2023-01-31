@@ -14,7 +14,7 @@
 #include <initializer_list>
 #include <list>
 
-// using namespace std::literals;
+using namespace std::literals;
 
 int main() {
     // Задание 1.

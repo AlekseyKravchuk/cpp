@@ -27,11 +27,26 @@ class RingQueue {
     size_t _capacity{};             // количество зарезервированных под элементы мест в памяти
     static const size_t _delta{2};  // определяет на сколько больше памяти нужно заразервировать при перевыделении
 
+    // вспомогательный метод, используется только в перегруженном "operator=="
+    // вызывается только после проверок на равенство полей соответствующих экземляров RingQueue<T>
+    bool hasTheSameContent(const T* const otherRawPtr) {
+        assert(otherRawPtr);
+        
+        for (int i = _first; i < _last; i = (i + 1) % _capacity) {
+            if (_rawPtr[i] != otherRawPtr[i]) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
    public:
     class iterator {
        private:
         const RingQueue<T>* _prq{nullptr};  // указатель на константный экземляр "ring queue"
         size_t _index{};                    // индекс текущего элемента в экземляре "ring queue"
+
        public:
         iterator() = default;
 
@@ -61,7 +76,7 @@ class RingQueue {
         T operator*() const {
             return _prq->_rawPtr[_index];
         }
-    };  // ============ END of class iterator ============
+    };  // ============ END of NESTED class "iterator" ============
 
     // ====================== public-методы RingQueue ======================
     RingQueue() = default;
@@ -83,21 +98,24 @@ class RingQueue {
     }
 
     // классический конструктор копирования с механизмом "Deep Copy"
-    // TODO:
     RingQueue(const RingQueue<T>& other) {
+        // выделяем память такой же емкости
         _rawPtr = new T[other._capacity];
 
-        // копируем "_size" элементов
-        for (size_t i = 0; i < _size; ++i) {
-            _rawPtr[i] = other._rawPtr[_first];
-            _first = (_first + 1) % _capacity;
+        // нужно сделать ТОЧНО ТАКУЮ ЖЕ ОЧЕРЕДЬ, т.е. с сохранением всех её текущих состояний, включая "_first" и "_last",
+        auto tmpFirst = other._first;
+
+        // копируем "other._size" элементов
+        for (size_t i = 0; i < other._size; ++i) {
+            _rawPtr[tmpFirst] = other._rawPtr[tmpFirst];
+            tmpFirst = (tmpFirst + 1) % other._capacity;
         }
-        // нужно сделать ТОЧНО ТАКУЮ ЖЕ ОЧЕРЕДЬ, т.е. с сохранением её текущих состояний
-        // осталось скопировать соответствующие поля из экземпляра "other" в "*this"
-        _first = 0;                   // явно прописываем для наглядности того, что запись в новое хранилище велась с начала
-        _last = other._size;          // индекс последнего элемента равен "_size", т.к. "закольцовки" ещё нет и инкремент количества уже выполнен
+
+        // осталось скопировать соответствующие поля "один-в-один" из экземпляра "other" в "*this"
+        _first = other._first;
+        _last = other._last;
         _size = other._size;
-        _capacity = other._capacity;  // обновляем "_capacity"
+        _capacity = other._capacity;
     }
 
     ~RingQueue() {
@@ -165,11 +183,28 @@ class RingQueue {
     }
 
     T& pop() {
-        assert(_rawPtr);  // проверяем, что "_rawPtr" ненулевой
+        assert(_rawPtr);         // проверяем, что "_rawPtr" ненулевой
         auto saved_first = _first;
         _first = (_first + 1) % _capacity;
         --_size;
 
         return _rawPtr[saved_first];
+    }
+
+    // проверка на равенство 2-х очередей, в стиле "DEEP operation"
+    // т.е. для выполнения условия должно быть выполнено равенство всех членов класса,
+    // а также значений, хранящихся в heap'e
+    bool operator==(const RingQueue<T>& other) {
+        bool isSame = hasTheSameContent(other._rawPtr);
+
+        if (_size == other._size &&
+            _capacity == other._capacity &&
+            _first == other._first &&
+            _last == other._last &&
+            isSame) {
+            return true;
+        } else {
+            return false;
+        }
     }
 };

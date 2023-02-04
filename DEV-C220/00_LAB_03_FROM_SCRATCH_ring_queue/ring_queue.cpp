@@ -1,9 +1,9 @@
 #include "ring_queue.h"
 
-#include <iostream>
-#include <string>
-#include <sstream>  // std::istringstream, std::ostringstream
 #include <cassert>
+#include <iostream>
+#include <sstream>  // std::istringstream, std::ostringstream
+#include <string>
 
 #include "../my_print.h"
 
@@ -84,7 +84,6 @@ void TEST_RingQueue_RangeBasedForLoop() {
         } else {
             oss << " "s << el;
         }
-        
     }
     std::ostringstream ossTest("bbb OTHER STOP"s);
     assert(oss.str() == ossTest.str());
@@ -103,31 +102,48 @@ void Print_TEST_RingQueue_RangeBasedForLoop() {
         } else {
             std::cout << " "s << el;
         }
-        
     }
     std::cout << std::endl;
 }
 
-void TEST_RingQueue_ClassicConstructor() {
+void TEST_RingQueue_CopyConstructor() {
     RingQueue<std::string> q1{"11"s, "22"s, "33"s, "44"};
     q1.pop();
     q1.pop();
-    q1.push("55"); // EMPTY EMPTY "33 "44" "55"
+    q1.push("55");  // EMPTY EMPTY "33 "44" "55", _first = 2, _last = 0,
+    q1.push("66");  // "66"  EMPTY "33 "44" "55", _first = 2, _last = 1
+
+    RingQueue<std::string> q2 = q1;
+    assert(q1 == q2);
+    std::cout << "TEST_RingQueue_CopyConstructor: PASSED"s << std::endl;
+}
+
+void Print_TEST_RingQueue_CopyConstructor() {
+    RingQueue<std::string> q1{"11"s, "22"s, "33"s, "44"};
+    q1.pop();
+    q1.pop();
+    q1.push("55");  // EMPTY EMPTY "33 "44" "55", _first = 2, _last = 0,
+    PrintCollection(q1, "q1 after push(55): ");
+    PrintRingQueueState(q1);
+
+    q1.push("66");  // "66"  EMPTY "33 "44" "55", _first = 2, _last = 1
     PrintCollection(q1, "q1 after manipulations: ");
     PrintRingQueueState(q1);
+
     RingQueue<std::string> q2 = q1;
-    // std::cout << "TEST_RingQueue_ClassicConstructor: PASSED"s << std::endl;
+    PrintCollection(q2, "q2 after CopyConstructoring: ");
+    PrintRingQueueState(q2);
 }
 
 int main() {
-    // TEST_RingQueue_PushPop();
+    TEST_RingQueue_PushPop();
     // Print_TEST_RingQueue_PushPop();
 
-    // TEST_RingQueue_RangeBasedForLoop();
+    TEST_RingQueue_RangeBasedForLoop();
     // Print_TEST_RingQueue_RangeBasedForLoop();
 
-    TEST_RingQueue_ClassicConstructor();
-
+    TEST_RingQueue_CopyConstructor();
+    // Print_TEST_RingQueue_CopyConstructor();
 
     return 0;
 }

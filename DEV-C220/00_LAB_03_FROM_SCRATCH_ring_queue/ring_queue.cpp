@@ -135,6 +135,12 @@ void Print_TEST_RingQueue_CopyConstructor() {
     PrintRingQueueState(q2);
 }
 
+void TEST_RingQueue_ConstructorWithDefaultValues() {
+    RingQueue<std::string> q1(10, "!"s);
+    assert(q1 == (RingQueue<std::string>{"!"s, "!"s, "!"s, "!"s, "!"s, "!"s, "!"s, "!"s, "!"s, "!"s}));
+    std::cout << "TEST_RingQueue_ConstructorWithDefaultValues: PASSED"s << std::endl;
+}
+
 int main() {
     TEST_RingQueue_PushPop();
     // Print_TEST_RingQueue_PushPop();
@@ -144,6 +150,8 @@ int main() {
 
     TEST_RingQueue_CopyConstructor();
     // Print_TEST_RingQueue_CopyConstructor();
+
+    TEST_RingQueue_ConstructorWithDefaultValues();
 
     return 0;
 }

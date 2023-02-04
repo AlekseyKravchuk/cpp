@@ -14,6 +14,7 @@
 #include <exception>  // std::bad_alloc
 #include <initializer_list>
 #include <string>
+#include <algorithm>
 
 using namespace std::literals;
 
@@ -32,7 +33,7 @@ class RingQueue {
     bool hasTheSameContent(const T* const otherRawPtr) {
         assert(otherRawPtr);
         
-        for (int i = _first; i < _last; i = (i + 1) % _capacity) {
+        for (size_t i = _first; i < _last; i = (i + 1) % _capacity) {
             if (_rawPtr[i] != otherRawPtr[i]) {
                 return false;
             }
@@ -80,6 +81,14 @@ class RingQueue {
 
     // ====================== public-методы RingQueue ======================
     RingQueue() = default;
+
+    RingQueue(int num, T defaultValue = T{}) {
+        _rawPtr = new T[num + 1];
+        std::fill_n(_rawPtr, num, defaultValue);
+        _first = 0;
+        _last = _size = num;
+        _capacity = _size + 1;
+    }
 
     RingQueue(std::initializer_list<T> values) {
         _rawPtr = new T[values.size() + 1]{};

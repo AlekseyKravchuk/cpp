@@ -14,6 +14,7 @@
 #include <cstddef>    // size_t
 #include <exception>  // std::bad_alloc
 #include <initializer_list>
+#include <iostream>
 #include <string>
 
 using namespace std::literals;
@@ -31,7 +32,7 @@ class RingQueue {
 
     // вспомогательный метод, используется только в перегруженном "operator=="
     // вызывается только после проверок на равенство полей соответствующих экземляров RingQueue<T>
-    bool hasTheSameContent(const T* const otherRawPtr) {
+    bool hasTheSameContent(const T* const otherRawPtr) const {
         assert(otherRawPtr);
 
         auto current = _first;
@@ -162,23 +163,16 @@ class RingQueue {
     }
 
     // перемещающий оператор копирования
-    // TODO: написать тест
     RingQueue(RingQueue<T>&& other) {
-        if (this != &other) {
-            // освобождаем занятую текущим экземпляром "RingQueue<T>" память
-            delete[] _rawPtr;
-
-            // перетаскиваем от "other" все ресурсы, а все ресурсы "other" зануляем
-            _rawPtr = std::exchange(other._rawPtr, nullptr);
-            _first = std::exchange(other._first, 0);
-            _last = std::exchange(other._last, 0);
-            _size = std::exchange(other._size, 0);
-            _capacity = std::exchange(other._capacity, 0);
-        }
+        // перетаскиваем от "other" все ресурсы, а все ресурсы "other" зануляем
+        _rawPtr = std::exchange(other._rawPtr, nullptr);
+        _first = std::exchange(other._first, 0);
+        _last = std::exchange(other._last, 0);
+        _size = std::exchange(other._size, 0);
+        _capacity = std::exchange(other._capacity, 0);
     }
 
     // перемещающий оператор присваивания
-    // TODO: написать тест
     RingQueue<T>& operator=(RingQueue<T>&& other) {
         if (this != &other) {
             delete[] _rawPtr;
@@ -282,4 +276,27 @@ class RingQueue {
             return false;
         }
     }
+
+    // используется только для проверки корректности работы перемещающего конструктора копирования
+    bool isEmpty() const {
+        if (_rawPtr == nullptr &&
+            _first == 0 &&
+            _last == 0 &&
+            _size == 0 &&
+            _capacity == 0) {
+            return true;
+        } else {
+            return false;
+        }
+    }
 };
+
+template <typename T>
+void PrintRingQueueState(const RingQueue<T>& q) {
+    std::cout << "_first = " << q.GetFirst() << ", "s
+              << "_last = " << q.GetLast() << ", "s
+              << "_size = " << q.GetSize() << ", "s
+              << "_capacity = " << q.GetCapacity() << ", "s
+              << std::endl;
+    std::cout << std::string(20, '=') << std::endl;
+}

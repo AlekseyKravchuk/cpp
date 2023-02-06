@@ -9,12 +9,12 @@
 // Ситуация №2: вызывается push (enqueue), а свободных элементов не осталось => требуется перевыделить память с запасом.
 
 #include <algorithm>  // std::copy
+#include <algorithm>
 #include <cassert>
 #include <cstddef>    // size_t
 #include <exception>  // std::bad_alloc
 #include <initializer_list>
 #include <string>
-#include <algorithm>
 
 using namespace std::literals;
 
@@ -26,17 +26,20 @@ class RingQueue {
     size_t _last{};                 // индекс "past-the-end" элемента (он всегда пустой), в общем случае: _last = (_first + _size) % _capacity;
     size_t _size{};                 // фактическое количество элементов в очереди
     size_t _capacity{};             // количество зарезервированных под элементы мест в памяти
-    static const size_t _delta{2};  // определяет на сколько больше памяти нужно заразервировать при перевыделении
+    static const size_t _delta{2};  // определяет на сколько больше памяти (в байтах) нужно заразервировать при перевыделении
+    static const size_t _mult{5};   // используется только в операторе присваивания для определения необходимости перевыделения памяти
 
     // вспомогательный метод, используется только в перегруженном "operator=="
     // вызывается только после проверок на равенство полей соответствующих экземляров RingQueue<T>
     bool hasTheSameContent(const T* const otherRawPtr) {
         assert(otherRawPtr);
-        
-        for (size_t i = _first; i < _last; i = (i + 1) % _capacity) {
-            if (_rawPtr[i] != otherRawPtr[i]) {
+
+        auto current = _first;
+        for (size_t i = 0; i < _size; ++i) {
+            if (_rawPtr[current] != otherRawPtr[current]) {
                 return false;
             }
+            current = (current + 1) % _capacity;
         }
 
         return true;
@@ -127,6 +130,69 @@ class RingQueue {
         _capacity = other._capacity;
     }
 
+    // оператор присваивания
+    RingQueue<T>& operator=(const RingQueue<T>& other) {
+        if (this != &other) {
+            // если ёмкости *this НЕдостаточно для размещения элементов "other"
+            // ИЛИ
+            // текущая емкость "_mult"-кратно (по умолчанию "_mult" = 5) превышает "other._capacity",
+            // требуется перевыделение памяти
+            if (_capacity < other._capacity || _capacity > _mult * other._capacity) {
+                delete[] _rawPtr;
+
+                // перевыделяем память
+                _rawPtr = new T[other._capacity];
+            }
+
+            // восстанавливаем состояние экземляра "other"
+            _first = other._first;
+            _last = other._last;
+            _size = other._size;
+            _capacity = other._capacity;
+
+            // копируем элементы из "other._rawPtr" в "this->_rawPtr"
+            auto current = _first;
+            for (size_t i = 0; i < _size; ++i) {
+                _rawPtr[current] = other._rawPtr[current];
+                current = (current + 1) % _capacity;
+            }
+        }
+
+        return *this;
+    }
+
+    // перемещающий оператор копирования
+    // TODO: написать тест
+    RingQueue(RingQueue<T>&& other) {
+        if (this != &other) {
+            // освобождаем занятую текущим экземпляром "RingQueue<T>" память
+            delete[] _rawPtr;
+
+            // перетаскиваем от "other" все ресурсы, а все ресурсы "other" зануляем
+            _rawPtr = std::exchange(other._rawPtr, nullptr);
+            _first = std::exchange(other._first, 0);
+            _last = std::exchange(other._last, 0);
+            _size = std::exchange(other._size, 0);
+            _capacity = std::exchange(other._capacity, 0);
+        }
+    }
+
+    // перемещающий оператор присваивания
+    // TODO: написать тест
+    RingQueue<T>& operator=(RingQueue<T>&& other) {
+        if (this != &other) {
+            delete[] _rawPtr;
+
+            _rawPtr = std::exchange(other._rawPtr, nullptr);
+            _first = std::exchange(other._first, 0);
+            _last = std::exchange(other._last, 0);
+            _size = std::exchange(other._size, 0);
+            _capacity = std::exchange(other._capacity, 0);
+        }
+
+        return *this;
+    }
+
     ~RingQueue() {
         delete[] _rawPtr;
     };
@@ -174,7 +240,7 @@ class RingQueue {
             delete[] _rawPtr;
 
             // используем setter "std::exchange"
-            // теперь поле "_rawPtr" теперь указывает на новое хранилище в "heap'e", а "newRawPtr" зануляем на всякий случай
+            // теперь "_rawPtr" указывает на новое хранилище в "heap'e", а "newRawPtr" зануляем для предотвращения его повторного использования
             _rawPtr = std::exchange(newRawPtr, nullptr);
 
             // осталось внести изменения в соответствующие поля экземпляра класса RingQueue<T>
@@ -192,7 +258,7 @@ class RingQueue {
     }
 
     T& pop() {
-        assert(_rawPtr);         // проверяем, что "_rawPtr" ненулевой
+        assert(_rawPtr);  // проверяем, что "_rawPtr" ненулевой
         auto saved_first = _first;
         _first = (_first + 1) % _capacity;
         --_size;

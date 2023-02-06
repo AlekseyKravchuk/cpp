@@ -141,17 +141,66 @@ void TEST_RingQueue_ConstructorWithDefaultValues() {
     std::cout << "TEST_RingQueue_ConstructorWithDefaultValues: PASSED"s << std::endl;
 }
 
+void TEST_RingQueue_AssignmentOperator() {
+    RingQueue<std::string> q1{"11"s, "22"s, "33"s, "44"s};
+    q1.pop();
+    q1.pop();
+    q1.push("55");  // EMPTY EMPTY "33 "44" "55", _first = 2, _last = 0,
+    q1.push("66");  // "66"  EMPTY "33 "44" "55", _first = 2, _last = 1
+
+    RingQueue<std::string> q3{"111"s, "222"s, "333"s, "444"s, "555"s, "666"s, "777"s};
+    q3.pop();
+    q3.pop();
+    q3.pop();
+    q3.pop();
+    q3.push("888"s);
+    q3.push("999"s);  // "999" EMPTY EMPTY EMPTY "555" "666" "777" "888" _first = 4, _last = 2, size = 5
+
+    RingQueue<std::string> q2 = q1;
+    q2 = q3;
+    assert(q3 == q2);
+    std::cout << "TEST_RingQueue_AssignmentOperator: PASSED"s << std::endl;
+}
+
+void Print_TEST_RingQueue_AssignmentOperator() {
+    RingQueue<std::string> q1{"11"s, "22"s, "33"s, "44"s};
+    q1.pop();
+    q1.pop();
+    q1.push("55");  // EMPTY EMPTY "33 "44" "55", _first = 2, _last = 0,
+    q1.push("66");  // "66"  EMPTY "33 "44" "55", _first = 2, _last = 1
+
+    RingQueue<std::string> q3{"111"s, "222"s, "333"s, "444"s, "555"s, "666"s, "777"s};
+    q3.pop();
+    q3.pop();
+    q3.pop();
+    q3.pop();
+    q3.push("888"s);
+    q3.push("999"s);  // "999" EMPTY EMPTY EMPTY "555" "666" "777" "888" _first = 4, _last = 2, size = 5
+    PrintCollection(q3, "q3: ");
+    PrintRingQueueState(q3);
+
+    RingQueue<std::string> q2 = q1;
+    q2 = q3;
+    assert(q3 == q2);
+
+    PrintCollection(q2, "q2 after assignment (q2 = q3): ");
+    PrintRingQueueState(q2);
+}
+
 int main() {
-    TEST_RingQueue_PushPop();
-    // Print_TEST_RingQueue_PushPop();
+    // TEST_RingQueue_PushPop();
+    // // Print_TEST_RingQueue_PushPop();
 
-    TEST_RingQueue_RangeBasedForLoop();
-    // Print_TEST_RingQueue_RangeBasedForLoop();
+    // TEST_RingQueue_RangeBasedForLoop();
+    // // Print_TEST_RingQueue_RangeBasedForLoop();
 
-    TEST_RingQueue_CopyConstructor();
-    // Print_TEST_RingQueue_CopyConstructor();
+    // TEST_RingQueue_CopyConstructor();
+    // // Print_TEST_RingQueue_CopyConstructor();
 
-    TEST_RingQueue_ConstructorWithDefaultValues();
+    // TEST_RingQueue_ConstructorWithDefaultValues();
+
+    // TEST_RingQueue_AssignmentOperator();
+    // Print_TEST_RingQueue_AssignmentOperator();
 
     return 0;
 }

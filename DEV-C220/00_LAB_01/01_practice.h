@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <cctype>  // std::to_upper
 #include <cmath>
 #include <exception>
 #include <iostream>
@@ -10,9 +11,9 @@
 #include <set>
 #include <string>
 #include <type_traits>  // std::decay
+#include <type_traits>  // std::remove_reference_t
 #include <utility>
 #include <vector>
-#include <type_traits>  // std::remove_reference_t
 
 using namespace std::literals;
 
@@ -34,23 +35,45 @@ void PrintCollection(const Collection& collection, const std::string& message = 
     std::cout << std::endl;
 }
 
+// 1-ый вариант реализации "NegateAll" за счет перегрузки "operator-" для "std::string"
+// template <typename Collection>
+// void NegateAll(Collection& collection) {
+//     for (auto& elm : collection) {
+//         elm = -elm;
+//     }
+// }
+
+// // перегружаем "operator-" для того, чтобы "NegateAll" могла принимать коллекции из строк
+// std::string& operator-(std::string& str) {
+//     for (auto& ch : str) {
+//         if (std::isupper(ch)) {
+//             ch = std::tolower(ch);
+//         } else {
+//             ch = std::toupper(ch);
+//         }
+//     }
+
+//     return str;
+// }
+
+// 2-ой вариант реализации "NegateAll" за счет использования статического "if constexpr"
 template <typename Collection>
 void NegateAll(Collection& collection) {
-    for (auto& elm : collection) {
-        elm = -elm;
-    }
-}
+    using type = std::remove_reference_t<decltype(*std::begin(collection))>;
 
-std::string& operator-(std::string& str) {
-    for (auto& ch : str) {
-        if (std::isupper(ch)) {
-            ch = std::tolower(ch);
+    for (auto& elm : collection) {
+        if constexpr (std::is_same_v<type, std::string>) {
+            for (auto& ch : elm) {
+                if (std::isupper(ch)) {
+                    ch = std::tolower(ch);
+                } else {
+                    ch = std::toupper(ch);
+                }
+            }
         } else {
-            ch = std::toupper(ch);
+            elm = -elm;
         }
     }
-
-    return str;
 }
 
 template <typename Collection>

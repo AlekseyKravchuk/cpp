@@ -16,6 +16,7 @@
 #include <initializer_list>
 #include <iostream>
 #include <string>
+#include <type_traits>
 
 using namespace std::literals;
 
@@ -53,6 +54,25 @@ class RingQueue {
         size_t _index{};                    // индекс текущего элемента в экземляре "ring queue"
 
        public:
+        // Для того, чтобы сделать вложенный класс "iterator" совместимым с STL-алгоритмами (header "algorithm"),
+        // необходимо задать некоторые определения типов (посредством директивы "using")
+        // Объявленные ниже типы сообщают стандартной библиотеке о свойствах этого итератора
+
+        // Категория итератора - forward iterator (итератор, поддерживающий операции инкремента и многократное разыменование)
+        using iterator_category = std::forward_iterator_tag;
+
+        // Тип элементов, по которым перемещается итератор
+        using value_type = std::remove_cv_t<T>;
+
+        // Тип, используемый для хранения смещения между итераторами
+        using difference_type = std::ptrdiff_t;
+
+        // Тип указателя на итерируемое значение (указатель на константное значение)
+        using pointer = const T*;
+
+        // Тип ссылки на итерируемое значение
+        using reference = const T&;
+
         iterator() = default;
 
         // этот конструктор будет вызываться только в методах "RingQueue<T>::begin()" и "RingQueue<T>::end()"
@@ -96,39 +116,48 @@ class RingQueue {
 
     RingQueue(std::initializer_list<T> values) {
         _rawPtr = new T[values.size() + 1]{};
-
-        // 1-ый вариант копирования элементов
-        for (const auto& elm : values) {
-            _rawPtr[_last++] = elm;
-        }
-
-        // 2-ой вариант копирования элементов - TODO!
-        // std::copy(values.begin(), values.end(), _rawPtr);
-        // _last = values.size();
-
+        _first = 0;
+        _last = values.size();
         _size = values.size();
         _capacity = values.size() + 1;
+
+        // 1-ый вариант копирования элементов
+        // for (const auto& elm : values) {
+        //     _rawPtr[_last++] = elm;
+        // }
+
+        // 2-ой вариант копирования элементов
+        std::copy(values.begin(), values.end(), _rawPtr);
+
+        // TODO:
+        // ===> А ХОТЕЛОСЬ БЫ ТАК, но попадаем в assert в тесте:
+        // std::copy(values.begin(), values.end(), begin());
     }
 
     // классический конструктор копирования с механизмом "Deep Copy"
     RingQueue(const RingQueue<T>& other) {
-        // выделяем память такой же емкости
         _rawPtr = new T[other._capacity];
-
-        // нужно сделать ТОЧНО ТАКУЮ ЖЕ ОЧЕРЕДЬ, т.е. с сохранением всех её текущих состояний, включая "_first" и "_last",
-        auto tmpFirst = other._first;
-
-        // копируем "other._size" элементов
-        for (size_t i = 0; i < other._size; ++i) {
-            _rawPtr[tmpFirst] = other._rawPtr[tmpFirst];
-            tmpFirst = (tmpFirst + 1) % other._capacity;
-        }
-
-        // осталось скопировать соответствующие поля "один-в-один" из экземпляра "other" в "*this"
         _first = other._first;
         _last = other._last;
         _size = other._size;
         _capacity = other._capacity;
+
+        // нужно сделать ТОЧНО ТАКУЮ ЖЕ ОЧЕРЕДЬ, т.е. с сохранением всех её текущих состояний, включая "_first" и "_last",
+        auto current = other._first;
+
+        // копируем "other._size" элементов
+        for (size_t i = 0; i < other._size; ++i) {
+            _rawPtr[current] = other._rawPtr[current];
+            current = (current + 1) % other._capacity;
+        }
+
+        // TODO:
+        // ===> А ХОТЕЛОСЬ БЫ ТАК, но попадаем в assert в тесте:
+        // auto it = begin();
+        // for (const auto& elm : other) {
+        //     *it = elm;
+        //     ++it;
+        // }
     }
 
     // оператор присваивания
@@ -145,7 +174,7 @@ class RingQueue {
                 _rawPtr = new T[other._capacity];
             }
 
-            // восстанавливаем состояние экземляра "other"
+            // восстанавливаем состояние текущего экземляра по экземпляру "other"
             _first = other._first;
             _last = other._last;
             _size = other._size;

@@ -34,27 +34,27 @@ void TEST_RingQueue_PushPop() {
 void Print_TEST_RingQueue_PushPop() {
     RingQueue<std::string> q = {"11"s, "22"s, "33"s, "44"s};
     PrintCollection(q, "q initial state: "s);
-    PrintRingQueueState(q);
+    q.PrintRingQueueState();
 
     q.pop();
     PrintCollection(q, "q after 1-st pop(): ");
-    PrintRingQueueState(q);
+    q.PrintRingQueueState();
 
     q.pop();
     PrintCollection(q, "q after 2-nd pop(): ");
-    PrintRingQueueState(q);
+    q.PrintRingQueueState();
 
     q.push("55"s);
     PrintCollection(q, "q after push(55): ");
-    PrintRingQueueState(q);
+    q.PrintRingQueueState();
 
     q.push("66"s);
     PrintCollection(q, "q after push(66): ");
-    PrintRingQueueState(q);
+    q.PrintRingQueueState();
 
     q.push("77"s);
     PrintCollection(q, "q after push(77): ");
-    PrintRingQueueState(q);
+    q.PrintRingQueueState();
 }
 
 void TEST_RingQueue_RangeBasedForLoop() {
@@ -113,15 +113,15 @@ void Print_TEST_RingQueue_CopyConstructor() {
     q1.pop();
     q1.push("55");  // EMPTY EMPTY "33 "44" "55", _first = 2, _last = 0,
     PrintCollection(q1, "q1 after push(55): ");
-    PrintRingQueueState(q1);
+    q1.PrintRingQueueState();
 
     q1.push("66");  // "66"  EMPTY "33 "44" "55", _first = 2, _last = 1
     PrintCollection(q1, "q1 after manipulations: ");
-    PrintRingQueueState(q1);
+    q1.PrintRingQueueState();
 
     RingQueue<std::string> q2 = q1;
     PrintCollection(q2, "q2 after CopyConstructoring: ");
-    PrintRingQueueState(q2);
+    q2.PrintRingQueueState();
 }
 
 void TEST_RingQueue_ConstructorWithDefaultValues() {
@@ -143,7 +143,7 @@ void TEST_RingQueue_AssignmentOperator() {
     q3.pop();
     q3.pop();
     q3.push("888"s);
-    q3.push("999"s);  // "999" EMPTY EMPTY EMPTY "555" "666" "777" "888" _first = 4, _last = 2, size = 5
+    q3.push("999"s);  //    
 
     RingQueue<std::string> q2 = q1;
     q2 = q3;
@@ -166,14 +166,14 @@ void Print_TEST_RingQueue_AssignmentOperator() {
     q3.push("888"s);
     q3.push("999"s);  // "999" EMPTY EMPTY EMPTY "555" "666" "777" "888" _first = 4, _last = 2, size = 5
     PrintCollection(q3, "q3: ");
-    PrintRingQueueState(q3);
+    q3.PrintRingQueueState();
 
     RingQueue<std::string> q2 = q1;
     q2 = q3;
     assert(q3 == q2);
 
     PrintCollection(q2, "q2 after assignment (q2 = q3): ");
-    PrintRingQueueState(q2);
+    q2.PrintRingQueueState();
 }
 
 void TEST_RingQueue_MovingCopyConstructor() {
@@ -196,19 +196,19 @@ void Print_TEST_RingQueue_MovingCopyConstructor() {
     q1.push("55");  // EMPTY EMPTY "33 "44" "55", _first = 2, _last = 0,
     q1.push("66");  // "66"  EMPTY "33 "44" "55", _first = 2, _last = 1
     PrintCollection(q1, "q1 after manipulations: ");
-    PrintRingQueueState(q1);
+    q1.PrintRingQueueState();
 
     RingQueue<std::string> q2 = q1;
     PrintCollection(q2, "q2 after (q2 = q1): ");
-    PrintRingQueueState(q2);
+    q2.PrintRingQueueState();
 
     RingQueue<std::string> q3 = std::move(q2);
     assert((q2.isEmpty() && (q3 == q1)));
     PrintCollection(q3, "q3 after (q3 = std::move(q2)): ");
-    PrintRingQueueState(q3);
+    q3.PrintRingQueueState();
 
     PrintCollection(q2, "q2 after (q3 = std::move(q2)): ");
-    PrintRingQueueState(q2);
+    q2.PrintRingQueueState();
 }
 
 void TEST_RingQueue_MovingAssignmentOperator() {
@@ -233,13 +233,13 @@ void Print_TEST_RingQueue_MovingAssignmentOperator() {
 
     RingQueue<std::string> q2{"aaa"s, "bbb"s, "ccc"s, "ddd"s, "eee"s, "fff"s};
     PrintCollection(q2, "q2: ");
-    PrintRingQueueState(q2);
+    q2.PrintRingQueueState();
 
     q1 = std::move(q2);
     assert(q2.isEmpty() && (q1 == RingQueue<std::string>{"aaa"s, "bbb"s, "ccc"s, "ddd"s, "eee"s, "fff"s}));
     PrintCollection(q1, "q1 after (q1 = std::move(q2)): ");
-    PrintRingQueueState(q1);
+    q1.PrintRingQueueState();
 
     PrintCollection(q2, "q1 after (q1 = std::move(q2)): ");
-    PrintRingQueueState(q2);
+    q2.PrintRingQueueState();
 }

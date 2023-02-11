@@ -40,7 +40,7 @@ std::vector<Person> GetMoscowPopulation() {
     };
 }
 
-void PrintPopulationSize(/* const */ std::vector<Person>& p) {
+void PrintPopulationSize(const std::vector<Person>& p) {
     std::cout << "There are "s << p.size() << " people in Moscow."s << std::endl;
 }
 
@@ -53,7 +53,8 @@ int main() {
     start = steady_clock::now();
 
     // TODO:
-    PrintPopulationSize(GetMoscowPopulation());
+    // PrintPopulationSize(GetMoscowPopulation());
+    PrintPopulationSize(people);
     finish = steady_clock::now();
     std::cout << "PrintPopulationSize(people): "s << duration_cast<microseconds>(finish - start).count() << " microseconds"s << std::endl;
 

@@ -1,4 +1,6 @@
+#include <algorithm>  // std::copy
 #include <iostream>
+#include <iterator>  // std::make_move_iterator
 #include <string>
 #include <vector>
 
@@ -14,39 +16,34 @@ words.clear();
 // Теперь вектор words пуст
  */
 
-// TODO:
-void MoveStrings(std::vector<std::string> source, std::vector<std::string> destination) {
-    /*
-    https://stackoverflow.com/questions/18159183/can-i-move-the-contents-of-one-vector-to-the-end-of-another
+// 1-ая версия: "в лоб"
+// void MoveStrings(std::vector<std::string>& source, std::vector<std::string>& destination) {
+//     for (const auto& str : source) {
+//         destination.push_back(str);
+//     }
+//     source.clear();
+//     source.shrink_to_fit();
+// }
 
-    You can use std::make_move_iterator, so that accesses to the iterator returns rvalue references instead of lvalue references:
-    a.insert(a.end(), std::make_move_iterator(b.begin()), std::make_move_iterator(b.end()));
+// 2-ая версия: с использованием move-семантики
+void MoveStrings(std::vector<std::string>& source, std::vector<std::string>& destination) {
+    destination.reserve(source.size() + destination.size());
+    // std::copy(std::make_move_iterator(source.begin()),
+    //           std::make_move_iterator(source.end()),
+    //           std::back_inserter(destination));
 
-    ========================
+    std::move(source.begin(),
+              source.end(),
+              std::inserter(destination, destination.end()));
 
-
-    There is a std::move algorithm that appears to do what you want.
-    In the following code the source std::vector is left with empty strings (the vector size doesn't change).
-    int main()
-    {
-        std::vector<std::string> one{"cat", "dog", "newt"};
-        std::vector<std::string> two;
-
-        std::move(begin(one), end(one), back_inserter(two));
-
-        std::cout << "one:\n";
-        for (auto& str : one) {
-            std::cout << str << '\n';
-        }
-
-        std::cout << "two:\n";
-        for (auto& str : two) {
-            std::cout << str << '\n';
-        }
-    }
-     */
+    source.clear();
+    source.shrink_to_fit();
 }
 
 int main() {
+    std::vector<std::string> source = {"a", "b", "c"};
+    std::vector<std::string> destination = {"z"};
+    MoveStrings(source, destination);
+
     return 0;
 }

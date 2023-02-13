@@ -1,6 +1,11 @@
 #include <cassert>
+#include <queue>
+#include <stack>
 
 #include "functions.h"
+#include "range.h"
+#include "sequence_print.h"
+#include "summation.h"
 
 using namespace std::literals;
 
@@ -60,17 +65,17 @@ int main() {
     // Должно работать так:
     // std::string sBin = 256_toBinStr;
     {
-        std::string sBin1 = 256_toBinStr;
-        assert(sBin1 == std::string("100000000"s));
+        // std::string sBin1 = 256_toBinStr;
+        // assert(sBin1 == std::string("100000000"s));
 
-        std::string sBin2 = 7_toBinStr;
-        assert(sBin2 == std::string("111"s));
+        // std::string sBin2 = 7_toBinStr;
+        // assert(sBin2 == std::string("111"s));
 
-        std::string sBin3 = 11_toBinStr;
-        assert(sBin3 == std::string("1011"s));
+        // std::string sBin3 = 11_toBinStr;
+        // assert(sBin3 == std::string("1011"s));
 
-        std::cout << "11 = "s
-                  << "0b"s << sBin3 << std::endl;
+        // std::cout << "11 = "s
+        //           << "0b"s << sBin3 << std::endl;
     }
 
     // Задание 3. constexpr - объекты
@@ -86,7 +91,93 @@ int main() {
 
     // Проверьте тот факт, что компилятор вычисляет значение на этапе компиляции.
     {
-        
+        // constexpr RangeMinMax<int> int_minmax_range(-500, 600);
+        // constexpr int x = int_minmax_range.CheckAndGet(1800);
+        // // auto x = 600;
+        // std::cout << "x = "s << x << std::endl;
+        // constexpr auto y = x;
+    }
+
+    // Задание 4.
+    /*
+    Реализуйте шаблон функции для печати любых последовательностей (vector, list, deque, set и встроенного массива), которые могут содержать:
+        - как объекты любого типа,
+        - так и указатели на объекты любого типа (указатели распечатывать неинтересно => в этом случае следует получать значение по адресу)
+    Подсказки: if constexpr
+    */
+    // {
+    //     std::vector<int> v1{1, 2, 3, 4};
+    //     PrintCollection(v1);
+
+    //     int x1 = 44;
+    //     int x2 = 55;
+    //     int x3 = 66;
+
+    //     std::vector<int*> v2{&x1, &x2, &x3};
+    //     PrintCollection(v2);
+    // }
+
+    // Задание 5.
+    /* Реализуйте шаблон функции сложения двух значений.
+    Если первое слагаемое является вектором, то все элементы вектора нужно увеличить на значение второго параметра.
+    При этом элементы вектора и второй параметр должны быть одного и того же типа.
+    Подсказки: if constexpr, is_same
+    */
+    // {
+    //     std::vector<int> v1{1, 2, 3};
+    //     int b = 2;
+    //     auto _sum = summation(v1, b);
+    //     PrintCollection(v1);
+    //     std::cout << "_sum = "s << _sum << std::endl;
+    // }
+
+    // {
+    //     int a = 15;
+    //     int b = 30;
+    //     auto _sum = summation(a, b);
+    //     std::cout << "_sum = "s << _sum << std::endl;
+    // }
+
+    // {
+    //     // ERROR
+    //     std::vector<int> v1{1, 2, 3};
+    //     auto _sum = summation(v1, 2.2);
+    //     PrintCollection(v1);
+    //     std::cout << "_sum = "s << _sum << std::endl;
+    // }
+
+    // {
+    //     // ERROR
+    //     std::vector<double> v1{1.2, 2.2, 3.2};
+    //     auto _sum = summation(v1, 2);
+    //     PrintCollection(v1);
+    //     std::cout << "_sum = "s << _sum << std::endl;
+    // }
+
+    // Задание 6.
+    /* 	Реализуйте шаблон функции вывода на печать значений элементов любого адаптера (stack, queue, priority_queue)
+    Подсказки: if constexpr, is_same
+    Предусмотрите вывод значений, если в адаптере хранятся указатели.
+    */
+    {
+        // std::stack<int> st;
+        // st.push(10);
+        // st.push(20);
+        // st.push(30);
+        // st.push(40);
+
+        // std::queue<int> q;
+        // q.push(111);
+        // q.push(222);
+        // q.push(333);
+        // q.push(444);
+
+        const auto data = {1, 8, 5, 6, 3, 4, 0, 9, 7, 2};
+        std::priority_queue<int> q1;  // Max priority queue
+        for (int n : data)
+            q1.push(n);
+
+        PrintAdapter(q1);
     }
 
     return 0;

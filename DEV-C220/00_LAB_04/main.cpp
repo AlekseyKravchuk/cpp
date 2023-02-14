@@ -160,24 +160,26 @@ int main() {
     Предусмотрите вывод значений, если в адаптере хранятся указатели.
     */
     {
-        // std::stack<int> st;
-        // st.push(10);
-        // st.push(20);
-        // st.push(30);
-        // st.push(40);
+        std::stack<int> st;
+        st.push(10);
+        st.push(20);
+        st.push(30);
+        st.push(40);
+        PrintAdapter(st);
 
-        // std::queue<int> q;
-        // q.push(111);
-        // q.push(222);
-        // q.push(333);
-        // q.push(444);
+        std::queue<int> q;
+        q.push(111);
+        q.push(222);
+        q.push(333);
+        q.push(444);
+        PrintAdapter(q);
 
-        const auto data = {1, 8, 5, 6, 3, 4, 0, 9, 7, 2};
-        std::priority_queue<int> q1;  // Max priority queue
-        for (int n : data)
-            q1.push(n);
-
-        PrintAdapter(q1);
+        std::priority_queue<int> pq;  // Max priority queue
+        int arr[6] = {10, 2, 4, 8, 6, 9};
+        for (int i = 0; i < 6; i++) {
+            pq.push(arr[i]);
+        }
+        PrintAdapter(pq);
     }
 
     return 0;

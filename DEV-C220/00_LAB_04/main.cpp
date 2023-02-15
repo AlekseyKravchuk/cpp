@@ -3,6 +3,7 @@
 #include <stack>
 
 #include "functions.h"
+#include "my_array.h"
 #include "range.h"
 #include "sequence_print.h"
 #include "summation.h"
@@ -23,19 +24,19 @@ int main() {
     // Проверьте тот факт, что компилятор вычисляет значение на этапе компиляции (если в качествепараметра используется константа, известная компилятору на этапе компиляции).
     //  Для проверки достаточно создать встроенный массив с размерностью, вычисляемой посредством constexpr-функции:
 
-    // {
-    //     int ar[factorial(3)];
-    //     constexpr int n = factorial(5);
-    //     std::cout << "factorial(5) = "s << n << std::endl;
-    //     // int ar1[n];
+    {
+        // int ar[factorial(3)];
+        // constexpr int n = factorial(5);
+        // std::cout << "factorial(5) = "s << n << std::endl;
+        // // int ar1[n];
 
-    //     const int m = 7;  // OK
-    //     // int m = 7;     // ERROR
-    //     constexpr int n1 = factorial(m);
-    //     int ar1[n1];
+        // const int m = 7;  // OK
+        // // int m = 7;     // ERROR
+        // constexpr int n1 = factorial(m);
+        // int ar1[n1];
 
-    //     int n2 = factorial(m);
-    // }
+        // int n2 = factorial(m);
+    }
 
     // Задание 2a. Перевод с помощью пользовательского литерала из двоичного представления строкового в значение,
     // например: строку "100000000" -> в значение 256
@@ -50,11 +51,11 @@ int main() {
     //		- но это выражение может включать вызов другой constexpr – функции,
     //		- которая может быть рекурсивной (если параметр такой функции - это константа,
     //		  компилятор вычислит результат вызова рекурсивной функции на этапе компиляции)
-    // {
-    //     100000000_b;
-    //     111_b;
-    //     0_b;
-    // }
+    {
+        // 100000000_b;
+        // 111_b;
+        // 0_b;
+    }
 
     // Задание 2b. Перевод в строковое двоичное представление, например: 256 -> "0b100000000"
     // Так как строка может быть любой длины, логичнее и проще возвращать объект std::string
@@ -105,17 +106,17 @@ int main() {
         - так и указатели на объекты любого типа (указатели распечатывать неинтересно => в этом случае следует получать значение по адресу)
     Подсказки: if constexpr
     */
-    // {
-    //     std::vector<int> v1{1, 2, 3, 4};
-    //     PrintCollection(v1);
+    {
+        // std::vector<int> v1{1, 2, 3, 4};
+        // PrintCollection(v1);
 
-    //     int x1 = 44;
-    //     int x2 = 55;
-    //     int x3 = 66;
+        // int x1 = 44;
+        // int x2 = 55;
+        // int x3 = 66;
 
-    //     std::vector<int*> v2{&x1, &x2, &x3};
-    //     PrintCollection(v2);
-    // }
+        // std::vector<int*> v2{&x1, &x2, &x3};
+        // PrintCollection(v2);
+    }
 
     // Задание 5.
     /* Реализуйте шаблон функции сложения двух значений.
@@ -140,18 +141,18 @@ int main() {
 
     // {
     //     // ERROR
-    //     std::vector<int> v1{1, 2, 3};
-    //     auto _sum = summation(v1, 2.2);
-    //     PrintCollection(v1);
-    //     std::cout << "_sum = "s << _sum << std::endl;
+    //     // std::vector<int> v1{1, 2, 3};
+    //     // auto _sum = summation(v1, 2.2);
+    //     // PrintCollection(v1);
+    //     // std::cout << "_sum = "s << _sum << std::endl;
     // }
 
     // {
     //     // ERROR
-    //     std::vector<double> v1{1.2, 2.2, 3.2};
-    //     auto _sum = summation(v1, 2);
-    //     PrintCollection(v1);
-    //     std::cout << "_sum = "s << _sum << std::endl;
+    //     // std::vector<double> v1{1.2, 2.2, 3.2};
+    //     // auto _sum = summation(v1, 2);
+    //     // PrintCollection(v1);
+    //     // std::cout << "_sum = "s << _sum << std::endl;
     // }
 
     // Задание 6.
@@ -160,26 +161,77 @@ int main() {
     Предусмотрите вывод значений, если в адаптере хранятся указатели.
     */
     {
-        std::stack<int> st;
-        st.push(10);
-        st.push(20);
-        st.push(30);
-        st.push(40);
-        PrintAdapter(st);
+        // std::stack<int> st;
+        // st.push(10);
+        // st.push(20);
+        // st.push(30);
+        // st.push(40);
+        // PrintAdapter(st);
 
-        std::queue<int> q;
-        q.push(111);
-        q.push(222);
-        q.push(333);
-        q.push(444);
-        PrintAdapter(q);
+        // std::stack<int*> st_ptrs;
+        // int a = 5;
+        // int b = 55;
+        // int c = 555;
+        // int d = 5555;
 
-        std::priority_queue<int> pq;  // Max priority queue
-        int arr[6] = {10, 2, 4, 8, 6, 9};
-        for (int i = 0; i < 6; i++) {
-            pq.push(arr[i]);
-        }
-        PrintAdapter(pq);
+        // st_ptrs.push(&a);
+        // st_ptrs.push(&b);
+        // st_ptrs.push(&c);
+        // st_ptrs.push(&d);
+        // PrintAdapter(st_ptrs);
+
+        // std::queue<int> q;
+        // q.push(111);
+        // q.push(222);
+        // q.push(333);
+        // q.push(444);
+        // PrintAdapter(q);
+
+        // std::priority_queue<int> pq;  // Max priority queue
+        // int arr[6] = {10, 2, 4, 8, 6, 9};
+        // for (int i = 0; i < 6; i++) {
+        //     pq.push(arr[i]);
+        // }
+        // PrintAdapter(pq);
+    }
+
+    // НЕ ПОНЯЛ ЗАДАНИЯ
+    //Задание 7.
+    /* 	Реализуйте шаблон constexpr функции Smth(), которая должна возвращать значения разного типа
+	Подсказки: constexpr, if constexpr
+	*/
+    //constexpr int res1 = /*<вызов Smth()>;*/ //res1 = 1
+    //constexpr double res2 = /*<вызов Smth()>; */ //res2 = 2.2
+    //  /*constexpr???*/ std::string res3 = /*<вызов Smth()>; */ //res3 = "abc"
+    {
+        // constexpr int res1 = Smth();     //res1 = 1
+        // constexpr double res2 = Smth();  //res2 = 2.2
+        //  /*constexpr???*/ std::string res3 = Smth();  //res3 = "abc"
+    }
+
+    //Задание 8.
+
+    /*
+    Пользовательский deduction guide – для вывода типов параметров шаблона.
+    Задан шаблон класса, который инкапсулирует внедренный ограниченный массив известной
+    размерности с элементами любого типа.
+
+    template <typename T, size_t size>
+    class MyArray {
+        T ar[size];  //как обеспечить инициализацию элементов базового типа по умолчанию нулем?
+        … public : MyArray(const T * [, возможно другие параметры ]);
+    };
+    */
+
+    //Требуется обеспечить работоспособность приведенных примеров использования.
+    {
+        MyArray<int, 5> ar1;                //MyArray<int,5>
+        MyArray<char, 5> ar2{"ABCqwerty"};  //MyArray<char,5>
+
+        MyArray ar3{"ABC"};  //MyArray<char,4>
+
+        int ar[] = {1, 2, 3};
+        MyArray ar4{ar};
     }
 
     return 0;

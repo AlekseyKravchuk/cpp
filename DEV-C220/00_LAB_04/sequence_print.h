@@ -39,21 +39,35 @@ void PrintAdapter(const Collection& collection) {
     bool isFirst = true;
 
     if constexpr (std::is_same_v<std::stack<ItemType>, Collection>) {
-        std::cout << "stack:" << std::endl;
-
         auto my_stack = collection;
         static_assert(std::is_same_v<decltype(my_stack), Collection>);
 
-        while (!my_stack.empty()) {
-            if (isFirst) {
-                std::cout << my_stack.top();
-                my_stack.pop();
-                isFirst = false;
-            } else {
-                std::cout << ' ' << my_stack.top();
-                my_stack.pop();
+        if constexpr (std::is_pointer_v<ItemType>) {
+            std::cout << "stack holding pointers:" << std::endl;
+            while (!my_stack.empty()) {
+                if (isFirst) {
+                    std::cout << *my_stack.top();
+                    my_stack.pop();
+                    isFirst = false;
+                } else {
+                    std::cout << ' ' << *my_stack.top();
+                    my_stack.pop();
+                }
+            }
+        } else {
+            std::cout << "stack:" << std::endl;
+            while (!my_stack.empty()) {
+                if (isFirst) {
+                    std::cout << my_stack.top();
+                    my_stack.pop();
+                    isFirst = false;
+                } else {
+                    std::cout << ' ' << my_stack.top();
+                    my_stack.pop();
+                }
             }
         }
+
         std::cout << std::endl;
 
     } else if constexpr (std::is_same_v<std::queue<ItemType>, Collection>) {

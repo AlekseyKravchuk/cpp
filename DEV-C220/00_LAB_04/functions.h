@@ -10,3 +10,8 @@ void operator""_b(const char* str);
 std::string operator""_toBinStr(unsigned long long n);
 
 std::string DecimalToBinary(int n);
+
+// template <typename T>
+// constexpr auto Smth() {
+    
+// }

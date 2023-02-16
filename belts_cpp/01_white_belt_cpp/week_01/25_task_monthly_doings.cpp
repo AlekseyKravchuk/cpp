@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <iostream>
 #include <map>
 #include <string>
@@ -25,7 +26,8 @@ NEXT    <=> Перейти к списку дел на новый месяц.
 
 Замечания:
 
-    Историю списков дел хранить не требуется, работа ведется только с текущим списком дел текущего месяца. Более того, при создании списка дел на следующий месяц, он «перетирает» предыдущий список.
+    Историю списков дел хранить не требуется, работа ведется только с текущим списком дел текущего месяца.
+    Более того, при создании списка дел на следующий месяц, он «перетирает» предыдущий список.
 
     Обратите внимание, что количество команд NEXT в общей последовательности команд при работе со списком дел может превышать 11.
 
@@ -82,37 +84,59 @@ std::map<std::string, OPERATIONS> str2op = {
     {"DUMP", OPERATIONS::DUMP},
     {"NEXT", OPERATIONS::NEXT}};
 
+template <typename Collection>
+void PrintCollection(const Collection& collection) {
+    bool isFirst = true;
+    for (const auto& elm : collection) {
+        if (isFirst) {
+            std::cout << elm;
+            isFirst = false;
+        } else {
+            std::cout << ' ' << elm;
+        }
+    }
+    std::cout << std::endl;
+}
+
 void ProcessOperations(int n) {
-    std::vector<bool> v;
-    std::string str;
-    int arg{};
+    int months[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+    int month_index{0};
+    std::vector<std::vector<std::string>> v(months[month_index]);
+    std::string op_as_str;
+    int day_num{};
+    std::string task_name{};
 
     for (int i = 0; i < n; ++i) {
-        std::cin >> str;
-        switch (str2op[str]) {
-            case OPERATIONS::COME: {
-                std::cin >> arg;
-                v.resize(v.size() + arg);
+        std::cin >> op_as_str;
+        switch (str2op[op_as_str]) {
+            case OPERATIONS::ADD: {
+                std::cin >> day_num;
+                std::cin >> task_name;
+                v[day_num].push_back(task_name);
                 break;
             }
-            case OPERATIONS::WORRY: {
-                std::cin >> arg;
-                v[arg] = true;
+            case OPERATIONS::DUMP: {
+                std::cin >> day_num;
+                PrintCollection(v[day_num]);
                 break;
             }
-            case OPERATIONS::QUIET: {
-                std::cin >> arg;
-                v[arg] = false;
-                break;
-            }
-            case OPERATIONS::WORRY_COUNT: {
-                int count{0};
-                for (bool elm : v) {
-                    if (elm) {
-                        ++count;
-                    }
+            case OPERATIONS::NEXT: {
+                int next_index = (month_index + 1) % std::size(months);
+                int delta = months[next_index] - months[month_index];
+
+                // если в следующем месяце дней больше, чем в текущем,
+                // «дополнительные» дни оставляем пустыми (не содержащими дел);
+                if (delta > 0) {
+                    v.resize(v.size() + delta, std::vector<std::string>());
+                    // если следующий месяц имеет меньше дней, чем текущий,
+                    // дела со всех «лишних» дней необходимо переместить на последний день следующего месяца.
+                } else if (delta < 0) {
+                    // TODO:
+                    std::vector<std::vector<std::string>> next_v;
+                    next_v.reserve(v.size() - delta);
+                    std::copy(v.begin(), v.end() - delta, next_v.begin());
                 }
-                std::cout << count << std::endl;
+                month_index = next_index;
                 break;
             }
             default:

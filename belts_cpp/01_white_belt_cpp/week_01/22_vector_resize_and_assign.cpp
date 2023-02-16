@@ -16,8 +16,8 @@ int main() {
     v.resize(8, 55);
     PrintCollection(v, "AFTER resize: ");  // метод std::vector::resize оставляет нетронутой исходную часть вектора
 
-    v.assign(3, 888);
-    PrintCollection(v, "AFTER assign: ");  // метод std::vector::resize оставляет нетронутой исходную часть вектора
+    v.assign(10, 888);
+    PrintCollection(v, "AFTER assign: ");  // метод std::vector::assign ЗАТИРАЕТ исходную часть вектора
 
     return 0;
 }

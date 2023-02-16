@@ -1,15 +1,9 @@
-#include <algorithm>
 #include <iostream>
 #include <map>
-#include <numeric>
-#include <sstream>
 #include <string>
-#include <utility>  // std::pair
 #include <vector>
 
-using namespace std::literals;
-
-/* 
+/*
 Люди стоят в очереди, но никогда не уходят из её начала, зато могут приходить в конец и уходить оттуда.
 Более того, иногда некоторые люди могут прекращать и начинать беспокоиться из-за того, что очередь не продвигается.
 Реализуйте обработку следующих операций над очередью:
@@ -28,7 +22,7 @@ using namespace std::literals;
 
 Формат вывода:
 Для каждой операции WORRY_COUNT выведите одно целое число — количество беспокоящихся людей в очереди.
- 
+
 Пример:
 
 Ввод:
@@ -49,37 +43,48 @@ WORRY_COUNT
 
 enum class OPERATIONS { COME,
                         WORRY,
+                        QUIET,
                         WORRY_COUNT };
 
 std::map<std::string, OPERATIONS> str2op = {
     {"COME", OPERATIONS::COME},
     {"WORRY", OPERATIONS::WORRY},
+    {"QUIET", OPERATIONS::QUIET},
     {"WORRY_COUNT", OPERATIONS::WORRY_COUNT}};
 
 void ProcessOperations(int n) {
     std::vector<bool> v;
+    std::string str;
+    int arg{};
 
     for (int i = 0; i < n; ++i) {
-        std::string str;
         std::cin >> str;
-
         switch (str2op[str]) {
-            case OPERATIONS::COME:
-                int k;
-                std::cin >> k;
-                v.resize(v.size() + k);
+            case OPERATIONS::COME: {
+                std::cin >> arg;
+                v.resize(v.size() + arg);
                 break;
-            case OPERATIONS::WORRY:
-                int i;
-                std::cin >> i;
-                v[i] = true;
+            }
+            case OPERATIONS::WORRY: {
+                std::cin >> arg;
+                v[arg] = true;
                 break;
-            case OPERATIONS::WORRY_COUNT:
-                std::cout << std::count_if(v.begin(), v.end(), [](bool value) {
-                    return value;
-                }) << std::endl;
+            }
+            case OPERATIONS::QUIET: {
+                std::cin >> arg;
+                v[arg] = false;
                 break;
-
+            }
+            case OPERATIONS::WORRY_COUNT: {
+                int count{0};
+                for (bool elm : v) {
+                    if (elm) {
+                        ++count;
+                    }
+                }
+                std::cout << count << std::endl;
+                break;
+            }
             default:
                 break;
         }

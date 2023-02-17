@@ -1,5 +1,8 @@
 #include <algorithm>
+#include <cmath>    // std::abs
+#include <fstream>  //
 #include <iostream>
+#include <iterator>  // std::make_move_iterator
 #include <map>
 #include <string>
 #include <vector>
@@ -26,14 +29,11 @@ NEXT    <=> Перейти к списку дел на новый месяц.
 
 Замечания:
 
-    Историю списков дел хранить не требуется, работа ведется только с текущим списком дел текущего месяца.
-    Более того, при создании списка дел на следующий месяц, он «перетирает» предыдущий список.
-
-    Обратите внимание, что количество команд NEXT в общей последовательности команд при работе со списком дел может превышать 11.
-
-    Начальным текущим месяцем считается январь.
-
-    Количества дней в месяцах соответствуют Григорианскому календарю с той лишь разницей, что в феврале всегда 28 дней.
+    - Историю списков дел хранить не требуется, работа ведется только с текущим списком дел текущего месяца.
+    - Более того, при создании списка дел на следующий месяц, он «перетирает» предыдущий список.
+    - Обратите внимание, что количество команд NEXT в общей последовательности команд при работе со списком дел может превышать 11.
+    - Начальным текущим месяцем считается январь.
+    - Количества дней в месяцах соответствуют Григорианскому календарю с той лишь разницей, что в феврале всегда 28 дней.
 
 Формат ввода:
     Сначала число операций Q, затем описания операций.
@@ -74,69 +74,80 @@ DUMP 28
     v1.insert(end(v1), begin(v2), end(v2));
  */
 
-enum class OPERATIONS { ADD,
-                        DUMP,
-                        NEXT
-};
+void PrintTasksPerDay(const std::vector<std::string>& tasks) {
+    std::cout << tasks.size();
 
-std::map<std::string, OPERATIONS> str2op = {
-    {"ADD", OPERATIONS::ADD},
-    {"DUMP", OPERATIONS::DUMP},
-    {"NEXT", OPERATIONS::NEXT}};
-
-template <typename Collection>
-void PrintCollection(const Collection& collection) {
-    bool isFirst = true;
-    for (const auto& elm : collection) {
-        if (isFirst) {
-            std::cout << elm;
-            isFirst = false;
-        } else {
-            std::cout << ' ' << elm;
-        }
+    for (const auto& task : tasks) {
+        std::cout << ' ' << task;
     }
+
     std::cout << std::endl;
 }
 
 void ProcessOperations(int n) {
-    int months[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
-    int month_index{0};
-    std::vector<std::vector<std::string>> v(months[month_index]);
+    enum class OPERATIONS { ADD,
+                            DUMP,
+                            NEXT
+    };
+
+    std::map<std::string, OPERATIONS> str2op = {
+        {"ADD", OPERATIONS::ADD},
+        {"DUMP", OPERATIONS::DUMP},
+        {"NEXT", OPERATIONS::NEXT}};
+
+    // массив с количеством дней в каждом месяце года
+    int days[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+
+    int month_index{0};  // всегда начинаем с Января
+
+    std::vector<std::vector<std::string>> v(days[month_index]);
+
     std::string op_as_str;
-    int day_num{};
+    int day{};
     std::string task_name{};
 
     for (int i = 0; i < n; ++i) {
         std::cin >> op_as_str;
         switch (str2op[op_as_str]) {
             case OPERATIONS::ADD: {
-                std::cin >> day_num;
+                std::cin >> day;
                 std::cin >> task_name;
-                v[day_num].push_back(task_name);
+                --day;  // поскольку элементы вектора нумеруются с нуля
+                v[day].push_back(task_name);
                 break;
             }
             case OPERATIONS::DUMP: {
-                std::cin >> day_num;
-                PrintCollection(v[day_num]);
+                std::cin >> day;
+                --day;  // поскольку элементы вектора нумеруются с нуля
+                PrintTasksPerDay(v[day]);
                 break;
             }
             case OPERATIONS::NEXT: {
-                int next_index = (month_index + 1) % std::size(months);
-                int delta = months[next_index] - months[month_index];
+                int next_index = (month_index + 1) % 12;
+                int delta = days[next_index] - days[month_index];
 
                 // если в следующем месяце дней больше, чем в текущем,
                 // «дополнительные» дни оставляем пустыми (не содержащими дел);
-                if (delta > 0) {
-                    v.resize(v.size() + delta, std::vector<std::string>());
-                    // если следующий месяц имеет меньше дней, чем текущий,
-                    // дела со всех «лишних» дней необходимо переместить на последний день следующего месяца.
-                } else if (delta < 0) {
-                    // TODO:
-                    std::vector<std::vector<std::string>> next_v;
-                    next_v.reserve(v.size() - delta);
-                    std::copy(v.begin(), v.end() - delta, next_v.begin());
+
+                // если в следующем месяце меньше дней, чем в текущем,
+                // дела со всех «лишних» дней необходимо переместить на последний день следующего месяца.
+                // например, Январь => Февраль (31 день => 28 дней): задачи с 31-го, 30-го и 29-го нужно переместить на 28-ой день
+                if (delta < 0) {
+                    // вычисляем индекс вектора строк, В КОТОРЫЙ будем перемещать дела (строки) из "лишних" дней
+                    auto dst_index = v.size() - 1 - abs(delta);
+
+                    // "i" - это индекс источника, откуда будем перемещать дела
+                    for (auto i = dst_index + 1; i < v.size(); ++i) {
+                        auto src_begin = std::make_move_iterator(v[i].begin());
+                        auto src_end = std::make_move_iterator(v[i].end());
+
+                        v[dst_index].reserve(v[dst_index].size() + v[i].size());
+                        v[dst_index].insert(v[dst_index].end(), src_begin, src_end);
+                    }
                 }
                 month_index = next_index;
+                v.resize(v.size() + delta, std::vector<std::string>());
+
                 break;
             }
             default:
@@ -146,9 +157,22 @@ void ProcessOperations(int n) {
 }
 
 int main() {
+    // std::ifstream in("25_task_input.txt");  // configuring input from the file "25_task_input.txt"
+
+    // if (in) {
+    //     std::cout << "File opened." << std::endl;
+    // } else {
+    //     std::cout << "Opening file failed." << std::endl;
+    // }
+
+    // std::streambuf* cinbuf = std::cin.rdbuf();  // save old buf
+    // std::cin.rdbuf(in.rdbuf());                 // redirect std::cin to "25_task_input.txt"!
+
     int n{};
     std::cin >> n;
     ProcessOperations(n);
+
+    // std::cin.rdbuf(cinbuf);  // reset to standard input again
 
     return 0;
 }

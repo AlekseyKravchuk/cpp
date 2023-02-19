@@ -1,7 +1,8 @@
+#include <fstream>
 #include <iostream>
 #include <map>
 #include <ostream>
-#include <utility>
+#include <utility>  // std::move
 #include <vector>
 
 using namespace std::literals;
@@ -75,7 +76,7 @@ Country RussianRepublic with capital Petrograd has been renamed to USSR
 Country USSR has changed its capital from Petrograd to Moscow
 USSR/Moscow
 
- 
+
 Пример 2
 
 Ввод
@@ -106,7 +107,7 @@ ABOUT RussianEmpire
 DUMP
 RENAME USSR USSR
 
- 
+
 
 Вывод
 
@@ -135,7 +136,7 @@ Country RussianEmpire doesn't exist
 FederativeRepublicOfBrazil/Brasilia USSR/Moscow
 Incorrect rename, skip
 
- 
+
 Пример 3
 
 Ввод
@@ -152,7 +153,7 @@ CHANGE_CAPITAL UnitedStatesOfBrazil Brasilia
 RENAME RussianEmpire UnitedStatesOfBrazil
 DUMP
 
- 
+
 
 Ввод
 
@@ -194,52 +195,64 @@ void ProcessOperations(int n) {
                 std::cin >> new_capital;
 
                 if (!country2capital.count(country)) {
-                    std::cout << "Introduce new country country with capital"s << new_capital << std::endl;
+                    std::cout << "Introduce new country "s << country << " with capital "s << new_capital << std::endl;
                     country2capital[country] = new_capital;
                 } else {
                     if (country2capital[country] == new_capital) {
-                        std::cout << "Country "s << country << " hasn't changed its capital"s << new_capital << std::endl;
+                        std::cout << "Country "s << country << " hasn't changed its capital"s << std::endl;
                     } else {
-                        std::cout << "Country "s << country << " has changed its capital from"s << country2capital[country] << " to "s << new_capital << std::endl;
+                        std::cout << "Country "s << country << " has changed its capital from "s << country2capital[country] << " to "s << new_capital << std::endl;
                         country2capital[country] = new_capital;
                     }
                 }
                 break;
             }
             case OPERATIONS::RENAME: {
-                // TODO:
-                std::cin >> day;
-                --day;  // поскольку элементы вектора нумеруются с нуля
-                PrintTasksPerDay(v[day]);
-                break;
-            }
-            case OPERATIONS::NEXT: {
-                int next_index = (month_index + 1) % 12;
-                int delta = days[next_index] - days[month_index];
+                std::string old_country_name{}, new_country_name{};
+                std::cin >> old_country_name >> new_country_name;
+                if (old_country_name == new_country_name ||
+                    country2capital.count(old_country_name) == 0 ||
+                    country2capital.count(new_country_name) == 1) {
+                    std::cout << "Incorrect rename, skip"s << std::endl;
+                } else {
+                    if (country2capital.count(old_country_name)) {
+                        std::cout << "Country "s << old_country_name << " with capital "s
+                                  << country2capital[old_country_name] << " has been renamed to "s
+                                  << new_country_name << std::endl;
 
-                // если в следующем месяце дней больше, чем в текущем,
-                // «дополнительные» дни оставляем пустыми (не содержащими дел);
-
-                // если в следующем месяце меньше дней, чем в текущем,
-                // дела со всех «лишних» дней необходимо переместить на последний день следующего месяца.
-                // например, Январь => Февраль (31 день => 28 дней): задачи с 31-го, 30-го и 29-го нужно переместить на 28-ой день
-                if (delta < 0) {
-                    // вычисляем индекс вектора строк, В КОТОРЫЙ будем перемещать дела (строки) из "лишних" дней
-                    auto dst_index = v.size() - 1 - abs(delta);
-
-                    // "i" - это индекс источника, откуда будем перемещать дела
-                    for (auto i = dst_index + 1; i < v.size(); ++i) {
-                        auto src_begin = std::make_move_iterator(v[i].begin());
-                        auto src_end = std::make_move_iterator(v[i].end());
-
-                        v[dst_index].reserve(v[dst_index].size() + v[i].size());
-                        v[dst_index].insert(v[dst_index].end(), src_begin, src_end);
+                        auto nodeHandle = country2capital.extract(old_country_name);
+                        nodeHandle.key() = new_country_name;
+                        country2capital.insert(std::move(nodeHandle));
                     }
                 }
-                month_index = next_index;
-                v.resize(v.size() + delta, std::vector<std::string>());
-
                 break;
+            }
+            case OPERATIONS::ABOUT: {
+                std::string country{};
+                std::cin >> country;
+                if (country2capital.count(country) == 0) {
+                    std::cout << "Country "s << country << " doesn't exist"s << std::endl;
+                } else if (country2capital.count(country) && country2capital[country] != ""s) {
+                    std::cout << "Country "s << country << " has capital "s
+                              << country2capital[country] << std::endl;
+                }
+                break;
+            }
+            case OPERATIONS::DUMP: {
+                if (!country2capital.size()) {
+                    std::cout << "There are no countries in the world"s << std::endl;
+                } else {
+                    bool isFirst = true;
+                    for (const auto& [country, capital] : country2capital) {
+                        if (isFirst) {
+                            std::cout << country << "/"s << capital;
+                            isFirst = false;
+                        } else {
+                            std::cout << ' ' << country << "/"s << capital;
+                        }
+                    }
+                    std::cout << std::endl;
+                }
             }
             default:
                 break;
@@ -248,16 +261,18 @@ void ProcessOperations(int n) {
 }
 
 int main() {
+    // std::ifstream in("29_task_input_1.txt");    // configuring input from the file "29_task_input_1.txt"
+    // std::ifstream in("29_task_input_2.txt");    // configuring input from the file "29_task_input_2.txt"
+    // std::ifstream in("29_task_input_3.txt");    // configuring input from the file "29_task_input_3.txt"
+    
+    // std::streambuf* cinbuf = std::cin.rdbuf();  // save old buf
+    // std::cin.rdbuf(in.rdbuf());                 // redirect std::cin to "25_task_input.txt"!
+
     int n{};
     std::cin >> n;
-    for (int i = 0; i < n; ++i) {
-        std::string word1{}, word2{};
-        std::cin >> word1 >> word2;
-        if (BuildCharCounters(word1) == BuildCharCounters(word2)) {
-            std::cout << "YES"s << std::endl;
-        } else {
-            std::cout << "NO"s << std::endl;
-        }
-    }
+    ProcessOperations(n);
+
+    // std::cin.rdbuf(cinbuf);  // reset to standard input again
+
     return 0;
 }

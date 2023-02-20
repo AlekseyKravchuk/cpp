@@ -9,6 +9,8 @@ class Counter {  // вспомогательный
    private:
     size_t _owners_num{1};
     char* _pStr;
+
+   private:
     Counter(const char* str);
     void AddOwner();
     void RemoveOwner();
@@ -90,4 +92,4 @@ MyString& MyString::operator=(const MyString& other) {
 // move-операции
 // GetString()
 // SetNewString()
-// operator<< 
+// operator<<

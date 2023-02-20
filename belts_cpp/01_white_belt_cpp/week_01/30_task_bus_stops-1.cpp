@@ -204,7 +204,7 @@ void ProcessOperations(int n) {
 int main() {
     std::ifstream in("30_task_input.txt");      // configuring input from the file "30_task_input.txt"
     std::streambuf* cinbuf = std::cin.rdbuf();  // save old buf
-    std::cin.rdbuf(in.rdbuf());                 // redirect std::cin to "25_task_input.txt"!
+    std::cin.rdbuf(in.rdbuf());                 // redirect std::cin to "30_task_input.txt"!
 
     int n{};
     std::cin >> n;

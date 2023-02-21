@@ -75,19 +75,21 @@ void ProcessOperations(int n) {
         {"CHECK", OPERATIONS::CHECK}};
 
     string op_as_str{};
-    map<string, set<string>> synonyms_fwd;
-    map<string, set<string>> synonyms_bwd;
+    map<string, set<string>> synonyms;
 
     for (int i = 0; i < n; ++i) {
         cin >> op_as_str;
 
         switch (str2op[op_as_str]) {
-            // TODO: wrong realization
             case OPERATIONS::ADD: {
                 string word1{}, word2{};
                 cin >> word1 >> word2;
-                synonyms_fwd[word1].insert(word2);
-                synonyms_bwd[word2].insert(word1);
+
+                // второе слово добавляем в список (множество) синонимов первого слова
+                synonyms[word1].insert(word2);
+
+                // и наоборот: первое слово добавляем в список синонимов второго слова
+                synonyms[word2].insert(word1);
 
                 break;
             }
@@ -95,32 +97,21 @@ void ProcessOperations(int n) {
                 string word;
                 cin >> word;
 
-                if (synonyms_fwd.count(word)) {
-                    cout << synonyms_fwd.size() << endl;
-                } else if (synonyms_bwd.count(word)) {
-                    cout << synonyms_bwd.size() << endl;
-                } else {
-                    cout << 0 << endl;
-                }
+                cout << synonyms[word].size() << endl;
 
                 break;
             }
             case OPERATIONS::CHECK: {
                 string word1{}, word2{};
                 cin >> word1 >> word2;
-                if (synonyms_fwd.count(word1)) {
-                    if (synonyms_fwd[word1].count(word2)) {
-                        cout << "YES" << endl;
-                    } else {
-                        cout << "NO" << endl;
-                    }
-                } else if (synonyms_bwd.count(word1)) {
-                    if (synonyms_bwd[word1].count(word2)) {
-                        cout << "YES" << endl;
-                    } else {
-                        cout << "NO" << endl;
-                    }
+
+                // ищем второе слово во множестве синонимов первого слова (можно было реализовать и наоборот)
+                if (synonyms[word1].count(word2)) {
+                    cout << "YES" << endl;
+                } else {
+                    cout << "NO" << endl;
                 }
+
                 break;
             }
             default:
@@ -130,15 +121,15 @@ void ProcessOperations(int n) {
 }
 
 int main() {
-    std::ifstream in("34_task_input.txt");      // configuring input from the file "34_task_input.txtt"
-    std::streambuf* cinbuf = std::cin.rdbuf();  // save old buf
-    std::cin.rdbuf(in.rdbuf());                 // redirect std::cin to "34_task_input.txt"
+    // std::ifstream in("34_task_input.txt");      // configuring input from the file "34_task_input.txtt"
+    // std::streambuf* cinbuf = std::cin.rdbuf();  // save old buf
+    // std::cin.rdbuf(in.rdbuf());                 // redirect std::cin to "34_task_input.txt"
 
     int n{};
     std::cin >> n;
     ProcessOperations(n);
 
-    std::cin.rdbuf(cinbuf);  // reset to standard input again
+    // std::cin.rdbuf(cinbuf);  // reset to standard input again
 
     return 0;
 }

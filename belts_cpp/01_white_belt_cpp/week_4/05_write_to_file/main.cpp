@@ -3,7 +3,7 @@
 #include <string>
 
 // функция, которая считывает весь файл
-void ReadAll(const std::string& path) {
+void ReadFile(const std::string& path) {
     using namespace std::literals;
 
     std::ifstream input(path);
@@ -40,7 +40,7 @@ int main() {
         std::cout << "Opening a file \""s << path << "\" for writing failed."s << std::endl;
     }
 
-    ReadAll(path);
+    ReadFile(path);
 
     return 0;
 }

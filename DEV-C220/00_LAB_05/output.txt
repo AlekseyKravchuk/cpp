@@ -1,0 +1,9 @@
+input_2.txt: 11111
+input_2.txt: 22222
+input_1.txt: first line
+input_2.txt: 33333
+input_3.txt: 01
+input_1.txt: second line
+input_1.txt: third line
+input_3.txt: 02
+input_3.txt: 03

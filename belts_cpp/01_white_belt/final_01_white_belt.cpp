@@ -14,7 +14,7 @@
 
 using namespace std::literals;
 
-#define _GLIBCXX_DEBUG 1  // включить режим отладки
+// #define _GLIBCXX_DEBUG 1  // включить режим отладки
 // Failed case #13/34: Wrong answer
 
 class Date {
@@ -46,7 +46,7 @@ class Date {
     int GetMonth() const { return _month; }
     int GetDay() const { return _day; }
 
-    friend std::ostream& operator<<(std::ostream& os, const Date& date);
+    // friend std::ostream& operator<<(std::ostream& os, const Date& date);
 
    private:
     int _year{};
@@ -70,7 +70,7 @@ class Database {
     bool DeleteEvent(const Date& date, const std::string& event) {
         if (_date2events.count(date)) {
             if (_date2events[date].count(event)) {
-                _date2events.erase(date);
+                _date2events[date].erase(event);
                 std::cout << "Deleted successfully"s << std::endl;
                 return true;
             } else {
@@ -84,12 +84,12 @@ class Database {
     }
 
     int DeleteDate(const Date& date) {
+        int N{};
         if (_date2events.count(date)) {
-            int N = _date2events[date].size();
-            std::cout << "Deleted "s << N << " events"s << std::endl;
+            N = _date2events[date].size();
             _date2events.erase(date);
-            return N;
         }
+        std::cout << "Deleted "s << N << " events"s << std::endl;
         return 0;
     }
 
@@ -127,31 +127,40 @@ std::map<std::string, COMMAND> str2command{
     {"Print"s, COMMAND::PRINT},
 };
 
-std::ostream& operator<<(std::ostream& os, const Date& date) {
-    os << std::setw(4) << std::setfill('0') << date.GetYear() << '-'
-       << std::setw(2) << std::setfill('0') << date.GetMonth() << '-'
-       << std::setw(2) << std::setfill('0') << date.GetDay();
-    return os;
+// std::ostream& operator<<(std::ostream& os, const Date& date) {
+//     os << std::setw(4) << std::setfill('0') << date.GetYear() << '-'
+//        << std::setw(2) << std::setfill('0') << date.GetMonth() << '-'
+//        << std::setw(2) << std::setfill('0') << date.GetDay();
+//     return os;
+// }
+
+// даты будут по умолчанию выводиться в нужном формате
+std::ostream& operator<<(std::ostream& stream, const Date& date) {
+    stream << std::setw(4) << std::setfill('0') << date.GetYear() << "-"
+           << std::setw(2) << std::setfill('0') << date.GetMonth() << "-"
+           << std::setw(2) << std::setfill('0') << date.GetDay();
+    return stream;
 }
 
 bool operator<(const Date& lhs, const Date& rhs) {
     if (lhs.GetYear() != rhs.GetYear()) {
         return lhs.GetYear() < rhs.GetYear();
-    } else {
-        // если годы одинаковые
+    } else {  // если годы одинаковые
         if (lhs.GetMonth() != rhs.GetMonth()) {
             return lhs.GetMonth() < rhs.GetMonth();
-        } else {
-            // если месяцы одинаковые
+        } else {  // если месяцы одинаковые
             return lhs.GetDay() < lhs.GetDay();
         }
     }
 }
 
-std::tuple<int, int, int> ParseString(const std::string& date_as_str) {
+std::tuple<int, int, int> ParseDate(const std::string& date_as_str) {
     int day{}, month{}, year{};
     std::istringstream iss(date_as_str);
-    std::string trash{};
+
+    std::ostringstream oss;
+    oss << "Wrong date format: "s << date_as_str;
+    std::string wrong_date_format = oss.str();
 
     if (iss >> year) {
         if (iss.peek() == '-') {
@@ -159,31 +168,24 @@ std::tuple<int, int, int> ParseString(const std::string& date_as_str) {
             if (iss >> month) {
                 if (iss.peek() == '-') {
                     iss.ignore(1);
-                    iss >> day >> std::ws;
+                    if ((iss >> day >> std::ws).fail()) {
+                        throw std::runtime_error(wrong_date_format);
+                    }
+                    std::string trash{};
                     if (iss >> trash) {
-                        std::ostringstream oss;
-                        oss << "Wrong date format: "s << date_as_str;
-                        throw std::runtime_error(oss.str());
+                        throw std::runtime_error(wrong_date_format);
                     }
                 } else {
-                    std::ostringstream oss;
-                    oss << "Wrong date format: "s << date_as_str;
-                    throw std::runtime_error(oss.str());
+                    throw std::runtime_error(wrong_date_format);
                 }
             } else {
-                std::ostringstream oss;
-                oss << "Wrong date format: "s << date_as_str;
-                throw std::runtime_error(oss.str());
+                throw std::runtime_error(wrong_date_format);
             }
-        } else {
-            std::ostringstream oss;
-            oss << "Wrong date format: "s << date_as_str;
-            throw std::runtime_error(oss.str());
+        } else {  // символ, следующий за годом не является '-'
+            throw std::runtime_error(wrong_date_format);
         }
-    } else {
-        std::ostringstream oss;
-        oss << "Wrong date format: "s << date_as_str;
-        throw std::runtime_error(oss.str());
+    } else {  // не удалось считать год
+        throw std::runtime_error(wrong_date_format);
     }
 
     return {year, month, day};
@@ -200,14 +202,14 @@ void ProcessCommands(std::istream& is, Database& db) {
                 switch (str2command[command]) {
                     case COMMAND::ADD: {
                         if (iss >> date_as_str >> event) {
-                            // Date date(ParseString(date_as_str));
-                            db.AddEvent(Date{ParseString(date_as_str)}, event);
+                            // Date date(ParseDate(date_as_str));
+                            db.AddEvent(Date{ParseDate(date_as_str)}, event);
                         }
                         break;
                     }
                     case COMMAND::DEL: {
                         if (iss >> date_as_str) {
-                            Date date{ParseString(date_as_str)};
+                            Date date{ParseDate(date_as_str)};
                             if (iss >> event) {
                                 db.DeleteEvent(date, event);
                             } else {
@@ -218,7 +220,7 @@ void ProcessCommands(std::istream& is, Database& db) {
                     }
                     case COMMAND::FIND: {
                         if (iss >> date_as_str) {
-                            if (auto result = db.Find(Date{ParseString(date_as_str)}); result.has_value()) {
+                            if (auto result = db.Find(Date{ParseDate(date_as_str)}); result.has_value()) {
                                 if (const auto& events = *(result.value()); !events.empty()) {
                                     for (const auto& event : events) {
                                         std::cout << event << std::endl;
@@ -232,12 +234,11 @@ void ProcessCommands(std::istream& is, Database& db) {
                         db.Print();
                         break;
                     }
-                    default: {
-                        std::ostringstream oss;
-                        oss << "Unknown command: " << command;
-                        throw std::runtime_error(oss.str());
-                    }
                 }
+            } else {
+                std::ostringstream oss;
+                oss << "Unknown command: " << command;
+                throw std::runtime_error(oss.str());
             }
         }
     }

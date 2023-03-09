@@ -13,6 +13,8 @@
 
 using namespace std::literals;
 
+// #define _GLIBCXX_DEBUG 1  // включить режим отладки
+
 class Date {
    public:
     Date() = default;

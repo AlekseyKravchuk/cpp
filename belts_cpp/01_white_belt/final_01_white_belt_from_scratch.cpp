@@ -1,3 +1,4 @@
+#include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <map>
@@ -8,6 +9,8 @@
 #include <vector>
 
 using namespace std;
+
+#define _GLIBCXX_DEBUG 1  // включить режим отладки
 
 class Date {
    public:
@@ -100,8 +103,8 @@ class Database {
     std::map<Date, std::set<std::string>> _date2events;
 };
 
-Date ParseDate(const std::string date) {
-    std::istringstream iss(date);
+Date ParseDate(const std::string date_as_str) {
+    std::istringstream iss(date_as_str);
     bool state = true;
 
     int year;
@@ -116,12 +119,12 @@ Date ParseDate(const std::string date) {
 
     int day;
     state = state && (iss >> day);
-    state = state && iss.eof();
+    state = state && iss.eof();  // iss.eof() <=> входных данных больше нет, завершаем ввод данных
 
     if (state) {
         return Date{year, month, day};
     } else {
-        throw std::logic_error("Wrong date format: "s + date);
+        throw std::logic_error("Wrong date format: "s + date_as_str);
     }
 }
 
@@ -159,21 +162,26 @@ void ProcessCommands(std::istream& is, Database& db) {
                         std::string date_as_str, event;
                         if (iss >> date_as_str) {
                             Date date{ParseDate(date_as_str)};
+
                             if (iss >> event) {
-                                db.DeleteEvent(date, event);
+                                if (db.DeleteEvent(date, event)) {
+                                    std::cout << "Deleted successfully"s << std::endl;
+                                } else {
+                                    std::cout << "Event not found"s << std::endl;
+                                }
                             } else {
-                                db.DeleteDate(date);
+                                int event_count = db.DeleteDate(date);
+                                std::cout << "Deleted "s << event_count << " events"s << std::endl;
                             }
                             break;
                         }
                     }
                     case COMMAND::FIND: {
+                        std::string date_as_str;
                         if (iss >> date_as_str) {
-                            if (auto result = db.Find(Date{ParseDate(date_as_str)}); result.has_value()) {
-                                if (const auto& events = *(result.value()); !events.empty()) {
-                                    for (const auto& event : events) {
-                                        std::cout << event << std::endl;
-                                    }
+                            if (auto events = db.Find(Date{ParseDate(date_as_str)}); !events.empty()) {
+                                for (const auto& event : events) {
+                                    std::cout << event << std::endl;
                                 }
                             }
                         }

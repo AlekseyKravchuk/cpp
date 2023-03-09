@@ -1,10 +1,13 @@
 #include <exception>
+#include <fstream>
 #include <iostream>
 #include <sstream>
 #include <string>
 #include <vector>
 
 using namespace std;
+
+// #define _GLIBCXX_DEBUG 1  // включить режим отладки
 
 class Matrix {
    public:
@@ -16,8 +19,13 @@ class Matrix {
 
     Matrix(int num_rows, int num_cols) {
         if (num_rows >= 0 && num_cols >= 0) {
-            _num_rows = num_rows;
-            _num_cols = num_cols;
+            if (num_rows == 0 || num_cols == 0) {
+                _num_rows = _num_cols = 0;
+            } else {
+                _num_rows = num_rows;
+                _num_cols = num_cols;
+            }
+
             _matrix.resize(_num_rows, std::vector<int>(_num_cols, 0));
         } else {
             throw std::out_of_range("Negative index of matrix."s);
@@ -26,10 +34,12 @@ class Matrix {
 
     // меняет размеры матрицы на заданные и обнуляет все её элементы
     void Reset(int num_rows, int num_cols) {
-        if (num_rows >= 0 && num_cols >= 0) {
+        if (num_rows > 0 && num_cols > 0) {
             _matrix.assign(num_rows, std::vector<int>(num_cols, 0));
             _num_rows = num_rows;
             _num_cols = num_cols;
+        } else if (num_rows == 0 || num_cols == 0) {
+            _num_rows = _num_cols = 0; // имеем дело с пустой матрицей
         } else {
             throw std::out_of_range("Negative index of matrix."s);
         }
@@ -82,12 +92,12 @@ std::istream& operator>>(std::istream& is, Matrix& matrix) {
     is >> num_rows >> num_columns >> std::ws;
     matrix.Reset(num_rows, num_columns);
 
-    for (int i = 0; i < num_rows; ++i) {
+    for (int i = 0; i < matrix.GetNumRows(); ++i) {
         std::string line{};
         std::getline(is, line);
         std::istringstream iss(line);
 
-        for (int j = 0; j < num_columns; ++j) {
+        for (int j = 0; j < matrix.GetNumColumns(); ++j) {
             int elm{};
             if (iss >> elm) {
                 matrix.At(i, j) = elm;
@@ -111,7 +121,7 @@ std::ostream& operator<<(std::ostream& os, const Matrix& matrix) {
                 os << ' ' << matrix.At(i, j);
             }
         }
-        std::cout << std::endl;
+        os << std::endl;
     }
 
     return os;
@@ -131,7 +141,7 @@ Matrix operator+(const Matrix& lhs, const Matrix& rhs) {
         }
         return matrix;
     } else {
-        throw std::invalid_argument("Summable matrices have different sizes."s);
+        throw std::invalid_argument("Adding matrices have different sizes."s);
     }
 }
 
@@ -141,10 +151,37 @@ int main() {
     // {3 2, 98-7654} != {3 2, 9 8, -7 6, 5 4}
     // Рассмотреть случай, когда матрица задается одной размерностью.
 
-    Matrix one;
-    Matrix two;
+#ifdef _GLIBCXX_DEBUG
+    std::string path = "input.txt";
+    std::ifstream input(path);
+    std::streambuf* cin_buf_bkp_ptr = std::cin.rdbuf();
+    std::cin.rdbuf(input.rdbuf());
+#endif  // _GLIBCXX_DEBUG
 
-    std::cin >> one >> two;
-    std::cout << one + two << std::endl;
+    {
+        // Matrix one;
+        // Matrix two;
+
+        // std::cin >> one >> two;
+        // std::cout << one + two << std::endl;
+    }
+
+    {
+       Matrix one;
+       std::cin >> one;
+       std::cout << one;
+    }
+
+    {
+        // Matrix one;
+        // Matrix two;
+        // std::cin >> one >> two;
+        // std::cout << one + two << std::endl;
+    }
+
+#ifdef _GLIBCXX_DEBUG
+    std::cin.rdbuf(cin_buf_bkp_ptr);
+#endif  //_GLIBCXX_DEBUG
+
     return 0;
 }

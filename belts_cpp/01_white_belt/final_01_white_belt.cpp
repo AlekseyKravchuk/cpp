@@ -1,4 +1,3 @@
-// TODO:
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -13,9 +12,6 @@
 #include <vector>
 
 using namespace std::literals;
-
-// #define _GLIBCXX_DEBUG 1  // включить режим отладки
-// Failed case #13/34: Wrong answer
 
 class Date {
    public:
@@ -46,13 +42,30 @@ class Date {
     int GetMonth() const { return _month; }
     int GetDay() const { return _day; }
 
-    // friend std::ostream& operator<<(std::ostream& os, const Date& date);
-
    private:
     int _year{};
     int _month{};
     int _day{};
 };
+
+std::ostream& operator<<(std::ostream& stream, const Date& date) {
+    stream << std::setw(4) << std::setfill('0') << date.GetYear() << "-"
+           << std::setw(2) << std::setfill('0') << date.GetMonth() << "-"
+           << std::setw(2) << std::setfill('0') << date.GetDay();
+    return stream;
+}
+
+bool operator<(const Date& lhs, const Date& rhs) {
+    if (lhs.GetYear() != rhs.GetYear()) {
+        return lhs.GetYear() < rhs.GetYear();
+    } else {  // если годы одинаковые
+        if (lhs.GetMonth() != rhs.GetMonth()) {
+            return lhs.GetMonth() < rhs.GetMonth();
+        } else {  // если месяцы одинаковые
+            return lhs.GetDay() < lhs.GetDay();
+        }
+    }
+}
 
 class Database {
    public:
@@ -126,33 +139,6 @@ std::map<std::string, COMMAND> str2command{
     {"Find"s, COMMAND::FIND},
     {"Print"s, COMMAND::PRINT},
 };
-
-// std::ostream& operator<<(std::ostream& os, const Date& date) {
-//     os << std::setw(4) << std::setfill('0') << date.GetYear() << '-'
-//        << std::setw(2) << std::setfill('0') << date.GetMonth() << '-'
-//        << std::setw(2) << std::setfill('0') << date.GetDay();
-//     return os;
-// }
-
-// даты будут по умолчанию выводиться в нужном формате
-std::ostream& operator<<(std::ostream& stream, const Date& date) {
-    stream << std::setw(4) << std::setfill('0') << date.GetYear() << "-"
-           << std::setw(2) << std::setfill('0') << date.GetMonth() << "-"
-           << std::setw(2) << std::setfill('0') << date.GetDay();
-    return stream;
-}
-
-bool operator<(const Date& lhs, const Date& rhs) {
-    if (lhs.GetYear() != rhs.GetYear()) {
-        return lhs.GetYear() < rhs.GetYear();
-    } else {  // если годы одинаковые
-        if (lhs.GetMonth() != rhs.GetMonth()) {
-            return lhs.GetMonth() < rhs.GetMonth();
-        } else {  // если месяцы одинаковые
-            return lhs.GetDay() < lhs.GetDay();
-        }
-    }
-}
 
 std::tuple<int, int, int> ParseDate(const std::string& date_as_str) {
     int day{}, month{}, year{};

@@ -98,6 +98,7 @@ class Database {
     map<Date, set<string>> storage;
 };
 
+
 Date ParseDate(const string& date) {
     istringstream date_stream(date);
     bool ok = true;

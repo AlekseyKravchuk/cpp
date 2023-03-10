@@ -65,11 +65,11 @@ class Matrix {
         }
     }
 
-    bool HasEqualContent(const Matrix& other) const {
+    bool HaveEqualContent(const Matrix& other) const {
         return _matrix == other._matrix;
     }
 
-    bool HasEqualSize(const Matrix& other) const {
+    bool HaveEqualSize(const Matrix& other) const {
         return (_num_rows == other._num_rows && _num_cols == other._num_cols);
     }
 
@@ -128,11 +128,11 @@ std::ostream& operator<<(std::ostream& os, const Matrix& matrix) {
 }
 
 bool operator==(const Matrix& lhs, const Matrix& rhs) {
-    return (lhs.HasEqualSize(rhs) && lhs.HasEqualContent(rhs));
+    return (lhs.HaveEqualSize(rhs) && lhs.HaveEqualContent(rhs));
 }
 
 Matrix operator+(const Matrix& lhs, const Matrix& rhs) {
-    if (lhs.HasEqualSize(rhs)) {
+    if (lhs.HaveEqualSize(rhs)) {
         Matrix matrix(lhs.GetNumRows(), lhs.GetNumColumns());
         for (int i = 0; i < matrix.GetNumRows(); ++i) {
             for (int j = 0; j < matrix.GetNumColumns(); ++j) {

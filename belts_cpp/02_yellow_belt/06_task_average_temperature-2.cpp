@@ -34,19 +34,37 @@ using namespace std::literals;
 */
 
 int main() {
-    int n, value;
+    int n;
     std::cin >> n;
+    std::vector<int> t(n);
 
-    std::vector<int> temperatures;
+    double average = 0.0;
     for (int i = 0; i < n; ++i) {
-        std::cin >> value;
-        
+        std::cin >> t[i];
+        // используем формулу для "накопленного среднего", CMA - Cumulative Moving Average
+        // CMA[n+1] = CMA[n] + (x[n+2] - CMA[]) / (n + 1)
+        average += (t[i] - average) / (i + 1);
     }
 
+    std::vector<int> indices;
+    for (int i = 0; i < n; ++i) {
+        if (t[i] > average) {
+            indices.push_back(i);
+        }
+    }
 
+    std::cout << indices.size() << std::endl;
+    bool isFirst = true;
 
+    for (const auto& index: indices) {
+        if (isFirst) {
+            std::cout << index;
+            isFirst = false;
+        } else {
+            std::cout << ' ' << index;
+        }
+    }
+    std::cout << std::endl;
 
-
-    
     return 0;
 }

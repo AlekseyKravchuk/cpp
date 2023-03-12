@@ -6,6 +6,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <tuple>
 #include <vector>
 
 using namespace std;
@@ -46,12 +47,19 @@ class Date {
     int _day;
 };
 
-// определить оператор сравнения для "Date" необходимо для использования этого типа в качестве ключей словаря
+// // такой мощный контейнер как "std::vector" здесь является излишним
+// // к тому же если месяц будет задаваться строкой, то создать вектор из разных типов не получится
+// // определить оператор сравнения для "Date" необходимо для использования этого типа в качестве ключей словаря
+// bool operator<(const Date& lhs, const Date& rhs) {
+//     // воспользуемся тем фактом, что векторы уже можно сравнивать на "<":
+//     // создадим вектора из года, месяца и дня для каждой даты и сравним их
+//     return std::vector<int>{lhs.GetYear(), lhs.GetMonth(), lhs.GetDay()} <
+//            std::vector<int>{rhs.GetYear(), rhs.GetMonth(), rhs.GetDay()};
+// }
+
 bool operator<(const Date& lhs, const Date& rhs) {
-    // воспользуемся тем фактом, что векторы уже можно сравнивать на "<":
-    // создадим вектора из года, месяца и дня для каждой даты и сравним их
-    return std::vector<int>{lhs.GetYear(), lhs.GetMonth(), lhs.GetDay()} <
-           std::vector<int>{rhs.GetYear(), rhs.GetMonth(), rhs.GetDay()};
+    return std::tuple(lhs.GetYear(), lhs.GetMonth(), lhs.GetDay()) <
+           std::tuple(rhs.GetYear(), rhs.GetMonth(), rhs.GetDay());
 }
 
 // вывод даты в требуемом формате (перегрузка оператора вывода)
@@ -79,7 +87,7 @@ class Database {
 
     int DeleteDate(const Date& date) {
         if (_date2events.count(date)) {
-            const int event_count = _date2events[date].size();
+            const int event_count = static_cast<int>(_date2events[date].size());
             _date2events.erase(date);
             return event_count;
         } else {
@@ -173,8 +181,8 @@ void ProcessCommands(std::istream& is, Database& db) {
                                 int event_count = db.DeleteDate(date);
                                 std::cout << "Deleted "s << event_count << " events"s << std::endl;
                             }
-                            break;
                         }
+                        break;
                     }
                     case COMMAND::FIND: {
                         std::string date_as_str;

@@ -60,13 +60,13 @@ std::ostream& operator<<(std::ostream& stream, const Date& date) {
 bool operator<(const Date& lhs, const Date& rhs) {
     if (lhs.GetYear() != rhs.GetYear()) {
         return lhs.GetYear() < rhs.GetYear();
-    } else {  // если годы одинаковые
-        if (lhs.GetMonth() != rhs.GetMonth()) {
-            return lhs.GetMonth() < rhs.GetMonth();
-        } else {  // если месяцы одинаковые
-            return lhs.GetDay() < lhs.GetDay();
-        }
     }
+
+    if (lhs.GetMonth() != rhs.GetMonth()) {
+        return lhs.GetMonth() < rhs.GetMonth();
+    }
+
+    return lhs.GetDay() < lhs.GetDay();
 }
 
 class Database {
@@ -101,7 +101,7 @@ class Database {
     int DeleteDate(const Date& date) {
         int N{};
         if (_date2events.count(date)) {
-            N = _date2events[date].size();
+            N = static_cast<int>(_date2events[date].size());
             _date2events.erase(date);
         }
         std::cout << "Deleted "s << N << " events"s << std::endl;
@@ -203,8 +203,8 @@ void ProcessCommands(std::istream& is, Database& db) {
                             } else {
                                 db.DeleteDate(date);
                             }
-                            break;
                         }
+                        break;
                     }
                     case COMMAND::FIND: {
                         if (iss >> date_as_str) {

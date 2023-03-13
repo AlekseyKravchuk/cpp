@@ -1,5 +1,7 @@
+#include <cassert>
 #include <iostream>
 #include <map>
+#include <stdexcept>
 #include <tuple>
 
 using namespace std::literals;
@@ -25,10 +27,10 @@ class TeamTasks {
 public:
   // Получить статистику по статусам задач конкретного разработчика
   const TasksInfo& GetPersonTasksInfo(const string& person) const;
-  
+
   // Добавить новую задачу (в статусе NEW) для конкретного разработчитка
   void AddNewTask(const string& person);
-  
+
   // Обновить статусы по данному количеству задач конкретного разработчика,
   // подробности см. ниже
   tuple<TasksInfo, TasksInfo> PerformPersonTasks(
@@ -84,9 +86,41 @@ enum class TaskStatus {
     DONE          // завершена
 };
 
+TaskStatus NextStatus(TaskStatus current_status) {
+    if (current_status != TaskStatus::DONE) {
+        return static_cast<TaskStatus>(static_cast<int>(current_status) + 1);
+    } else {
+        throw std::runtime_error("Current status is \"TaskStatus::DONE\", operation \"NextStatus\" not applicable"s);
+    }
+}
+
+// overloading of prefix increment operator
+TaskStatus& operator++(TaskStatus& current_status) {
+    return current_status = NextStatus(current_status);
+}
+
 // Объявляем тип-синоним для map<TaskStatus, int>,
 // позволяющего хранить количество задач каждого статуса
 using TasksInfo = std::map<TaskStatus, int>;
+
+template <typename T>
+inline int sgn(T val) {
+    return ((T{} < val) - (val < T{}));
+}
+
+void TestSGN() {
+    assert(0 == sgn(0));
+    assert(0 == sgn(0.0));
+    assert(0 == sgn(0.0f));
+    assert(1 == sgn(1.3f));
+    assert(1 == sgn(110));
+    assert(1 == sgn(0.0001f));
+    assert(1 == sgn(0.5));
+    assert(-1 == sgn(-0.0003));
+    assert(-1 == sgn(-9.0f));
+    assert(-1 == sgn(-234234));
+    assert(-1 == sgn(-1.00003f));
+}
 
 class TeamTasks {
    public:
@@ -94,12 +128,59 @@ class TeamTasks {
     const TasksInfo& GetPersonTasksInfo(const std::string& person) const;
 
     // Добавить новую задачу (в статусе NEW) для конкретного разработчитка
-    void AddNewTask(const std::string& person);
+    void AddNewTask(const std::string& person) {
+        ++_names2tasksinfo[person][TaskStatus::NEW];
+    }
 
     // Обновить статусы по данному количеству задач конкретного разработчика,
     // подробности см. ниже
-    std::tuple<TasksInfo, TasksInfo> PerformPersonTasks(
-        const std::string& person, int task_count);
+    std::tuple<TasksInfo, TasksInfo> PerformPersonTasks(const std::string& person, int task_count) {
+        // auto current_status = TaskStatus::NEW;
+        std::map<TaskStatus, int> updated;
+        std::map<TaskStatus, int> not_updated;
+
+        // while (task_count > 0 && current_status != TaskStatus::DONE) {
+        //     if (_names2tasksinfo[person].count(current_status)) {
+        //         int delta = task_count - _names2tasksinfo[person][current_status];
+        //         int sign = (sgn(delta));
+        //         switch (sign) {
+        //             case -1:
+        //                 // TODO:
+        //                 break;
+        //             case 0:
+        //                 updated[NextStatus(current_status)] += _names2tasksinfo[person][current_status];
+        //                 _names2tasksinfo[person][current_status] = 0;
+        //                 task_count = 0;
+        //                 break;
+        //             case 1:
+        //                 updated[NextStatus(current_status)] += _names2tasksinfo[person][current_status];
+        //                 task_count -= _names2tasksinfo[person][current_status];
+        //                 _names2tasksinfo[person][current_status] = 0;
+        //                 ++current_status;
+        //                 break;
+        //         }
+        //     } else {
+        //         // переходим к проверке следующего статуса
+        //         ++current_status;
+        //     }
+        // }
+        TasksInfo tmp;
+        // TODO:
+        for (const auto& [current_status, count] : _names2tasksinfo[person]) {
+            int delta = task_count - count;
+            if (delta >= 0) {
+                updated[NextStatus(current_status)] += count;
+                task_count -= count;
+            } else {
+
+            }
+        }
+
+        return {updated, not_updated};
+    }
+
+   private:
+    std::map<std::string, TasksInfo> _names2tasksinfo;
 };
 
 // Принимаем словарь по значению, чтобы иметь возможность
@@ -113,31 +194,33 @@ void PrintTasksInfo(TasksInfo tasks_info) {
 }
 
 int main() {
-    TeamTasks tasks;
-    tasks.AddNewTask("Ilia");
-    for (int i = 0; i < 3; ++i) {
-        tasks.AddNewTask("Ivan");
-    }
-    std::cout << "Ilia's tasks: ";
-    PrintTasksInfo(tasks.GetPersonTasksInfo("Ilia"));
-    std::cout << "Ivan's tasks: ";
-    PrintTasksInfo(tasks.GetPersonTasksInfo("Ivan"));
+    TestSGN();
 
-    TasksInfo updated_tasks, untouched_tasks;
+    // TeamTasks tasks;
+    // tasks.AddNewTask("Ilia");
+    // for (int i = 0; i < 3; ++i) {
+    //     tasks.AddNewTask("Ivan");
+    // }
+    // std::cout << "Ilia's tasks: ";
+    // PrintTasksInfo(tasks.GetPersonTasksInfo("Ilia"));
+    // std::cout << "Ivan's tasks: ";
+    // PrintTasksInfo(tasks.GetPersonTasksInfo("Ivan"));
 
-    std::tie(updated_tasks, untouched_tasks) =
-        tasks.PerformPersonTasks("Ivan", 2);
-    std::cout << "Updated Ivan's tasks: ";
-    PrintTasksInfo(updated_tasks);
-    cout << "Untouched Ivan's tasks: ";
-    PrintTasksInfo(untouched_tasks);
+    // TasksInfo updated_tasks, untouched_tasks;
 
-    std::tie(updated_tasks, untouched_tasks) =
-        tasks.PerformPersonTasks("Ivan", 2);
-    std::cout << "Updated Ivan's tasks: ";
-    PrintTasksInfo(updated_tasks);
-    cout << "Untouched Ivan's tasks: ";
-    PrintTasksInfo(untouched_tasks);
+    // std::tie(updated_tasks, untouched_tasks) =
+    //     tasks.PerformPersonTasks("Ivan", 2);
+    // std::cout << "Updated Ivan's tasks: ";
+    // PrintTasksInfo(updated_tasks);
+    // std::cout << "Untouched Ivan's tasks: ";
+    // PrintTasksInfo(untouched_tasks);
+
+    // std::tie(updated_tasks, untouched_tasks) =
+    //     tasks.PerformPersonTasks("Ivan", 2);
+    // std::cout << "Updated Ivan's tasks: ";
+    // PrintTasksInfo(updated_tasks);
+    // std::cout << "Untouched Ivan's tasks: ";
+    // PrintTasksInfo(untouched_tasks);
 
     return 0;
 }

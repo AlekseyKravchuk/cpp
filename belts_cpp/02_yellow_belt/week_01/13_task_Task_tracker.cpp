@@ -1,4 +1,5 @@
 #include <cassert>
+#include <cmath>
 #include <iostream>
 #include <map>
 #include <stdexcept>
@@ -125,7 +126,9 @@ void TestSGN() {
 class TeamTasks {
    public:
     // Получить статистику по статусам задач конкретного разработчика
-    const TasksInfo& GetPersonTasksInfo(const std::string& person) const;
+    const TasksInfo& GetPersonTasksInfo(const std::string& person) const {
+        return _names2tasksinfo.at(person);
+    }
 
     // Добавить новую задачу (в статусе NEW) для конкретного разработчитка
     void AddNewTask(const std::string& person) {
@@ -137,46 +140,23 @@ class TeamTasks {
     std::tuple<TasksInfo, TasksInfo> PerformPersonTasks(const std::string& person, int task_count) {
         // auto current_status = TaskStatus::NEW;
         std::map<TaskStatus, int> updated;
-        std::map<TaskStatus, int> not_updated;
+        std::map<TaskStatus, int> untouched;
 
-        // while (task_count > 0 && current_status != TaskStatus::DONE) {
-        //     if (_names2tasksinfo[person].count(current_status)) {
-        //         int delta = task_count - _names2tasksinfo[person][current_status];
-        //         int sign = (sgn(delta));
-        //         switch (sign) {
-        //             case -1:
-        //                 // TODO:
-        //                 break;
-        //             case 0:
-        //                 updated[NextStatus(current_status)] += _names2tasksinfo[person][current_status];
-        //                 _names2tasksinfo[person][current_status] = 0;
-        //                 task_count = 0;
-        //                 break;
-        //             case 1:
-        //                 updated[NextStatus(current_status)] += _names2tasksinfo[person][current_status];
-        //                 task_count -= _names2tasksinfo[person][current_status];
-        //                 _names2tasksinfo[person][current_status] = 0;
-        //                 ++current_status;
-        //                 break;
-        //         }
-        //     } else {
-        //         // переходим к проверке следующего статуса
-        //         ++current_status;
-        //     }
-        // }
         TasksInfo tmp;
-        // TODO:
-        for (const auto& [current_status, count] : _names2tasksinfo[person]) {
-            int delta = task_count - count;
+        for (const auto& [current_status, current_count] : _names2tasksinfo[person]) {
+            int delta = task_count - current_count;
             if (delta >= 0) {
-                updated[NextStatus(current_status)] += count;
-                task_count -= count;
+                updated[NextStatus(current_status)] += current_count;
+                tmp[NextStatus(current_status)] += current_count;
             } else {
-
+                untouched[current_status] += std::abs(delta);
+                tmp[current_status] += untouched[current_status];
+                updated[NextStatus(current_status)] = task_count;
+                break;
             }
         }
 
-        return {updated, not_updated};
+        return {updated, untouched};
     }
 
    private:
@@ -194,33 +174,37 @@ void PrintTasksInfo(TasksInfo tasks_info) {
 }
 
 int main() {
-    TestSGN();
+    TeamTasks tasks;
 
-    // TeamTasks tasks;
-    // tasks.AddNewTask("Ilia");
-    // for (int i = 0; i < 3; ++i) {
-    //     tasks.AddNewTask("Ivan");
-    // }
-    // std::cout << "Ilia's tasks: ";
-    // PrintTasksInfo(tasks.GetPersonTasksInfo("Ilia"));
-    // std::cout << "Ivan's tasks: ";
-    // PrintTasksInfo(tasks.GetPersonTasksInfo("Ivan"));
+    for (int i = 0; i < 10; ++i) {
+        tasks.AddNewTask("Ivan");
+    }
 
-    // TasksInfo updated_tasks, untouched_tasks;
+    std::cout << "Ivan's tasks: ";
+    PrintTasksInfo(tasks.GetPersonTasksInfo("Ivan"));
 
-    // std::tie(updated_tasks, untouched_tasks) =
-    //     tasks.PerformPersonTasks("Ivan", 2);
-    // std::cout << "Updated Ivan's tasks: ";
-    // PrintTasksInfo(updated_tasks);
-    // std::cout << "Untouched Ivan's tasks: ";
-    // PrintTasksInfo(untouched_tasks);
+    TasksInfo updated_tasks, untouched_tasks;
 
-    // std::tie(updated_tasks, untouched_tasks) =
-    //     tasks.PerformPersonTasks("Ivan", 2);
-    // std::cout << "Updated Ivan's tasks: ";
-    // PrintTasksInfo(updated_tasks);
-    // std::cout << "Untouched Ivan's tasks: ";
-    // PrintTasksInfo(untouched_tasks);
+    std::tie(updated_tasks, untouched_tasks) =
+        tasks.PerformPersonTasks("Ivan", 4);
+    std::cout << "Updated Ivan's tasks: ";
+    PrintTasksInfo(updated_tasks);
+    std::cout << "Untouched Ivan's tasks: ";
+    PrintTasksInfo(untouched_tasks);
+
+    std::tie(updated_tasks, untouched_tasks) =
+        tasks.PerformPersonTasks("Ivan", 3);
+    std::cout << "Updated Ivan's tasks: ";
+    PrintTasksInfo(updated_tasks);
+    std::cout << "Untouched Ivan's tasks: ";
+    PrintTasksInfo(untouched_tasks);
+
+    std::tie(updated_tasks, untouched_tasks) =
+        tasks.PerformPersonTasks("Ivan", 2);
+    std::cout << "Updated Ivan's tasks: ";
+    PrintTasksInfo(updated_tasks);
+    std::cout << "Untouched Ivan's tasks: ";
+    PrintTasksInfo(untouched_tasks);
 
     return 0;
 }

@@ -5,7 +5,7 @@
 #include <tuple>
 #include <vector>
 
-using namespace std::literals;
+using namespace std;
 
 // Перечислимый тип для статуса задачи
 enum class TaskStatus {
@@ -29,60 +29,66 @@ TaskStatus Next(TaskStatus task_status) {
 
 // Объявляем тип-синоним для map<TaskStatus, int>,
 // позволяющего хранить количество задач каждого статуса
-using TasksInfo = std::map<TaskStatus, int>;
+using TasksInfo = map<TaskStatus, int>;
 
 class TeamTasks {
    public:
     // Получить статистику по статусам задач конкретного разработчика
-    const TasksInfo& GetPersonTasksInfo(const std::string& person) const;
+    const TasksInfo& GetPersonTasksInfo(const string& person) const;
 
     // Добавить новую задачу (в статусе NEW) для конкретного разработчика
-    void AddNewTask(const std::string& person);
+    void AddNewTask(const string& person);
 
     // Обновить статусы по данному количеству задач конкретного разработчика
-    std::tuple<TasksInfo, TasksInfo> PerformPersonTasks(
-        const std::string& person, int task_count);
+    tuple<TasksInfo, TasksInfo> PerformPersonTasks(
+        const string& person, int task_count);
 
    private:
-    std::map<std::string, TasksInfo> _person_tasks;
+    map<string, TasksInfo> person_tasks_;
 };
 
-const TasksInfo& TeamTasks::GetPersonTasksInfo(const std::string& person) const {
-    return _person_tasks.at(person);
+const TasksInfo& TeamTasks::GetPersonTasksInfo(const string& person) const {
+    return person_tasks_.at(person);
 }
 
-void TeamTasks::AddNewTask(const std::string& person) {
-    ++_person_tasks[person][TaskStatus::NEW];
+void TeamTasks::AddNewTask(const string& person) {
+    ++person_tasks_[person][TaskStatus::NEW];
 }
 
 // Функция для удаления нулей из словаря
 void RemoveZeros(TasksInfo& tasks_info) {
     // Соберём те статусы, которые нужно убрать из словаря
-    std::vector<TaskStatus> statuses_to_remove;
+    vector<TaskStatus> statuses_to_remove;
     for (const auto& task_item : tasks_info) {
         if (task_item.second == 0) {
             statuses_to_remove.push_back(task_item.first);
         }
     }
-
     for (const TaskStatus status : statuses_to_remove) {
         tasks_info.erase(status);
     }
 }
 
-std::tuple<TasksInfo, TasksInfo> TeamTasks::PerformPersonTasks(
-    const std::string& person, int task_count) {
+tuple<TasksInfo, TasksInfo> TeamTasks::PerformPersonTasks(
+    const string& person, int task_count) {
     TasksInfo updated_tasks, untouched_tasks;
 
     // Здесь и далее мы будем пользоваться тем фактом, что в std::map оператор []
-    // в случае отсутствия ключа инициализирует значение по умолчанию, если это возможно.
-    TasksInfo& tasks = _person_tasks[person];
+    // в случае отсутствия ключа инициализирует значение по умолчанию,
+    // если это возможно.
+    // std::map::operator[] ->
+    // http://ru.cppreference.com/w/cpp/container/map/operator_at
+    TasksInfo& tasks = person_tasks_[person];
 
-    // Посчитаем, сколько задач каждого из статусов нужно обновить, пользуясь тем фактом,
-    // что по умолчанию enum class инциализирует значения от нуля по возрастанию.
-    for (TaskStatus status = TaskStatus::NEW; status != TaskStatus::DONE; status = Next(status)) {
+    // Посчитаем, сколько задач каждого из статусов нужно обновить,
+    // пользуясь тем фактом, что по умолчанию enum class инциализирует значения
+    // от нуля по возрастанию.
+    // enum class -> http://ru.cppreference.com/w/cpp/language/enum
+    for (TaskStatus status = TaskStatus::NEW;
+         status != TaskStatus::DONE;
+         status = Next(status)) {
         // Считаем обновлённые
-        updated_tasks[Next(status)] = std::min(task_count, tasks[status]);
+        updated_tasks[Next(status)] = min(task_count, tasks[status]);
         // Считаем, сколько осталось обновить
         task_count -= updated_tasks[Next(status)];
     }
@@ -95,13 +101,13 @@ std::tuple<TasksInfo, TasksInfo> TeamTasks::PerformPersonTasks(
         untouched_tasks[status] = tasks[status] - updated_tasks[Next(status)];
         tasks[status] += updated_tasks[status] - updated_tasks[Next(status)];
     }
-    // По условию, DONE задачи не нужно возвращать в необновлённых задачах
+    // По условию, DONE задачи не нужно возвращать в не обновлённых задачах
     tasks[TaskStatus::DONE] += updated_tasks[TaskStatus::DONE];
 
     // По условию в словарях не должно быть нулей
     RemoveZeros(updated_tasks);
     RemoveZeros(untouched_tasks);
-    RemoveZeros(_person_tasks.at(person));
+    RemoveZeros(person_tasks_.at(person));
 
     return {updated_tasks, untouched_tasks};
 }
@@ -114,36 +120,6 @@ void PrintTasksInfo(TasksInfo tasks_info) {
               << ", " << tasks_info[TaskStatus::IN_PROGRESS] << " tasks in progress"
               << ", " << tasks_info[TaskStatus::TESTING] << " tasks are being tested"
               << ", " << tasks_info[TaskStatus::DONE] << " tasks are done" << std::endl;
-}
-
-void Test_1_base() {
-    TeamTasks tasks;
-
-    tasks.AddNewTask("Ilia");
-    for (int i = 0; i < 3; ++i) {
-        tasks.AddNewTask("Ivan");
-    }
-
-    std::cout << "Ilia's tasks: ";
-    PrintTasksInfo(tasks.GetPersonTasksInfo("Ilia"));
-    std::cout << "Ivan's tasks: ";
-    PrintTasksInfo(tasks.GetPersonTasksInfo("Ivan"));
-
-    TasksInfo updated_tasks, untouched_tasks;
-
-    std::tie(updated_tasks, untouched_tasks) =
-        tasks.PerformPersonTasks("Ivan", 2);
-    std::cout << "Updated Ivan's tasks: ";
-    PrintTasksInfo(updated_tasks);
-    std::cout << "Untouched Ivan's tasks: ";
-    PrintTasksInfo(untouched_tasks);
-
-    std::tie(updated_tasks, untouched_tasks) =
-        tasks.PerformPersonTasks("Ivan", 2);
-    std::cout << "Updated Ivan's tasks: ";
-    PrintTasksInfo(updated_tasks);
-    std::cout << "Untouched Ivan's tasks: ";
-    PrintTasksInfo(untouched_tasks);
 }
 
 void Test_2_failed_case_1_102() {
@@ -201,6 +177,8 @@ void Test_2_failed_case_1_102() {
 
 int main() {
     // Test_1_base();
-    Test_2_failed_case_1_102();
+    // Test_2_failed_case_1_102();
+    // Test_3();
+
     return 0;
 }

@@ -52,7 +52,6 @@ CHECK cpp java
 YES
 NO
 NO
-
 */
 
 void ProcessOperations(int n) {

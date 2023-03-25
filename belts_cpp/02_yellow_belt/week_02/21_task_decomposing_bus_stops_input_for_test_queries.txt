@@ -1,0 +1,7 @@
+4
+ALL_BUSES
+BUSES_FOR_STOP Marushkino
+STOPS_FOR_BUS 32K
+NEW_BUS 32 3 Tolstopaltsevo Marushkino Vnukovo
+
+

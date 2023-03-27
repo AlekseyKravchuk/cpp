@@ -71,12 +71,12 @@ NO
 // Это делается для того, чтобы впоследствии каждый из этих блоков покрыть unit-тестами
 void AddSynonyms(Synonyms& synonyms,
                  const std::string& first_word, const std::string& second_word) {
-    // synonyms[first_word].insert(second_word);
-    // synonyms[second_word].insert(first_word);
+    synonyms[first_word].insert(second_word);
+    synonyms[second_word].insert(first_word);
 
     // намеренно добавляем баг, чтобы увидеть, как "стреляют" наши Assert'ы
-    synonyms[first_word].insert(second_word);
-    synonyms[second_word].insert(second_word);
+    // synonyms[first_word].insert(second_word);
+    // synonyms[second_word].insert(second_word);
 }
 
 size_t GetSynonymsCount(const Synonyms& synonyms,
@@ -89,29 +89,30 @@ size_t GetSynonymsCount(const Synonyms& synonyms,
 
 bool AreSynonyms(const Synonyms& synonyms,
                  const std::string& first_word, const std::string& second_word) {
-    // // корректный код
-    // if (synonyms.count(first_word)) {
-    //     if (synonyms.at(first_word).count(second_word)) {
-    //         return true;
-    //     } else {
-    //         return false;
-    //     }
-    // } else {
-    //     return false;
-    // }
-
-    // преднамеренно вносим ошибку в код для тестирование AssertEqual
+    // корректный код
     if (synonyms.count(first_word)) {
         if (synonyms.at(first_word).count(second_word)) {
-            return false;
-        } else {
             return true;
+        } else {
+            return false;
         }
     } else {
         return false;
     }
+
+    // // преднамеренно вносим ошибку в код для тестирование AssertEqual
+    // if (synonyms.count(first_word)) {
+    //     if (synonyms.at(first_word).count(second_word)) {
+    //         return false;
+    //     } else {
+    //         return true;
+    //     }
+    // } else {
+    //     return false;
+    // }
 }
 
+// AssertEqual должна сравнивать аргументы любых типов
 template <typename T, typename U>
 void AssertEqual(const T& t, const U& u, const std::string& hint) {
     if (t != u) {
@@ -120,6 +121,11 @@ void AssertEqual(const T& t, const U& u, const std::string& hint) {
             << " Hint: "s << hint;
         throw std::runtime_error(oss.str());
     }
+}
+
+// Assert проверяет истинность аргументов только одного типа — типа bool
+void Assert(bool b, const std::string& hint) {
+    AssertEqual(b, true, hint);
 }
 
 template <typename T>
@@ -148,10 +154,6 @@ std::ostream& operator<<(std::ostream& os, const std::map<KeyType, ValueType>& m
         os << key << ": "s << value;
     }
     return os << "}";
-}
-
-void Assert(bool b, const std::string& hint) {
-    AssertEqual(b, true, hint);
 }
 
 void TestAddSynonyms() {
@@ -206,7 +208,7 @@ void TestGetSynonymsCount() {
         AssertEqual(GetSynonymsCount(synonyms, "z"), 0u, "count for z"s);
     }
 
-    std::cout << "TestAddSynonyms PASSED"s << std::endl;
+    std::cout << "TestGetSynonymsCount PASSED"s << std::endl;
 }
 
 void TestAreSynonyms() {

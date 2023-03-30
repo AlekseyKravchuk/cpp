@@ -135,7 +135,7 @@ class TeamTasks {
             }
 
             // "task_count == 0" => больше задач, подлежащих выполнению, нет и "status != TaskStatus::DONE"
-            // => все задачи данного статуса должны быть учтены как необработанные, т.е. в "untouched_tasks"
+            // => все задачи данного статуса должны быть учтены как необработанные, т.е. учтены в "untouched_tasks"
             if (task_count == 0) {
                 untouched_tasks[status] = tasks.at(status);
                 continue;

@@ -8,7 +8,6 @@
 #include <stdexcept>
 #include <string>
 
-// ==== Interface ====
 using namespace std::literals;
 
 template <typename T, typename U>

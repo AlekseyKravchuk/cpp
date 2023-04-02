@@ -2,5 +2,5 @@
 
 #include "test_runner.h"
 
-void Test_ContainsPlusSign();
+void Test_1();
 void TestAll();

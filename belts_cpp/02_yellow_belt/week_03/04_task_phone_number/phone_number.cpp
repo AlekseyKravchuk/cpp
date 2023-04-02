@@ -3,45 +3,59 @@
 #include <sstream>
 #include <stdexcept>
 
-PhoneNumber::PhoneNumber(const string &international_number) {
-    std::istringstream iss(international_number);
-    if (iss.peek() != '+') {
-        std::ostringstream oss;
-        oss << "Wrong format: \""s << international_number << "\". Correct format starts from '+' sign."s;
-        throw std::invalid_argument(oss.str());
-    }
-    iss.ignore(1);
+// PhoneNumber::PhoneNumber(const string &international_number) {
+//     std::istringstream iss(international_number);
+//     if (iss.peek() != '+') {
+//         std::ostringstream oss;
+//         oss << "Wrong format: \""s << international_number << "\". Correct format starts from '+' sign."s;
+//         throw std::invalid_argument(oss.str());
+//     }
+//     iss.ignore(1);
 
-    char delim = '-';
+//     char delim = '-';
 
-    string country_code;
-    std::getline(iss, country_code, delim);
-    if (country_code.empty()) {
-        std::ostringstream oss;
-        oss << "Wrong format: \""s << international_number << "\". Correct format contains country code."s;
-        throw std::invalid_argument(oss.str());
-    } else {
-        country_code_ = country_code;
-    }
+//     string country_code;
+//     std::getline(iss, country_code, delim);
+//     if (country_code.empty()) {
+//         std::ostringstream oss;
+//         oss << "Wrong format: \""s << international_number << "\". Correct format contains country code."s;
+//         throw std::invalid_argument(oss.str());
+//     } else {
+//         country_code_ = country_code;
+//     }
 
-    string city_code;
-    std::getline(iss, city_code, delim);
-    if (city_code.empty()) {
-        std::ostringstream oss;
-        oss << "Wrong format: \""s << international_number << "\". Correct format contains city code."s;
-        throw std::invalid_argument(oss.str());
-    } else {
-        city_code_ = city_code;
-    }
+//     string city_code;
+//     std::getline(iss, city_code, delim);
+//     if (city_code.empty()) {
+//         std::ostringstream oss;
+//         oss << "Wrong format: \""s << international_number << "\". Correct format contains city code."s;
+//         throw std::invalid_argument(oss.str());
+//     } else {
+//         city_code_ = city_code;
+//     }
 
-    string local_number;
-    std::getline(iss, local_number);
-    if (local_number.empty()) {
-        std::ostringstream oss;
-        oss << "Wrong format: \""s << international_number << "\". Correct format contains local number."s;
-        throw std::invalid_argument(oss.str());
-    } else {
-        local_number_ = local_number;
+//     string local_number;
+//     std::getline(iss, local_number);
+//     if (local_number.empty()) {
+//         std::ostringstream oss;
+//         oss << "Wrong format: \""s << international_number << "\". Correct format contains local number."s;
+//         throw std::invalid_argument(oss.str());
+//     } else {
+//         local_number_ = local_number;
+//     }
+// }
+
+// ========== STEPIK SOLUTION ==========
+PhoneNumber::PhoneNumber(const string& international_number) {
+    istringstream iss(international_number);
+
+    char sign = iss.get();
+    std::getline(iss, country_code_, '-');
+    std::getline(iss, city_code_, '-');
+    std::getline(iss, local_number_);
+
+    if (sign != '+' || country_code_.empty() || city_code_.empty() || local_number_.empty()) {
+        throw invalid_argument("Phone number must begin with '+' symbol and contain 3 parts separated by '-' symbol: " + international_number);
     }
 }
 

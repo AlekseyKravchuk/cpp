@@ -1,204 +1,4 @@
-#include <cassert>
-#include <fstream>
-#include <iostream>
-#include <map>
-#include <sstream>  // std::istringstream
-#include <string>
-#include <vector>
-#include <utility>  // std::pair
-
-using namespace std;
-
-// #define _GLIBCXX_DEBUG 1  // включить режим отладки
-
-enum class QueryType {
-    NewBus,
-    BusesForStop,
-    StopsForBus,
-    AllBuses
-};
-
-struct Query {
-    QueryType type;
-    string bus;
-    string stop;
-    vector<string> stops;
-};
-
-template <typename Collection>
-std::string Join(const Collection& collection, const std::string separator = " "s) {
-    std::ostringstream oss;
-    bool isFirst = true;
-    for (const auto& elm : collection) {
-        if (!isFirst) {
-            oss << separator;
-        }
-        isFirst = false;
-        oss << elm;
-    }
-
-    return oss.str();
-}
-
-map<string, QueryType> str2qtype = {
-    {"NEW_BUS"s, QueryType::NewBus},
-    {"BUSES_FOR_STOP"s, QueryType::BusesForStop},
-    {"STOPS_FOR_BUS"s, QueryType::StopsForBus},
-    {"ALL_BUSES"s, QueryType::AllBuses},
-};
-
-istream& operator>>(istream& is, QueryType& qtype) {
-    string type_as_str;
-    is >> type_as_str;
-    qtype = str2qtype[type_as_str];
-
-    return is;
-}
-
-istream& operator>>(istream& is, Query& q) {
-    is >> std::ws;
-    if (is.peek() == '\n') {
-        is.ignore(1);
-    }
-    is >> q.type;
-    switch (q.type) {
-        case QueryType::NewBus: {
-            int stop_count = 0;
-            is >> q.bus >> stop_count;
-            q.stops.resize(stop_count);
-            for (auto& stop : q.stops) {
-                is >> stop;
-            }
-            break;
-        }
-        case QueryType::BusesForStop:
-            is >> q.stop;
-            break;
-        case QueryType::StopsForBus:
-            is >> q.bus;
-            break;
-        case QueryType::AllBuses:
-            // code
-            break;
-    }
-
-    return is;
-}
-
-struct BusesForStopResponse {
-    vector<string> buses_for_stop;
-};
-
-ostream& operator<<(ostream& os, const BusesForStopResponse& r) {
-    return (r.buses_for_stop.empty()) ? os << "No stop"s : os << Join(r.buses_for_stop);
-}
-
-struct StopsForBusResponse {
-    vector<pair<string, vector<string>>> stops_for_bus;
-};
-
-ostream& operator<<(ostream& os, const StopsForBusResponse& r) {
-    if (r.stops_for_bus.empty()) {
-        os << "No bus"s;
-    } else {
-        bool isFirst = true;
-        for (const auto& [stop, buses_list] : r.stops_for_bus) {
-            if (!isFirst) {
-                os << endl;
-            }
-            isFirst = false;
-            os << "Stop " << stop << ": "s << Join(buses_list);
-        }
-    }
-    return os;
-}
-
-struct AllBusesResponse {
-    map<string, vector<string>> response;
-};
-
-ostream& operator<<(ostream& os, const AllBusesResponse& r) {
-    if (r.response.empty()) {
-        os << "No buses"s;
-    } else {
-        bool isFirst = true;
-        for (const auto& [bus, stop_names] : r.response) {
-            if (!isFirst) {
-                os << std::endl;
-            }
-            isFirst = false;
-            os << "Bus "s << bus << ": " << Join(stop_names);
-        }
-    }
-    return os;
-}
-
-class BusManager {
-   public:
-    void AddBus(const string& bus, const vector<string>& stops) {
-        for (const auto& stop : stops) {
-            _buses_to_stops[bus].push_back(stop);
-            _stops_to_buses[stop].push_back(bus);
-        }
-    }
-
-    BusesForStopResponse GetBusesForStop(const string& stop) const {
-        return (_stops_to_buses.count(stop)) ? BusesForStopResponse{_stops_to_buses.at(stop)} : BusesForStopResponse();
-    }
-
-    StopsForBusResponse GetStopsForBus(const string& bus) const {
-        StopsForBusResponse response;
-
-        // если маршрут "bus" ранее был ранее добавлен,
-        // И если "_stops_to_buses[stop_name] == 1",
-        // то через эту остановку проходит ТОЛЬКО этот маршрут, => "no interchange"
-        if (_buses_to_stops.count(bus)) {
-            for (const auto& stop_name : _buses_to_stops.at(bus)) {
-
-                pair<string, vector<string>> interchanges_for_stop;
-                interchanges_for_stop.first = stop_name;
-                for (const auto& other_bus : _stops_to_buses.at(stop_name)) {
-                    if (_stops_to_buses.at(stop_name).size() == 1) {
-                        interchanges_for_stop.second = {"no interchange"s};
-                        break;
-                    }
-
-                    if (other_bus != bus) {
-                        interchanges_for_stop.second.push_back(other_bus);
-                    }
-                }
-                response.stops_for_bus.push_back(interchanges_for_stop);
-            }
-        }
-        return response;
-    }
-
-    AllBusesResponse GetAllBuses() const {
-        return AllBusesResponse{_buses_to_stops};
-    }
-
-   private:
-    map<string, vector<string>> _buses_to_stops;
-    map<string, vector<string>> _stops_to_buses;
-};
-
-class RedirectStandardInput {
-   public:
-    RedirectStandardInput(std::ifstream& input) {
-        // сохраняем указатель на "streambuf"
-        _cinbuf_bkp = std::cin.rdbuf();
-
-        // перенаправляем поток ввода std::cin на файл
-        std::cin.rdbuf(input.rdbuf());
-    }
-
-    ~RedirectStandardInput() {
-        std::cin.rdbuf(_cinbuf_bkp);  // восстанавливаем standard input
-    }
-
-   private:
-    std::streambuf* _cinbuf_bkp{nullptr};
-};
+#include "tests.h"
 
 bool operator==(const Query& lhs, const Query& rhs) {
     return std::tuple(static_cast<int>(lhs.type), lhs.bus, lhs.stop, lhs.stops) ==
@@ -206,7 +6,7 @@ bool operator==(const Query& lhs, const Query& rhs) {
 }
 
 void Test_InputProcessing() {
-    std::string path = "21_task_decomposing_bus_stops_input_for_test_queries.txt"s;
+    std::string path = "input.txt"s;
 
     std::ifstream input(path);
     if (!input) {
@@ -219,11 +19,11 @@ void Test_InputProcessing() {
         int query_count;
         Query q;
 
-        cin >> query_count;
+        std::cin >> query_count;
         std::vector<Query> queries(query_count);
 
         for (int i = 0; i < query_count; ++i) {
-            cin >> queries[i];
+            std::cin >> queries[i];
         }
 
         Query q0_expected = {QueryType::AllBuses};
@@ -250,7 +50,7 @@ void Test_AddBus_GetAllBuses() {
         bm.AddBus("950"s, {"Kokoshkino"s, "Marushkino"s, "Vnukovo"s, "Peredelkino"s, "Solntsevo"s, "Troparyovo"s});
         bm.AddBus("272"s, {"Vnukovo"s, "Moskovsky"s, "Rumyantsevo"s, "Troparyovo"s});
 
-        map<string, vector<string>> expected_buses_to_stops = {
+        std::map<std::string, std::vector<std::string>> expected_buses_to_stops = {
             {"272"s, {"Vnukovo"s, "Moskovsky"s, "Rumyantsevo"s, "Troparyovo"s}},
             {"32"s, {"Tolstopaltsevo"s, "Marushkino"s, "Vnukovo"s}},
             {"32K"s, {"Tolstopaltsevo"s, "Marushkino"s, "Vnukovo"s, "Peredelkino"s, "Solntsevo"s, "Skolkovo"s}},
@@ -273,7 +73,7 @@ void Test_OstreamOperator_AllBusesResponse() {
         std::ostringstream oss;
         oss << bm.GetAllBuses();
 
-        string out_str_expected =
+        std::string out_str_expected =
             "Bus 272: Vnukovo Moskovsky Rumyantsevo Troparyovo\n"
             "Bus 32: Tolstopaltsevo Marushkino Vnukovo\n"
             "Bus 32K: Tolstopaltsevo Marushkino Vnukovo Peredelkino Solntsevo Skolkovo\n"
@@ -287,7 +87,7 @@ void Test_OstreamOperator_AllBusesResponse() {
         std::ostringstream oss;
         oss << bm.GetAllBuses();
 
-        string out_str_expected = "No buses"s;
+        std::string out_str_expected = "No buses"s;
 
         assert(oss.str() == out_str_expected);
     }
@@ -298,7 +98,7 @@ void Test_OstreamOperator_AllBusesResponse() {
 void Test_GetBusesForStop() {
     {
         BusManager bm;
-        string stop = "Moskovsky"s;
+        std::string stop = "Moskovsky"s;
 
         BusesForStopResponse response = bm.GetBusesForStop(stop);
         BusesForStopResponse expected_response = BusesForStopResponse{{}};
@@ -312,7 +112,7 @@ void Test_GetBusesForStop() {
         bm.AddBus("950"s, {"Kokoshkino"s, "Marushkino"s, "Vnukovo"s, "Peredelkino"s, "Solntsevo"s, "Troparyovo"s});
         bm.AddBus("272"s, {"Vnukovo"s, "Moskovsky"s, "Rumyantsevo"s, "Troparyovo"s});
 
-        string stop = "Vnukovo"s;
+        std::string stop = "Vnukovo"s;
         BusesForStopResponse response = bm.GetBusesForStop(stop);
         BusesForStopResponse expected_response = BusesForStopResponse{{"32"s, "32K"s, "950"s, "272"s}};
         assert(response.buses_for_stop == expected_response.buses_for_stop);
@@ -325,7 +125,7 @@ void Test_GetBusesForStop() {
         bm.AddBus("950"s, {"Kokoshkino"s, "Marushkino"s, "Vnukovo"s, "Peredelkino"s, "Solntsevo"s, "Troparyovo"s});
         bm.AddBus("272"s, {"Vnukovo"s, "Moskovsky"s, "Rumyantsevo"s, "Troparyovo"s});
 
-        string stop = "Moskovsky"s;
+        std::string stop = "Moskovsky"s;
         BusesForStopResponse response = bm.GetBusesForStop(stop);
         BusesForStopResponse expected_response = BusesForStopResponse{{"272"s}};
         assert(response.buses_for_stop == expected_response.buses_for_stop);
@@ -381,11 +181,11 @@ void Test_OstreamOperator_StopsForBusResponse() {
         bm.AddBus("950"s, {"Kokoshkino"s, "Marushkino"s, "Vnukovo"s, "Peredelkino"s, "Solntsevo"s, "Troparyovo"s});
         bm.AddBus("272"s, {"Vnukovo"s, "Moskovsky"s, "Rumyantsevo"s, "Troparyovo"s});
 
-        string bus = "272"s;
+        std::string bus = "272"s;
         std::ostringstream oss;
         oss << bm.GetStopsForBus(bus);
 
-        string expected_response =
+        std::string expected_response =
             "Stop Vnukovo: 32 32K 950\n"
             "Stop Moskovsky: no interchange\n"
             "Stop Rumyantsevo: no interchange\n"
@@ -405,53 +205,17 @@ void Test_OstreamOperator_StopsForBusResponse() {
     std::cout << "Test_OstreamOperator_StopsForBusResponse PASSED"s << std::endl;
 }
 
-void RunTests() {
-    Test_InputProcessing();
-    Test_AddBus_GetAllBuses();
-    Test_OstreamOperator_AllBusesResponse();
-    Test_GetBusesForStop();
-    Test_OstreamOperator_BusesForStopResponse();
-    Test_GetStopsForBus();
-    Test_OstreamOperator_StopsForBusResponse();
-}
-
-// Не меняя тела функции main, реализуйте функции и классы выше
-int main() {
-#ifdef _GLIBCXX_DEBUG
-    RunTests();
-#else
-    // // std::string path = "21_task_decomposing_bus_stops_input_for_test_queries.txt"s;
-    // std::string path = "21_task_decomposing_bus_stops_input.txt"s;
-    // std::ifstream input(path);
-    // if (!input) {
-    //     throw std::runtime_error("File \""s + path + "\" is not opened"s);
-    // }
-    // RedirectStandardInput redirection(input);
-
-    int query_count;
-    Query q;
-
-    cin >> query_count;
-
-    BusManager bm;
-    for (int i = 0; i < query_count; ++i) {
-        cin >> q;
-        switch (q.type) {
-            case QueryType::NewBus:
-                bm.AddBus(q.bus, q.stops);
-                break;
-            case QueryType::BusesForStop:
-                cout << bm.GetBusesForStop(q.stop) << endl;
-                break;
-            case QueryType::StopsForBus:
-                cout << bm.GetStopsForBus(q.bus) << endl;
-                break;
-            case QueryType::AllBuses:
-                cout << bm.GetAllBuses() << endl;
-                break;
-        }
-    }
-#endif  //_GLIBCXX_DEBUG
-
-    return 0;
-}
+// 1) Если все тесты отработали успешно, то выполняется основная часть программы.
+// 2) Если хотя бы один тест упал, все тесты отрабатывают, но основная часть уже не выполняется.
+void TestAll() {
+    // Unit-тесты выводят результаты в СТАНДАРТНЫЙ ПОТОК ОШИБОК (std::cerr).
+    // Это позволяет нам не комментировать запуск тестов при отправке в тестирующую систему.
+    TestRunner tr;
+    tr.RunTest(Test_InputProcessing, "Test_InputProcessing"s);
+    tr.RunTest(Test_AddBus_GetAllBuses, "Test_AddBus_GetAllBuses"s);
+    tr.RunTest(Test_OstreamOperator_AllBusesResponse, "Test_OstreamOperator_AllBusesResponse"s);
+    tr.RunTest(Test_GetBusesForStop, "Test_GetBusesForStop"s);
+    tr.RunTest(Test_OstreamOperator_BusesForStopResponse, "Test_OstreamOperator_BusesForStopResponse"s);
+    tr.RunTest(Test_GetStopsForBus, "Test_GetStopsForBus"s);
+    tr.RunTest(Test_OstreamOperator_StopsForBusResponse, "Test_OstreamOperator_StopsForBusResponse"s);
+}  // по этой закрывающей скобке вызывается деструктор "TestRunner::~TestRunner" - для этого мы и используем функцию TestAll

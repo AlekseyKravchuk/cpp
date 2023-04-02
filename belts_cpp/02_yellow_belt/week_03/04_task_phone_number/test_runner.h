@@ -31,7 +31,7 @@ std::ostream& operator<<(std::ostream& os, const std::map<KeyType, ValueType>& m
 class TestRunner {
    public:
     template <typename FuncType>
-    void RunTest(FuncType test_as_func, std::string test_name);
+    void RunTest(FuncType test_func, std::string test_name);
     ~TestRunner();  // В деструкторе оцениваем количество упавших тестов
 
    private:
@@ -80,12 +80,12 @@ std::ostream& operator<<(std::ostream& os, const std::map<KeyType, ValueType>& m
 }
 
 template <typename FuncType>
-void TestRunner::RunTest(FuncType test_as_func, std::string test_name) {
+void TestRunner::RunTest(FuncType test_func, std::string test_name) {
     try {
         if (!_times_runtest_called) {
             std::cerr << "====================== Beginning of TESTS ======================"s << std::endl;
         }
-        test_as_func();
+        test_func();
         ++_times_runtest_called;
         std::cerr << test_name << " PASSED"s << std::endl;
     } catch (const std::exception& e) {

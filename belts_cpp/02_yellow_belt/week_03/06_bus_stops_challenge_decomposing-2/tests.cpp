@@ -5,6 +5,48 @@ bool operator==(const Query& lhs, const Query& rhs) {
            std::tuple(static_cast<int>(rhs.type), rhs.bus, rhs.stop, rhs.stops);
 }
 
+bool operator!=(const Query& lhs, const Query& rhs) {
+    return !(lhs == rhs);
+}
+
+void Test_Pair_Vector_Map_Set_Ouput() {
+    {
+        std::ostringstream oss;
+        std::string desired_str = "2: 15"s;
+        std::pair<int, int> p{2, 15};
+        oss << p;
+        AssertEqual(desired_str, oss.str(), "test pair output"s);
+    }
+
+    {
+        std::ostringstream oss;
+        std::string desired_str = "[6, 4, 12, 5, 11]"s;
+        std::vector<int> v{6, 4, 12, 5, 11};
+        oss << v;
+        AssertEqual(desired_str, oss.str(), "test vector output"s);
+    }
+
+    {
+        std::ostringstream oss;
+        std::string desired_str = "{4, 5, 6, 11, 12}"s;
+        std::set<int> s{6, 4, 12, 5, 11};
+        oss << s;
+        AssertEqual(desired_str, oss.str(), "test set output"s);
+    }
+
+    {
+        std::ostringstream oss;
+        std::string desired_str = "{4: four, 5: five, 6: six}"s;
+        std::map<int, std::string> m = {
+            {4, "four"s},
+            {5, "five"s},
+            {6, "six"s}
+            };
+        oss << m;
+        AssertEqual(desired_str, oss.str(), "test set output"s);
+    }
+}
+
 void Test_InputProcessing() {
     std::string path = "input.txt"s;
 
@@ -26,19 +68,17 @@ void Test_InputProcessing() {
             std::cin >> queries[i];
         }
 
-        Query q0_expected = {QueryType::AllBuses};
-        assert(q0_expected == queries[0]);
+        Query q0_expected = Query{QueryType::AllBuses, {}, {}, {}};
+        AssertEqual(q0_expected, queries[0]);
 
         Query q1_expected = {QueryType::BusesForStop, ""s, "Marushkino"s, {}};
-        assert(q1_expected == queries[1]);
+        AssertEqual(q1_expected, queries[1]);
 
         Query q2_expected = {QueryType::StopsForBus, "32K"s, ""s, {}};
-        assert(q2_expected == queries[2]);
+        AssertEqual(q2_expected, queries[2]);
 
         Query q3_expected = {QueryType::NewBus, "32"s, ""s, {"Tolstopaltsevo"s, "Marushkino"s, "Vnukovo"s}};
-        assert(q3_expected == queries[3]);
-
-        std::cout << "Test_InputProcessing PASSED" << std::endl;
+        AssertEqual(q3_expected, queries[3]);
     }  // по этой закрывающей скобке будет вызван деструктор ~RedirectStandardInput, который восстановит стандартный ввод
 }
 
@@ -56,10 +96,8 @@ void Test_AddBus_GetAllBuses() {
             {"32K"s, {"Tolstopaltsevo"s, "Marushkino"s, "Vnukovo"s, "Peredelkino"s, "Solntsevo"s, "Skolkovo"s}},
             {"950"s, {"Kokoshkino"s, "Marushkino"s, "Vnukovo"s, "Peredelkino"s, "Solntsevo"s, "Troparyovo"s}}};
 
-        assert(expected_buses_to_stops == bm.GetAllBuses().response);
+        AssertEqual(expected_buses_to_stops, bm.GetAllBuses().response);
     }
-
-    std::cout << "Test_AddBus_GetAllBuses PASSED"s << std::endl;
 }
 
 void Test_OstreamOperator_AllBusesResponse() {
@@ -79,7 +117,7 @@ void Test_OstreamOperator_AllBusesResponse() {
             "Bus 32K: Tolstopaltsevo Marushkino Vnukovo Peredelkino Solntsevo Skolkovo\n"
             "Bus 950: Kokoshkino Marushkino Vnukovo Peredelkino Solntsevo Troparyovo"s;
 
-        assert(oss.str() == out_str_expected);
+        AssertEqual(oss.str(), out_str_expected);
     }
 
     {
@@ -89,10 +127,8 @@ void Test_OstreamOperator_AllBusesResponse() {
 
         std::string out_str_expected = "No buses"s;
 
-        assert(oss.str() == out_str_expected);
+        AssertEqual(oss.str(), out_str_expected);
     }
-
-    std::cout << "Test_OstreamOperator_AllBusesResponse PASSED"s << std::endl;
 }
 
 void Test_GetBusesForStop() {
@@ -102,7 +138,7 @@ void Test_GetBusesForStop() {
 
         BusesForStopResponse response = bm.GetBusesForStop(stop);
         BusesForStopResponse expected_response = BusesForStopResponse{{}};
-        assert(response.buses_for_stop == expected_response.buses_for_stop);
+        AssertEqual(response.buses_for_stop, expected_response.buses_for_stop);
     }
 
     {
@@ -115,7 +151,7 @@ void Test_GetBusesForStop() {
         std::string stop = "Vnukovo"s;
         BusesForStopResponse response = bm.GetBusesForStop(stop);
         BusesForStopResponse expected_response = BusesForStopResponse{{"32"s, "32K"s, "950"s, "272"s}};
-        assert(response.buses_for_stop == expected_response.buses_for_stop);
+        AssertEqual(response.buses_for_stop, expected_response.buses_for_stop);
     }
 
     {
@@ -128,10 +164,8 @@ void Test_GetBusesForStop() {
         std::string stop = "Moskovsky"s;
         BusesForStopResponse response = bm.GetBusesForStop(stop);
         BusesForStopResponse expected_response = BusesForStopResponse{{"272"s}};
-        assert(response.buses_for_stop == expected_response.buses_for_stop);
+        AssertEqual(response.buses_for_stop, expected_response.buses_for_stop);
     }
-
-    std::cout << "Test_GetBusesForStop PASSED"s << std::endl;
 }
 
 void Test_OstreamOperator_BusesForStopResponse() {
@@ -139,7 +173,7 @@ void Test_OstreamOperator_BusesForStopResponse() {
         BusManager bm;
         std::ostringstream oss;
         oss << bm.GetBusesForStop("Marushkino"s);
-        assert(oss.str() == "No stop"s);
+        AssertEqual(oss.str(), "No stop"s);
     }
 
     {
@@ -148,10 +182,8 @@ void Test_OstreamOperator_BusesForStopResponse() {
         bm.AddBus("32K"s, {"Tolstopaltsevo"s, "Marushkino"s, "Vnukovo"s, "Peredelkino"s, "Solntsevo"s, "Skolkovo"s});
         std::ostringstream oss;
         oss << bm.GetBusesForStop("Vnukovo"s);
-        assert(oss.str() == "32 32K"s);
+        AssertEqual(oss.str(), "32 32K"s);
     }
-
-    std::cout << "Test_OstreamOperator_BusesForStopResponse PASSED"s << std::endl;
 }
 
 void Test_GetStopsForBus() {
@@ -160,10 +192,8 @@ void Test_GetStopsForBus() {
         std::ostringstream oss;
         StopsForBusResponse res = bm.GetStopsForBus("32K"s);
         StopsForBusResponse expected_res = StopsForBusResponse{};
-        assert(res.stops_for_bus == expected_res.stops_for_bus);
+        AssertEqual(res.stops_for_bus, expected_res.stops_for_bus);
     }
-
-    std::cout << "Test_GetStopsForBus PASSED"s << std::endl;
 }
 
 void Test_OstreamOperator_StopsForBusResponse() {
@@ -171,7 +201,7 @@ void Test_OstreamOperator_StopsForBusResponse() {
         BusManager bm;
         std::ostringstream oss;
         oss << bm.GetStopsForBus("32K"s);
-        assert(oss.str() == "No bus"s);
+        AssertEqual(oss.str(), "No bus"s);
     }
 
     {
@@ -199,10 +229,8 @@ void Test_OstreamOperator_StopsForBusResponse() {
         // std::cout << expected_response << std::endl;
         // std::cout << "==============================="s << std::endl;
 
-        assert(oss.str() == expected_response);
+        AssertEqual(oss.str(), expected_response);
     }
-
-    std::cout << "Test_OstreamOperator_StopsForBusResponse PASSED"s << std::endl;
 }
 
 // 1) Если все тесты отработали успешно, то выполняется основная часть программы.
@@ -211,6 +239,7 @@ void TestAll() {
     // Unit-тесты выводят результаты в СТАНДАРТНЫЙ ПОТОК ОШИБОК (std::cerr).
     // Это позволяет нам не комментировать запуск тестов при отправке в тестирующую систему.
     TestRunner tr;
+    tr.RunTest(Test_Pair_Vector_Map_Set_Ouput, "Test_Pair_Vector_Map_Set_Ouput"s);
     tr.RunTest(Test_InputProcessing, "Test_InputProcessing"s);
     tr.RunTest(Test_AddBus_GetAllBuses, "Test_AddBus_GetAllBuses"s);
     tr.RunTest(Test_OstreamOperator_AllBusesResponse, "Test_OstreamOperator_AllBusesResponse"s);
@@ -218,4 +247,6 @@ void TestAll() {
     tr.RunTest(Test_OstreamOperator_BusesForStopResponse, "Test_OstreamOperator_BusesForStopResponse"s);
     tr.RunTest(Test_GetStopsForBus, "Test_GetStopsForBus"s);
     tr.RunTest(Test_OstreamOperator_StopsForBusResponse, "Test_OstreamOperator_StopsForBusResponse"s);
-}  // по этой закрывающей скобке вызывается деструктор "TestRunner::~TestRunner" - для этого мы и используем функцию TestAll
+}  // По этой закрывающей скобке вызывается деструктор "TestRunner::~TestRunner",
+   // в котором произойдет обработка количества упавших тестов.
+   // Для своевременного вызова деструктора "TestRunner::~TestRunner" мы и используем функцию TestAll

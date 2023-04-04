@@ -26,18 +26,3 @@ std::ostream& operator<<(std::ostream& os, const BusesForStopResponse& r);
 std::ostream& operator<<(std::ostream& os, const StopsForBusResponse& r);
 
 std::ostream& operator<<(std::ostream& os, const AllBusesResponse& r);
-
-template <typename Collection>
-std::string Join(const Collection& collection, const std::string separator = " "s) {
-    std::ostringstream oss;
-    bool isFirst = true;
-    for (const auto& elm : collection) {
-        if (!isFirst) {
-            oss << separator;
-        }
-        isFirst = false;
-        oss << elm;
-    }
-
-    return oss.str();
-}

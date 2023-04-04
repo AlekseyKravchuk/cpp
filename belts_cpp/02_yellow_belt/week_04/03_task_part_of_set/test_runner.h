@@ -9,7 +9,6 @@
 #include <string>
 #include <vector>
 
-#include "query.h"
 
 using namespace std::literals;
 
@@ -55,12 +54,12 @@ class TestRunner {
 };
 
 template <typename Collection>
-std::string Join(const Collection& collection, const std::string separator = " "s) {
+std::string Join(const Collection& collection, const std::string delim = " "s) {
     std::ostringstream oss;
     bool isFirst = true;
     for (const auto& elm : collection) {
         if (!isFirst) {
-            oss << separator;
+            oss << delim;
         }
         isFirst = false;
         oss << elm;

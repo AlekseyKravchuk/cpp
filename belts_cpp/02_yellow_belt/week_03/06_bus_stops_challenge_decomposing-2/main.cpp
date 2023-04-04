@@ -18,7 +18,7 @@
 
 using namespace std;
 
-// #define _GLIBCXX_DEBUG 1  // включить режим отладки
+#define _GLIBCXX_DEBUG 1  // включить режим отладки
 
 /*
 ===================== Декомпозиция программы — 2 =====================
@@ -174,42 +174,3 @@ int main() {
 
     return 0;
 }  // по этой закрывающей скобке сработает деструктор ~RedirectStandardInput() и стандартный ввод будет восстановлен
-
-/* int main() {
-#ifdef _GLIBCXX_DEBUG
-    // =========== Standard input redirection, debug mode ===========
-    std::string path = "input.txt"s;
-    std::ifstream input(path);
-    if (!input) {
-        throw std::runtime_error("File \""s + path + "\" is not opened"s);
-    }
-    RedirectStandardInput redirection(input);
-    // =================== End of input redirection ==================
-#endif  //_GLIBCXX_DEBUG
-
-    int query_count;
-    Query q;
-
-    cin >> query_count;
-
-    BusManager bm;
-    for (int i = 0; i < query_count; ++i) {
-        cin >> q;
-        switch (q.type) {
-            case QueryType::NewBus:
-                bm.AddBus(q.bus, q.stops);
-                break;
-            case QueryType::BusesForStop:
-                cout << bm.GetBusesForStop(q.stop) << endl;
-                break;
-            case QueryType::StopsForBus:
-                cout << bm.GetStopsForBus(q.bus) << endl;
-                break;
-            case QueryType::AllBuses:
-                cout << bm.GetAllBuses() << endl;
-                break;
-        }
-    }
-
-    return 0;
-} */

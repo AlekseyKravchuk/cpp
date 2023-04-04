@@ -1,4 +1,19 @@
 #include "query.h"
+#include "test_runner.h"
+
+std::map<std::string, QueryType> str2qtype = {
+    {"NEW_BUS"s, QueryType::NewBus},
+    {"BUSES_FOR_STOP"s, QueryType::BusesForStop},
+    {"STOPS_FOR_BUS"s, QueryType::StopsForBus},
+    {"ALL_BUSES"s, QueryType::AllBuses},
+};
+
+std::map<QueryType, std::string> qtype2str = {
+    {QueryType::NewBus, "NEW_BUS"s},
+    {QueryType::BusesForStop, "BUSES_FOR_STOP"s},
+    {QueryType::StopsForBus, "STOPS_FOR_BUS"s},
+    {QueryType::AllBuses, "ALL_BUSES"s},
+};
 
 std::istream& operator>>(std::istream& is, QueryType& qtype) {
     std::string type_as_str;
@@ -38,9 +53,10 @@ std::istream& operator>>(std::istream& is, Query& q) {
     return is;
 }
 
-std::map<std::string, QueryType> str2qtype = {
-    {"NEW_BUS"s, QueryType::NewBus},
-    {"BUSES_FOR_STOP"s, QueryType::BusesForStop},
-    {"STOPS_FOR_BUS"s, QueryType::StopsForBus},
-    {"ALL_BUSES"s, QueryType::AllBuses},
-};
+std::ostream& operator<<(std::ostream& os, const Query& q) {
+    return os << "<QueryType: "s << qtype2str[q.type] << ", "s
+              << "bus: "s << q.bus << ", "s
+              << "stop: "s << q.stop << ", "s
+              << "stops: "s << q.stops << ">"s;
+}
+

@@ -1,9 +1,10 @@
 #pragma once
 
+#include <istream>  // std::ws, std::istream
+#include <map>
+#include <ostream>
 #include <string>
 #include <vector>
-#include <map>
-#include <istream>  // std::ws, std::istream
 
 using namespace std::literals;
 
@@ -23,6 +24,10 @@ struct Query {
 
 extern std::map<std::string, QueryType> str2qtype;
 
+extern std::map<QueryType, std::string> qtype2str;
+
 std::istream& operator>>(std::istream& is, QueryType& qtype);
 
 std::istream& operator>>(std::istream& is, Query& q);
+
+std::ostream& operator<<(std::ostream& os, const Query& q);

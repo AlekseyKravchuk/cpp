@@ -1,4 +1,5 @@
 #include "responses.h"
+#include "test_runner.h"
 
 std::ostream& operator<<(std::ostream& os, const BusesForStopResponse& r) {
     return (r.buses_for_stop.empty()) ? os << "No stop"s : os << Join(r.buses_for_stop);

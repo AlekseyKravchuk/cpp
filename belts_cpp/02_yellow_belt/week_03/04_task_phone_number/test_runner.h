@@ -39,7 +39,7 @@ class TestRunner {
     inline static int _times_runtest_called = 0;  // счетчик количества запусков метода "RunTest"
 };
 
-// ==== Implementation ====
+
 // AssertEqual должна сравнивать аргументы любых типов
 template <typename T, typename U>
 void AssertEqual(T t, U u, const std::string hint) {

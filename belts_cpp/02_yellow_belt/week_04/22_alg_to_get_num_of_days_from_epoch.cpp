@@ -1,15 +1,30 @@
 #include <cstdint>  // uint64_t
 #include <iostream>
 #include <limits>
+#include <numeric>  // std::accumulate
+#include <sstream>
+#include <string>
 
 using namespace std::literals;
 
 class Date {
+   public:
+    Date() = default;
+    void SetDay(int day) {
+    }
+
+    void SetMonth(int month) {
+    }
+
+    void SetYear(int year) {
+    }
+
    private:
-    int _year;
-    int _month;
     int _day;
-    uint64_t _days_from_epoch;  // количество дней начиная с 01.01.1700
+    int _month;
+    int _year;
+
+    uint64_t _days_from_epoch{1};  // количество дней, начиная с 01.01.1700
 };
 
 // Returns: "true" если "year" является високосным годом, в противном случае - "false"
@@ -22,8 +37,29 @@ constexpr bool is_leap(int year) noexcept {
     return year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
 }
 
+std::istream& operator>>(std::istream& is, Date& date) {
+    int day{0};
+    int month{0};
+    int year{0};
+
+    is >> year;
+    if (is.peek() != '-') {
+        throw std::runtime_error("Wrong date format. Correct format is: YYYY-MM-DD"s);
+    }
+    is.ignore('-');
+
+    is >> month;
+    if (is.peek() != '-') {
+        throw std::runtime_error("Wrong date format. Correct format is: YYYY-MM-DD"s);
+    }
+
+    is >> day;
+
+    return is;
+}
+
+uint64_t GetDaysFromEpoch(const std::string& date) {
+}
+
 int main() {
-    std::cout.imbue(std::locale(""));
-    std::cout << "max value of type 'uint64_t': " << std::numeric_limits<uint64_t>::max() << std::endl;
-    return 0;
 }

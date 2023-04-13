@@ -5,10 +5,13 @@
 using namespace std::literals;
 
 class Date {
+   public:
+    Date() = default;
+
    private:
-    int _year;
-    int _month;
-    int _day;
+    int _year = 1700;
+    int _month = 1;
+    int _day = 1;
     uint64_t _days_from_epoch;  // количество дней начиная с 01.01.1700
 };
 

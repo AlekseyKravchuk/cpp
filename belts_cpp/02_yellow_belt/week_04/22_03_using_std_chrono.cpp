@@ -6,6 +6,12 @@
 #include <string>
 
 using namespace std::literals;
+using namespace std::chrono;
+
+time_point<system_clock> to_chrono_time_point(const std::string& date, const std::string& fmt = "%Y-%m-%d"s) {
+    return system_clock::now();
+
+}
 
 int get_days_in_year(const std::string& date_from, const std::string& date_to) {
     using namespace std;
@@ -18,8 +24,9 @@ int get_days_in_year(const std::string& date_from, const std::string& date_to) {
     std::tm tm_start = {};
     std::stringstream ss1(date_from);
     ss1 >> std::get_time(&tm_start, "%Y-%m-%d");
-    std::time_t start_since_epoch = std::mktime(&tm_start);
-    auto tms = system_clock::from_time_t(start_since_epoch);
+    std::time_t start_since_1970 = std::mktime(&tm_start);  // since 00:00, Jan 1 1970 UTC, corresponding to POSIX time
+    // auto tms = system_clock::from_time_t(start_since_1970);
+    std::chrono::time_point tms = system_clock::from_time_t(start_since_1970);
 
     // Create end time span
     std::tm tm_end = {};

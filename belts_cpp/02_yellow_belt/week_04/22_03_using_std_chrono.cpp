@@ -8,17 +8,9 @@
 using namespace std::literals;
 using namespace std::chrono;
 
-time_point<system_clock> to_chrono_time_point(const std::string& date, const std::string& fmt = "%Y-%m-%d"s) {
-    return system_clock::now();
-
-}
-
 int get_days_in_year(const std::string& date_from, const std::string& date_to) {
     using namespace std;
     using namespace std::chrono;
-
-    // We want results to be in days
-    using days = duration<int, ratio_multiply< hours::period, std::ratio<24> >::type>;
 
     // Create start time span
     std::tm tm_start = {};
@@ -34,7 +26,6 @@ int get_days_in_year(const std::string& date_from, const std::string& date_to) {
     ss2 >> std::get_time(&tm_end, "%Y-%m-%d");
     std::time_t end_since_epoch = std::mktime(&tm_end);
     auto tme = system_clock::from_time_t(end_since_epoch);
-
 
     // Calculate time duration between those two dates
     auto diff_in_days = std::chrono::duration_cast<days>(tme - tms);

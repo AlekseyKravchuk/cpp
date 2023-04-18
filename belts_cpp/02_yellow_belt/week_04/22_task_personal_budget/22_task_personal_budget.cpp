@@ -61,8 +61,7 @@ class Date {
 
         days_count += daysUpToCurrentMonth[_month] + _day;
         days_count += LeapYearsCount(year);
-        // ++days_count;  // по условию задачи дипазон дат симметричный => добавляем единицу
-
+        
         return days_count;
     }
 

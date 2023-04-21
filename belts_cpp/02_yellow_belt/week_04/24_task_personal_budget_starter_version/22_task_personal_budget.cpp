@@ -42,14 +42,14 @@ class Date {
         ss.ignore(1);
         ss >> _day;
 
-        _total_days = GetDaysFromEpoch();
+        _total_days = Days();
     }
 
     int GetTotalDaysFromEpoch() const { return _total_days; }
 
     friend std::istream& operator>>(std::istream& is, Date& date);
 
-    int GetDaysFromEpoch() {
+    int Days() {
         int year = _year - _year_start;
         int days_count = 0;
         days_count += year * 365;
@@ -131,7 +131,7 @@ std::istream& operator>>(std::istream& is, Date& date) {
     is >> date._month;
     is.ignore(1);
     is >> date._day;
-    date._total_days = date.GetDaysFromEpoch();
+    date._total_days = date.Days();
 
     return is;
 }

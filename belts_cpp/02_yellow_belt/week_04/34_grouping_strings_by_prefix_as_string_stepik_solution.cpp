@@ -8,7 +8,7 @@ using namespace std;
 template <typename RandomIt>
 pair<RandomIt, RandomIt> FindStartsWith(
     RandomIt range_begin, RandomIt range_end, string prefix) {
-    // Все строки, начинающиеся с prefix, больше или равны строке "<prefix>"
+    // Все строки, начинающиеся с префикса "prefix", больше или равны строке "<prefix>"
     auto left = lower_bound(range_begin, range_end, prefix);
 
     // Составим строку, которая в рамках буквенных строк является точной верхней гранью множества строк, начинающихся с "prefix"

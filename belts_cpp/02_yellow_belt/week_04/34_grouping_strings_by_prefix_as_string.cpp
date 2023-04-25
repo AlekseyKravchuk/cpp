@@ -17,7 +17,7 @@ template <typename RandomIt>
 pair<RandomIt, RandomIt> FindStartsWith(
     RandomIt range_begin, RandomIt range_end,
     const string& prefix);
-    
+
 */
 
 template <typename RandomIt>
@@ -29,21 +29,17 @@ pair<RandomIt, RandomIt> FindStartsWith(RandomIt range_begin,
                                range_end,
                                prefix,
                                [](const std::string& pref, const std::string& rhs) {
-                                   if (rhs.compare(0, pref.size(), pref) == 0) {
-                                       return pref < rhs.substr(0, pref.size());
-                                   } else {
-                                       return pref < rhs;
-                                   }
+                                   return (rhs.compare(0, pref.size(), pref) != 0) ? pref < rhs : false;
                                });
     return {lb, ub};
 }
 
 int main() {
-    const vector<string> sorted_strings = {"moscow", "motovilikha", "murmansk"};
-    // const vector<string> sorted_strings = {"anadyr", "borisoglebsk", "dzehzhinsk", "moscow", "motovilikha", "murmansk"};
+    // const vector<string> sorted_strings = {"moscow", "motovilikha", "murmansk"};
+    const vector<string> sorted_strings = {"anadyr", "bologoe", "borisoglebsk", "dzehzhinsk", "moscow", "motovilikha", "murmansk"};
 
     const auto mo_result =
-        FindStartsWith(begin(sorted_strings), end(sorted_strings), "mo");
+        FindStartsWith(begin(sorted_strings), end(sorted_strings), "bo");
     for (auto it = mo_result.first; it != mo_result.second; ++it) {
         cout << *it << " ";
     }

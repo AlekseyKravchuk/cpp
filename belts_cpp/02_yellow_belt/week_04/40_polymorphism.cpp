@@ -10,7 +10,9 @@ class Animal {
         std::cout << _type << " eats "s << fruit << std::endl;
     }
 
-    virtual void Voice() const {}
+    // требуем, чтобы этот метод был реализован во всех классах-потомках
+    // делаем метод Sound чисто виртуальным (pure virtual) или абстрактным
+    virtual void Sound() const = 0;
 
    private:
     const std::string _type;
@@ -20,7 +22,7 @@ class Cat : public Animal {
    public:
     Cat() : Animal("cat"s) {}
 
-    void Voice() const override {
+    void Sound() const override {
         std::cout << "Meow!" << std::endl;
     }
 };
@@ -29,7 +31,7 @@ class Dog : public Animal {
    public:
     Dog() : Animal("dog"s) {}
 
-    void Voice() const override {
+    void Sound() const override {
         std::cout << "Whaf!" << std::endl;
     }
 };
@@ -38,7 +40,7 @@ class Parrot : public Animal {
    public:
     Parrot(const std::string name) : Animal("parrot"s), _name(name) {}
 
-    void Voice() const override {
+    void Sound() const override {
         std::cout << _name << " is good!"s << std::endl;
     }
 
@@ -46,16 +48,28 @@ class Parrot : public Animal {
     const std::string _name;
 };
 
+// класс Horse отличается от предыдущих тем, что в нем не определен метод Sound
+class Horse : public Animal {
+   public:
+    Horse() : Animal("horse"s) {}
+};
+
 void MakeSound(const Animal& animal) {
-    animal.Voice();
+    animal.Sound();
 }
 
 void Test1() {
     Cat cat;
     Dog dog;
     Parrot parrot("Kesha"s);
+
+    // // в классе Horse у нас нет реализации абстрактного метода Voice (задан в базовом абстрактном классе Animal),
+    // // поэтому мы не можем создавать экземпляры такого класса
+    // Horse horse;
+
     cat.Eat("apple"s);
     dog.Eat("orange"s);
+    parrot.Eat("banana"s);
 
     std::cout << "======================"s << std::endl;
 

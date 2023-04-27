@@ -48,7 +48,8 @@ class Parrot : public Animal {
     const std::string _name;
 };
 
-// класс Horse отличается от предыдущих тем, что в нем не определен метод Sound
+// у класса Horse нет реализации АБСТРАКТНОГО метода "Sound" => класс Horse является АБСТРАКТНЫМ
+// Базовый класс Animal также является АБСТРАКТНЫМ
 class Horse : public Animal {
    public:
     Horse() : Animal("horse"s) {}

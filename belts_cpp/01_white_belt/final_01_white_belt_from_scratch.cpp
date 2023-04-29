@@ -111,8 +111,8 @@ class Database {
     std::map<Date, std::set<std::string>> _date2events;
 };
 
-Date ParseDate(const std::string date_as_str) {
-    std::istringstream iss(date_as_str);
+Date ParseDate(const std::string date_str) {
+    std::istringstream iss(date_str);
     bool state = true;
 
     int year;
@@ -132,7 +132,7 @@ Date ParseDate(const std::string date_as_str) {
     if (state) {
         return Date{year, month, day};
     } else {
-        throw std::logic_error("Wrong date format: "s + date_as_str);
+        throw std::logic_error("Wrong date format: "s + date_str);
     }
 }
 
@@ -160,16 +160,16 @@ void ProcessCommands(std::istream& is, Database& db) {
             if (str2command.count(command)) {
                 switch (str2command[command]) {
                     case COMMAND::ADD: {
-                        std::string date_as_str, event;
-                        if (iss >> date_as_str >> event) {
-                            db.AddEvent(Date{ParseDate(date_as_str)}, event);
+                        std::string date_str, event;
+                        if (iss >> date_str >> event) {
+                            db.AddEvent(Date{ParseDate(date_str)}, event);
                         }
                         break;
                     }
                     case COMMAND::DEL: {
-                        std::string date_as_str, event;
-                        if (iss >> date_as_str) {
-                            Date date{ParseDate(date_as_str)};
+                        std::string date_str, event;
+                        if (iss >> date_str) {
+                            Date date{ParseDate(date_str)};
 
                             if (iss >> event) {
                                 if (db.DeleteEvent(date, event)) {
@@ -178,7 +178,7 @@ void ProcessCommands(std::istream& is, Database& db) {
                                     std::cout << "Event not found"s << std::endl;
                                 }
                             } else {
-                                int event_count = db.DeleteDate(date);
+                                const int event_count = db.DeleteDate(date);
                                 std::cout << "Deleted "s << event_count << " events"s << std::endl;
                             }
                         }

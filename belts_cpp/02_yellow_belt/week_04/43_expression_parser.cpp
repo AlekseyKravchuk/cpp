@@ -36,7 +36,7 @@ struct Variable : public Node {
 };
 
 struct Op : public Node {
-    Op(char value) : precedence([value] {
+    Op(char value) : precedence([value]() {
                          if (value == '*') {
                              return 2;
                          } else {

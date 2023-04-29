@@ -7,7 +7,9 @@ using namespace std::literals;
 // ================= Investigating inner workings of virtual functions mechanism =================
 // g++ -Wall -g -std=c++17 file_name.cpp -fdump-lang-class -o output_file_name
 
-// В результате использования флага "-fdump-lang-class" "*.cpp.001l.class"
+// В результате использования флага "-fdump-lang-class" будет создан файл "*.cpp.001l.class"
+// Далее в этом файли поиском ищем "Vtable for A", где "А" - это название исследуемого класса.
+// В возможные значения строки поиска: "Vtable for Animal", "Vtable for Cat", Vtable for Dog" и т.д.
 // ================================================================================================
 
 class Animal {

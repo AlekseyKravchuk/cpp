@@ -1,12 +1,10 @@
 #pragma once
 
+#include <iostream>
+#include <memory>
+
 #include "node.h"
 
-#include <memory>
-#include <iostream>
-
-using namespace std;
-
-shared_ptr<Node> ParseCondition(istream& is);
+std::shared_ptr<Node> ParseCondition(std::istream& is);
 
 void TestParseCondition();

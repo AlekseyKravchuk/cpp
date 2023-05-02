@@ -1,4 +1,3 @@
-#include <cctype>  // std::isdigit
 #include <cstdint>
 #include <iostream>
 #include <memory>
@@ -6,8 +5,6 @@
 #include <stack>
 #include <string>
 #include <vector>
-
-using namespace std::literals;
 
 // Внимание!
 // Для простоты разбора будем использовать только числа из одной цифры,
@@ -97,8 +94,8 @@ std::shared_ptr<Node> Parse(Iterator token, Iterator end, const int &x) {
     };
 
     while (token != end) {
-        const char &value = *token;
-        if (std::isdigit(value)) {
+        const auto &value = *token;
+        if (value >= '0' && value <= '9') {
             values.push(std::make_shared<Value>(value));
         } else if (value == 'x') {
             values.push(std::make_shared<Variable>(x));
@@ -121,12 +118,18 @@ std::shared_ptr<Node> Parse(Iterator token, Iterator end, const int &x) {
 }
 
 int main() {
-    // std::string tokens = "2+3*x"s;
-    std::string tokens = ""s;
-    int x = 1;
+    std::string tokens;
+    std::cout << "Enter expression: ";
+    std::getline(std::cin, tokens);
 
-    std::shared_ptr<Node> node = Parse(tokens.begin(), tokens.end(), x);
-    std::cout << "Expression value: " << node->Evaluate() << std::endl;
+    int x = 0;
+    auto node = Parse(tokens.begin(), tokens.end(), x);
+
+    std::cout << "Enter x: ";
+    while (std::cin >> x) {
+        std::cout << "Expression value: " << node->Evaluate() << std::endl;
+        std::cout << "Enter x: ";
+    }
 
     return 0;
 }

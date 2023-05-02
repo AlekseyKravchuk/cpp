@@ -26,6 +26,30 @@ int Date::GetDay() const {
     return _day;
 }
 
+bool Date::operator<(const Date& rhs) const {
+    return std::tuple(_year, _month, _day) < std::tuple(rhs.GetYear(), rhs.GetMonth(), rhs.GetDay());
+}
+
+bool Date::operator<=(const Date& rhs) const {
+    return std::tuple(_year, _month, _day) <= std::tuple(rhs.GetYear(), rhs.GetMonth(), rhs.GetDay());
+}
+
+bool Date::operator>(const Date& rhs) const {
+    return std::tuple(_year, _month, _day) > std::tuple(rhs.GetYear(), rhs.GetMonth(), rhs.GetDay());
+}
+
+bool Date::operator>=(const Date& rhs) const {
+    return std::tuple(_year, _month, _day) >= std::tuple(rhs.GetYear(), rhs.GetMonth(), rhs.GetDay());
+}
+
+bool Date::operator==(const Date& rhs) const {
+    return std::tuple(_year, _month, _day) == std::tuple(rhs.GetYear(), rhs.GetMonth(), rhs.GetDay());
+}
+
+bool Date::operator!=(const Date& rhs) const {
+    return std::tuple(_year, _month, _day) != std::tuple(rhs.GetYear(), rhs.GetMonth(), rhs.GetDay());
+}
+
 Date ParseDate(std::istringstream& iss) {
     bool state = true;
 
@@ -48,4 +72,12 @@ Date ParseDate(std::istringstream& iss) {
     } else {
         throw std::logic_error("Wrong date format: "s + iss.str());
     }
+}
+
+std::ostream& operator<<(std::ostream& os, const Date& date) {
+    os << std::setw(4) << std::setfill('0') << date.GetYear() << '-'
+       << std::setw(2) << std::setfill('0') << date.GetMonth() << '-'
+       << std::setw(2) << std::setfill('0') << date.GetDay();
+    
+    return os;
 }

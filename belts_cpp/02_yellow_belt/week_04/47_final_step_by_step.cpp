@@ -52,7 +52,7 @@ std::ostream& operator<<(std::ostream& os, const TokenType type) {
 }
 
 std::ostream& operator<<(std::ostream& os, const Token& token) {
-    os << "["s << token.value << ", "s << token.type << "]"s;
+    os << "["s << token.value << ", "s << token.type << "]"s << std::endl;
     return os;
 }
 
@@ -138,9 +138,12 @@ std::vector<Token> Tokenize(std::istream& is) {
 }
 
 int main() {
-    std::string str = ">= 2017-01-01 AND date < 2017-07-01 AND event == \"sport event\"";
-    std::istringstream iss(str);
-    std::vector<Token> res = Tokenize(iss);
+    std::string whole = "Find date >= 2017-01-01 AND date < 2017-07-01 AND event == \"sport event\" "s;
+    std::istringstream iss(whole);
+    std::string command{};
+    iss >> command;
+    std::cout << "Command = "s << command << std::endl;
+    std::vector<Token> res = Tokenize(iss >> std::ws);
     std::cout << res << std::endl;
     return 0;
 }

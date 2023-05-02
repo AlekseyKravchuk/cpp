@@ -1,5 +1,10 @@
+#pragma once
+
+#include <iomanip>
+#include <ostream>
 #include <sstream>
 #include <string>
+#include <tuple>
 
 using namespace std::literals;
 
@@ -10,10 +15,19 @@ class Date {
     int GetMonth() const;
     int GetDay() const;
 
+    bool operator<(const Date& rhs) const;
+    bool operator<=(const Date& rhs) const;
+    bool operator>(const Date& rhs) const;
+    bool operator>=(const Date& rhs) const;
+    bool operator==(const Date& rhs) const;
+    bool operator!=(const Date& rhs) const;
+
    private:
     int _year;
     int _month;
     int _day;
 };
 
-Date ParseDate(const std::string date_str);
+Date ParseDate(std::istringstream& iss);
+
+std::ostream& operator<<(std::ostream& os, const Date& date);

@@ -1,6 +1,8 @@
 #include <iostream>
-#include <stdexcept>
 #include <sstream>  // std::istringstream
+#include <stdexcept>
+#include <string>
+#include <vector>
 
 #include "condition_parser.h"
 #include "database.h"
@@ -8,10 +10,10 @@
 #include "node.h"
 #include "test_runner.h"
 
-std::string ParseEvent(std::istream& is) {
+std::string ParseEvent(std::istream& iss) {
     // Реализуйте эту функцию
     std::string str;
-    is >> str;
+    iss >> str;
     return str;
 }
 
@@ -22,27 +24,27 @@ int main() {
 
     Database db;
 
-    for (string line; std::getline(cin, line);) {
-        istringstream is(line);
+    for (std::string line; std::getline(std::cin, line);) {
+        std::istringstream iss(line);
 
         std::string command;
-        is >> command;
+        iss >> command;
         if (command == "Add") {
-            const auto date = ParseDate(is);
-            const auto event = ParseEvent(is);
+            const auto date = ParseDate(iss);
+            const auto event = ParseEvent(iss);
             db.Add(date, event);
         } else if (command == "Print") {
-            db.Print(cout);
+            db.Print(std::cout);
         } else if (command == "Del") {
-            auto condition = ParseCondition(is);
-            auto predicate = [condition](const Date& date, const string& event) {
+            auto condition = ParseCondition(iss);
+            auto predicate = [condition](const Date& date, const std::string& event) {
                 return condition->Evaluate(date, event);
             };
             int count = db.RemoveIf(predicate);
             std::cout << "Removed " << count << " entries" << std::endl;
         } else if (command == "Find") {
-            auto condition = ParseCondition(is);
-            auto predicate = [condition](const Date& date, const string& event) {
+            auto condition = ParseCondition(iss);
+            auto predicate = [condition](const Date& date, const std::string& event) {
                 return condition->Evaluate(date, event);
             };
 
@@ -50,17 +52,17 @@ int main() {
             for (const auto& entry : entries) {
                 std::cout << entry << std::endl;
             }
-            cout << "Found " << entries.size() << " entries" << endl;
+            std::cout << "Found " << entries.size() << " entries" << std::endl;
         } else if (command == "Last") {
             try {
-                std::cout << db.Last(ParseDate(is)) << std::endl;
-            } catch (invalid_argument&) {
+                std::cout << db.Last(ParseDate(iss)) << std::endl;
+            } catch (std::invalid_argument&) {
                 std::cout << "No entries" << std::endl;
             }
         } else if (command.empty()) {
             continue;
         } else {
-            throw logic_error("Unknown command: " + command);
+            throw std::logic_error("Unknown command: " + command);
         }
     }
 
@@ -69,19 +71,19 @@ int main() {
 
 void TestParseEvent() {
     {
-        istringstream is("event");
-        AssertEqual(ParseEvent(is), "event", "Parse event without leading spaces");
+        std::istringstream iss("event");
+        AssertEqual(ParseEvent(iss), "event", "Parse event without leading spaces");
     }
     {
-        istringstream is("   sport event ");
-        AssertEqual(ParseEvent(is), "sport event ", "Parse event with leading spaces");
+        std::stringstream iss("   sport event ");
+        AssertEqual(ParseEvent(iss), "sport event ", "Parse event with leading spaces");
     }
     {
-        istringstream is("  first event  \n  second event");
-        vector<string> events;
-        events.push_back(ParseEvent(is));
-        events.push_back(ParseEvent(is));
-        AssertEqual(events, vector<string>{"first event  ", "second event"}, "Parse multiple events");
+        std::istringstream iss("  first event  \n  second event");
+        std::vector<std::string> events;
+        events.push_back(ParseEvent(iss));
+        events.push_back(ParseEvent(iss));
+        AssertEqual(events, std::vector<std::string>{"first event  ", "second event"}, "Parse multiple events");
     }
 }
 

@@ -121,17 +121,16 @@ double EvaluatePostfixExpression(const std::string& postfix_str) {
 }
 
 int main() {
-    // std::string infix = "2+3"s;
-    std::string infix = "(5+7)/2"s;
-    // std::string infix = "5+7/2"s;
-    // std::string infix = "5*2-3"s;
-    // std::string infix = "5*(2-3)"s;
-    // std::string infix = "2+(3*(8-4))"s;
-    // std::cout << toPostfix(infix) << std::endl;
-
-    // std::string infix = "2+(3*(8-4))"s;
-    // std::string infix = "2+3"s;
-    std::string postfix_str = toPostfix(infix);
+    // std::string infix_str = "2+3"s;
+    // std::string infix_str = "(5+7)/2"s;
+    // std::string infix_str = "5+7/2"s;
+    // std::string infix_str = "5*2-3"s;
+    // std::string infix_str = "5*(2-3)"s;
+    // std::string infix_str = "2+(3*(8-4))"s;
+    // std::cout << toPostfix(infix_str) << std::endl;
+    // std::string infix_str = "2+(3*(8-4))"s;
+    std::string infix_str = "2+3"s;
+    std::string postfix_str = toPostfix(infix_str);
     std::cout << EvaluatePostfixExpression(postfix_str) << std::endl;
 
     return 0;

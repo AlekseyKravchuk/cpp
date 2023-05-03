@@ -23,10 +23,10 @@ void processToken(const char token, std::deque<char>& postfix, std::stack<char>&
     // 1) токен может быть числом
     if (std::isdigit(token)) {
         postfix.push_back(token);
-
     } else if (isOperator(token)) {  // 2) токен может быть оператором
-        // Пока на вершине стека "operator_stack" лежит оператор с бОльшим или равным приоритетом, чем текущий "token",
-        // перемещаем операторы из стека "operator_stack" в конец очереди "postfix".
+        // Если текущий токен является оператором, то помещаем его в стек "operator_stack" ПОСЛЕ СЛЕДУЮЩЕЙ ПРОВЕРКИ:
+        // пока на вершине стека "operator_stack" лежит оператор с бОльшим или равным приоритетом, чем у текущего "token"а,
+        // необходимо переместить оператор с вершины стека "operator_stack" в конец очереди "postfix".
         while (!op_stack.empty() &&
                op_stack.top() != '(' &&
                priority.at(op_stack.top()) >= priority.at(token)) {
@@ -36,7 +36,6 @@ void processToken(const char token, std::deque<char>& postfix, std::stack<char>&
 
         // После того, как проблема согласования приоритетов операций решена, помещаем текущий токен в стек "operator_stack".
         op_stack.push(token);
-
     } else if (token == '(') {  // 3) токен может быть левой скобкой (открывающей)
         op_stack.push(token);
 

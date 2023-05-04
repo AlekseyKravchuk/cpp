@@ -21,7 +21,7 @@ int main() {
     // cout << min1 << endl;
     // cout << min2 << endl;
 
-    cout << "sizeof(uint8_t) = "s << sizeof(uint8_t) << " bytes, range: ["
-         << static_cast<int>(numeric_limits<uint8_t>::min()) << ", "s
-         << static_cast<int>(numeric_limits<uint8_t>::max()) << "] "s << endl;
+    cout << "sizeof(uint64_t) = "s << sizeof(uint64_t) << " bytes, range: ["
+         << numeric_limits<uint64_t>::min() << ", "s
+         << numeric_limits<uint64_t>::max() << "] "s << endl;
 }

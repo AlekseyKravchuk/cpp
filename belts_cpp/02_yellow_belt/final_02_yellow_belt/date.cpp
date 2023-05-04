@@ -65,7 +65,6 @@ Date ParseDate(std::istringstream& iss) {
 
     int day;
     state = state && (iss >> day);
-    state = state && iss.eof();  // iss.eof() <=> входных данных больше нет, завершаем ввод данных
 
     if (state) {
         return Date{year, month, day};

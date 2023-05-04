@@ -44,19 +44,20 @@ int main() {
     // std::vector<int> v = {1, 2, 3, 4, 4, 4, 5, 5, 5, 5, 5, 6, 7};
     // int x = 5;
     std::vector<int> v = {5, 9, 11, 12, 17, 21, 21, 21, 25, 26, 26, 26, 26, 27};
-    int x = 21;
+    int x = 1;
 
-    auto it_lbound = std::lower_bound(v.begin(), v.end(), x);
+    // auto it_lbound = std::lower_bound(v.begin(), v.end(), x);
     // std::cout << it_lbound - v.begin() << std::endl;
 
     auto it_ubound = std::upper_bound(v.begin(), v.end(), x);
+    std::cout << "Upper bound for x = "s << x << ": "s << *it_ubound << std::endl;
     // std::cout << it_ubound - v.begin() << std::endl;
 
-    PrintRange(it_lbound, it_ubound);
+    // PrintRange(it_lbound, it_ubound);
 
-    int y = 26;
-    auto range = std::equal_range(v.begin(), v.end(), y);
-    PrintRange(range.first, range.second);
+    // int y = 26;
+    // auto range = std::equal_range(v.begin(), v.end(), y);
+    // PrintRange(range.first, range.second);
 
 
     return 0;

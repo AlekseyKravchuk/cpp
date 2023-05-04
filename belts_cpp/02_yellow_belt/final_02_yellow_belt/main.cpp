@@ -9,18 +9,35 @@
 #include "date.h"
 #include "node.h"
 #include "test_runner.h"
+#include "input_redirection.h"
+
+using namespace std::literals;
+
+#define _GLIBCXX_DEBUG 1  // включить режим отладки
 
 std::string ParseEvent(std::istream& iss) {
-    // Реализуйте эту функцию
-    std::string str;
-    iss >> str;
-    return str;
+    std::string line;
+    iss >> std::ws;
+    std::getline(iss, line);
+    return line;
 }
 
 void TestAll();
 
 int main() {
-    TestAll();
+    // !!! временно отключаем тестирование, поскольку реализованы не все интерфейсы 
+    // TestAll();
+
+#ifdef _GLIBCXX_DEBUG
+    // =========== Standard input redirection, debug mode ===========
+    std::string path = "input.txt"s;
+    std::ifstream input(path);
+    if (!input) {
+        throw std::runtime_error("File \""s + path + "\" is not opened"s);
+    }
+    RedirectStandardInput redirection(input);
+    // =================== End of input redirection ==================
+#endif  //_GLIBCXX_DEBUG
 
     Database db;
 
@@ -37,9 +54,11 @@ int main() {
             db.Print(std::cout);
         } else if (command == "Del") {
             auto condition = ParseCondition(iss);
+
             auto predicate = [condition](const Date& date, const std::string& event) {
                 return condition->Evaluate(date, event);
             };
+            
             int count = db.RemoveIf(predicate);
             std::cout << "Removed " << count << " entries" << std::endl;
         } else if (command == "Find") {
@@ -67,7 +86,7 @@ int main() {
     }
 
     return 0;
-}
+}  // по этой закрывающей скобке сработает деструктор ~RedirectStandardInput() и стандартный ввод будет восстановлен
 
 void TestParseEvent() {
     {

@@ -7,7 +7,6 @@
 #include <string>
 #include <vector>
 
-//-------------------------------------------------------------------------------------------------
 class TestRunner {
    public:
     template <typename test_func>
@@ -19,7 +18,7 @@ class TestRunner {
    private:
     int fail_count = 0;
 };
-//-------------------------------------------------------------------------------------------------
+
 template <typename test_func>
 void TestRunner::RunTest(test_func func, const std::string& test_name) {
     try {
@@ -30,7 +29,7 @@ void TestRunner::RunTest(test_func func, const std::string& test_name) {
         std::cerr << "FAIL: " << test_name << e.what() << std::endl;
     }
 }
-//-------------------------------------------------------------------------------------------------
+
 template <typename T>
 std::ostream& operator<<(std::ostream& os, const std::set<T>& s) {
     os << "{";
@@ -44,7 +43,7 @@ std::ostream& operator<<(std::ostream& os, const std::set<T>& s) {
     }
     return os << "}";
 }
-//-------------------------------------------------------------------------------------------------
+
 template <typename Key, typename Value>
 std::ostream& operator<<(std::ostream& os, const std::map<Key, Value>& map) {
     os << "{";
@@ -58,7 +57,7 @@ std::ostream& operator<<(std::ostream& os, const std::map<Key, Value>& map) {
     }
     return os << "}";
 }
-//-------------------------------------------------------------------------------------------------
+
 template <typename T>
 std::ostream& operator<<(std::ostream& os, const std::vector<T>& s) {
     os << "{";
@@ -72,9 +71,9 @@ std::ostream& operator<<(std::ostream& os, const std::vector<T>& s) {
     }
     return os << "}";
 }
-//-------------------------------------------------------------------------------------------------
+
 void Assert(bool b, const std::string& hint);
-//-------------------------------------------------------------------------------------------------
+
 template <typename T, typename U>
 void AssertEqual(const T& t, const U& u, const std::string& hint) {
     if (t != u) {
@@ -84,4 +83,4 @@ void AssertEqual(const T& t, const U& u, const std::string& hint) {
         throw std::runtime_error(os.str());
     }
 }
-//-------------------------------------------------------------------------------------------------
+

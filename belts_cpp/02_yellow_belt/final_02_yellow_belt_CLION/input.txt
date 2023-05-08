@@ -1,0 +1,39 @@
+Last
+Last 2017-05-02
+Add 2017-07-08 e2
+Add 2017-07-08 e6
+Add 2020-01-01 ""
+Add 2019-01-01 e8
+Add 2017-06-01 e1
+Add 2017-07-08 e2
+Add 2017-05-02 e0-1
+Add 2017-07-08 e7
+Add 2015-01-01 e0-0
+Print
+Last
+Last 2017-05-05
+Last
+Last 2018-01-01
+Last
+Print
+Last
+Del date == 2017-06-01 OR event == "e7" OR date < 2017-06-01
+Last
+Print
+Last
+Find event != "e6"
+Last
+Del event == "e2"
+Last
+Find event != "e6"
+Last
+Print
+Last
+Del date < 2018-06-01
+Last
+Print
+Last
+Del date < 2018-06-01
+Last
+Find event != "e6"
+Last

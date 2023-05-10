@@ -34,36 +34,26 @@ ForwardIterator max_element_if(
 
 using namespace std;
 
-template <typename ForwardIterator, typename UnaryPredicate>
-ForwardIterator max_element_if(ForwardIterator first, ForwardIterator last, UnaryPredicate pred) {
-    if (first == last) {
-        return last;
-    }
+// template <typename ForwardIterator, typename UnaryPredicate>
+// ForwardIterator max_element_if(ForwardIterator first, ForwardIterator last, UnaryPredicate pred) {
+//     if (first == last) {
+//         return last;
+//     }
 
-    ForwardIterator largest = first;
-    ForwardIterator first_bkp = first;
+//     ForwardIterator largest{first}, it{first}, checker{first};
 
-    bool isPredTriggered = false;
-    bool allElementsEqualAndPredSatisfied = false;
-    // while (++first != last) {
-    //     if ((*largest < *first) && (pred(*first))) {
-    //         largest = first;
-    //         isPredTriggered = true;
-    //     }
-    // }
+//     while (++it != last) {
+//         if (pred(*it)) {
+//             if (*largest < *it) {
+//                 largest = it;
+//             }
+//             ++checker;
+//         }
+//     }
 
-    while (++first != last) {
-        if (pred(*first)) {
-            if (*largest < *first) {
-                largest = first;
-                isPredTriggered = true;
-            }
-            allElementsEqualAndPredSatisfied = allElementsEqualAndPredSatisfied && (*largest == *first);
-        }
-    }
+//     return (largest != first) ? largest : ((checker != first) ? first : last);
+// }
 
-    return isPredTriggered ? largest : (allElementsEqualAndPredSatisfied ? first_bkp : last);
-}
 
 void TestUniqueMax() {
     auto IsEven = [](int x) {
@@ -141,11 +131,37 @@ void TestEqualValues() {
         "max_element_if() returned end of the container but there is at least one suitable element");
 }
 
+void TestDescendingOrderWithRepetitions() {
+    vector<int> numbers = {5, 5, 5, 5, 5, 3, 1};
+
+    auto IsOdd = [](int x) {
+        return x % 2 != 0;
+    };
+
+    Assert(
+        max_element_if(numbers.begin(), numbers.end(), IsOdd) == numbers.begin(),
+        "TestDescendingOrderWithRepetitions");
+}
+
+void TestExtra() {
+    vector<int> numbers = {5, 5, 5, 7, 5, 5, 8, 5, 5};
+
+    auto IsOdd = [](int x) {
+        return x % 2 != 0;
+    };
+
+    Assert(
+        max_element_if(numbers.begin(), numbers.end(), IsOdd) == (numbers.begin() + 3),
+        "TestExtra");
+}
+
 int main() {
     TestRunner tr;
     tr.RunTest(TestUniqueMax, "TestUniqueMax");
     tr.RunTest(TestSeveralMax, "TestSeveralMax");
     tr.RunTest(TestNoMax, "TestNoMax");
     tr.RunTest(TestEqualValues, "TestEqualValues");
+    tr.RunTest(TestDescendingOrderWithRepetitions, "TestDescendingOrderWithRepetitions");
+    tr.RunTest(TestExtra, "TestExtra");
     return 0;
 }

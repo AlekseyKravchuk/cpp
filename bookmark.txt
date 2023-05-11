@@ -1,3 +1,0 @@
-24.01.2023:
-    - p. 182, "Leveraging the RAII idiom":  Vardan Grigoryan_ Shunguang Wu - Expert C++_ Become a proficient programmer by learning coding best practices with C++17 and C++20's latest features (2020)
-    - p. 112, "Create an iterable range":   Bill Weinman - C++20 STL Cookbook_ Leverage the latest features of the STL to solve real-world problems (2022)

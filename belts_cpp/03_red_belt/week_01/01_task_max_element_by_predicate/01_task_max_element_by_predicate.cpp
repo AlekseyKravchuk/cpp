@@ -13,18 +13,14 @@ ForwardIterator max_element_if(
 возвращающую итератор на максимальный элемент в диапазоне [first, last), для которого предикат pred возвращает true. Если диапазон содержит несколько подходящих элементов с максимальным значением, то результатом будет первое вхождение такого элемента. Если диапазон не содержит подходящих элементов, то функция должна вернуть last.
 
 Гарантируется, что:
-
-    pred принимает аргумент того типа, который имеют элементы диапазона
-
-    для ForwardIterator определены операторы ++, ==, !=, * (разыменование)
-
-    для типа, на который указывает итератор, определён оператор < («меньше»)
-
+    - pred принимает аргумент того типа, который имеют элементы диапазона
+    - для ForwardIterator определены операторы ++, ==, !=, * (разыменование)
+    - для типа, на который указывает итератор, определён оператор < («меньше»)
 */
 
 #include <algorithm>
 #include <forward_list>
-#include <iterator>
+#include <iterator>  // std::distance
 #include <list>
 #include <numeric>
 #include <string>
@@ -34,26 +30,32 @@ ForwardIterator max_element_if(
 
 using namespace std;
 
-// template <typename ForwardIterator, typename UnaryPredicate>
-// ForwardIterator max_element_if(ForwardIterator first, ForwardIterator last, UnaryPredicate pred) {
-//     if (first == last) {
-//         return last;
-//     }
+template <typename ForwardIterator, typename UnaryPredicate>
+ForwardIterator max_element_if(ForwardIterator first, ForwardIterator last, UnaryPredicate pred) {
+    if (first == last) {
+        return last;
+    }
 
-//     ForwardIterator largest{first}, it{first}, checker{first};
+    // отдельно рассматриваем случай, когда в контейнере ровно 1 элемент
+    if (std::distance(first, last) == 1) {
+        return (pred(*first)) ? first : last;
+    }
 
-//     while (++it != last) {
-//         if (pred(*it)) {
-//             if (*largest < *it) {
-//                 largest = it;
-//             }
-//             ++checker;
-//         }
-//     }
+    auto it = first;
+    auto largest = (pred(*first) ? first : last);
+    
+    while (++it != last) {
+        if (pred(*it)) {
+            if (largest != last) {
+                largest = (*largest < *it) ? it : largest;
+            } else {
+                largest = it;
+            }
+        }
+    }
 
-//     return (largest != first) ? largest : ((checker != first) ? first : last);
-// }
-
+    return largest;
+}
 
 void TestUniqueMax() {
     auto IsEven = [](int x) {
@@ -155,6 +157,30 @@ void TestExtra() {
         "TestExtra");
 }
 
+void Test_1() {
+    vector<int> numbers = {5};
+
+    auto IsOdd = [](int x) {
+        return x % 2 != 0;
+    };
+
+    Assert(
+        max_element_if(numbers.begin(), numbers.end(), IsOdd) == (numbers.begin()),
+        "Test_1");
+}
+
+void Test_2() {
+    vector<int> numbers = {5, 5};
+
+    auto IsOdd = [](int x) {
+        return x % 2 != 0;
+    };
+
+    Assert(
+        max_element_if(numbers.begin(), numbers.end(), IsOdd) == (numbers.begin()),
+        "Test_2");
+}
+
 int main() {
     TestRunner tr;
     tr.RunTest(TestUniqueMax, "TestUniqueMax");
@@ -163,5 +189,7 @@ int main() {
     tr.RunTest(TestEqualValues, "TestEqualValues");
     tr.RunTest(TestDescendingOrderWithRepetitions, "TestDescendingOrderWithRepetitions");
     tr.RunTest(TestExtra, "TestExtra");
+    tr.RunTest(Test_1, "Test_1");
+    tr.RunTest(Test_2, "Test_2");
     return 0;
 }

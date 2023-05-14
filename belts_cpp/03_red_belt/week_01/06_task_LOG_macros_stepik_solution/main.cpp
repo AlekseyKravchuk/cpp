@@ -47,37 +47,46 @@ private:
 */
 
 class Logger {
-   public:
-    explicit Logger(std::ostream& output_stream) : os(output_stream) {}
+public:
+  explicit Logger(std::ostream& output_stream) : os(output_stream) {
+  }
 
-    void SetLogLine(bool value) { log_line = value; }
-    void SetLogFile(bool value) { log_file = value; }
+  void SetLogLine(bool value) { log_line = value; }
+  void SetLogFile(bool value) { log_file= value; }
 
-    void Log(const std::string& message) {
-        os << message;
-    }
+  void Log(const std::string& message);
 
-    bool line() { return log_line; }
-    bool file() { return log_file; }
+  void SetFile(const std::string& filename) {
+    file = filename;
+  }
 
-   private:
-    std::ostream& os;
-    bool log_line = false;
-    bool log_file = false;
+  void SetLine(int line_number) {
+    line = line_number;
+  }
+
+private:
+  std::ostream& os;
+  bool log_line = false;
+  bool log_file = false;
+  std::string file;
+  int line;
 };
 
-#define LOG(logger, message) {                          \
-        std::ostringstream oss;                         \
-        if (logger.file() && logger.line()) {           \
-            oss << __FILE__ << ":"s << __LINE__ << ' '; \
-        } else if (logger.file() && !logger.line()) {   \
-            oss << __FILE__ << ' ';                     \
-        } else if (!logger.file() && logger.line()) {   \
-            oss << "Line "s << __LINE__ << ' ';         \
-        }                                               \
-        oss << message << "\n"s;                        \
-        logger.Log(oss.str());                          \
-}                                                       
+void Logger::Log(const std::string& message) {
+  if (log_file && log_line) {
+    os << file << ':' << line << ' ';
+  } else if (log_file) {
+    os << file << ' ';
+  } else if (log_line) {
+    os << "Line " << line << ' ';
+  }
+  os << message << '\n';
+}
+
+#define LOG(logger, message) \
+  logger.SetFile(__FILE__);  \
+  logger.SetLine(__LINE__);  \
+  logger.Log(message);                                                    
 
 void TestLog() {
 /* Для написания юнит-тестов в этой задаче нам нужно фиксировать конкретные номера строк в ожидаемом значении

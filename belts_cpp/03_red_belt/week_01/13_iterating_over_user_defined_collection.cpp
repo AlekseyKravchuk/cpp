@@ -16,7 +16,7 @@ struct IteratorRange {
 
 template <typename T>
 size_t RangeSize(IteratorRange<T> it_range) {
-    return std::distance(it_range.first, it_range.last);
+    return std::distance(it_range.begin(), it_range.end());
 }
 
 // // Создание копии вектора нам не подходит в силу низкой эффективности этого подхода
@@ -30,6 +30,12 @@ size_t RangeSize(IteratorRange<T> it_range) {
 template <typename T>
 IteratorRange<typename std::vector<T>::iterator> Head(std::vector<T>& v, size_t prefix_size) {
     return {v.begin(), std::next(v.begin(), std::min(v.size(), prefix_size))};
+}
+
+// пишем порождающую функцию
+template <typename Iterator>
+IteratorRange<Iterator> MakeRange(Iterator it_begin, Iterator it_end) {
+    return IteratorRange<Iterator>{it_begin, it_end};
 }
 
 int main() {
@@ -50,6 +56,15 @@ int main() {
 
     for (const auto& elm : v) {
         std::cout << elm << ' ';
+    }
+    std::cout << std::endl;
+
+    // IteratorRange<std::vector<int>::iterator> second_half{v.begin() + v.size() / 2, v.end()};
+    auto second_half = MakeRange(v.begin() + v.size() / 2, v.end());
+
+    std::cout << "second half of vector: "s;
+    for (int x : second_half) {
+        std::cout << x << ' ';
     }
     std::cout << std::endl;
 

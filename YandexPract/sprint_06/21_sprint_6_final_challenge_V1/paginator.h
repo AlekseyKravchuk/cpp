@@ -9,22 +9,22 @@
 template <typename Iterator>
 class IteratorRange {
    public:
-    IteratorRange(Iterator pageBeginIt, Iterator pageEndIt) : _iteratorRange(pageBeginIt, pageEndIt) {}
+    IteratorRange(Iterator pageBeginIt, Iterator pageEndIt) : _it_range(pageBeginIt, pageEndIt) {}
 
     Iterator begin() const {
-        return _iteratorRange.first;
+        return _it_range.first;
     }
 
     Iterator end() const {
-        return _iteratorRange.second;
+        return _it_range.second;
     }
 
     size_t size() const {
-        return std::abs(std::distance(_iteratorRange.first, _iteratorRange.second));
+        return std::abs(std::distance(_it_range.first, _it_range.second));
     }
 
    private:
-    std::pair<Iterator, Iterator> _iteratorRange;
+    std::pair<Iterator, Iterator> _it_range;
 };
 
 template <typename Iterator>

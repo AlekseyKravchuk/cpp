@@ -42,11 +42,25 @@ size_t RangeSize(IteratorRange<T> it_range) {
 //     return {c.begin(), std::next(c.begin(), std::min(c.size(), prefix_size))};
 // }
 
+// // Чтобы была возможность работать с константными контейнерами, нужно либо перегружать
+// // функцию "Head", либо использовать "auto"
+// template <typename Container>
+// IteratorRange<typename Container::iterator> Head(Container& c, size_t prefix_size) {
+//     return IteratorRange<typename Container::iterator>{c.begin(), std::next(c.begin(), std::min(c.size(), prefix_size))};
+// }
+
+// template <typename Container>
+// IteratorRange<typename Container::const_iterator> Head(const Container& c, size_t prefix_size) {
+//     return IteratorRange<typename Container::const_iterator>{c.cbegin(), std::next(c.cbegin(), std::min(c.size(), prefix_size))};
+// }
+
 template <typename Container>
 auto Head(Container& c, size_t prefix_size) {
-    return IteratorRange{c.begin(), std::next(c.begin(), std::min(c.size(), prefix_size))};
+    // компилятор сам выводит тип итератора, с которым нужно инстанцировать шаблон класса "IteratorRange"
+    return IteratorRange{
+        c.begin(), std::next(c.begin(), std::min(c.size(), prefix_size))
+    };
 }
-
 
 // порождающая функция
 template <typename Iterator>

@@ -388,22 +388,22 @@ class SearchServer {
 template <typename Iterator>
 class IteratorRange {
    public:
-    IteratorRange(Iterator pageBeginIt, Iterator pageEndIt) : _it_range(pageBeginIt, pageEndIt) {}
+    IteratorRange(Iterator pageBeginIt, Iterator pageEndIt) : _p(pageBeginIt, pageEndIt) {}
 
     Iterator begin() const {
-        return _it_range.first;
+        return _p.first;
     }
 
     Iterator end() const {
-        return _it_range.second;
+        return _p.second;
     }
 
     size_t size() const {
-        return abs(distance(_it_range.first, _it_range.second));
+        return abs(distance(_p.first, _p.second));
     }
 
    private:
-    pair<Iterator, Iterator> _it_range;
+    pair<Iterator, Iterator> _p;
 };
 
 template <typename Iterator>

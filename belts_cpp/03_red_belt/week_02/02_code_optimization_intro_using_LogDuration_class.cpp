@@ -5,10 +5,10 @@
 // вариант со вставкой элементов в начало вектора (и с последующим сдвигом всех элементов массива)
 std::vector<std::string> GenerateBigVector() {
     std::vector<std::string> result;
+    int vec_size = 25'000;
     {
         // LogDuration log_duration("GenerateBigVector"s);
         LOG_DURATION("GenerateBigVector"s);
-        int vec_size = 30'000;
         for (int i = 0; i < vec_size; ++i) {
             result.insert(std::begin(result), std::to_string(i));
         }
@@ -19,10 +19,10 @@ std::vector<std::string> GenerateBigVector() {
 // вариант без резервирования
 std::vector<std::string> GenerateBigVectorEnhanced_V1() {
     std::vector<std::string> result;
+    int vec_size = 25'000;
     {
         // LogDuration log_duration("GenerateBigVectorEnhanced_V1"s);
         LOG_DURATION("GenerateBigVectorEnhanced_V1"s);
-        int vec_size = 30'000;
         for (int i = 0; i < vec_size; ++i) {
             result.push_back(std::to_string(i));
         }
@@ -33,10 +33,10 @@ std::vector<std::string> GenerateBigVectorEnhanced_V1() {
 // вариант с резервированием
 std::vector<std::string> GenerateBigVectorEnhanced_V2() {
     std::vector<std::string> result;
+    int vec_size = 25'000;
     {
         // LogDuration log_duration("GenerateBigVectorEnhanced_V2"s);
         LOG_DURATION("GenerateBigVectorEnhanced_V2"s);
-        int vec_size = 30'000;
         result.reserve(vec_size);
         for (int i = 0; i < vec_size; ++i) {
             result.push_back(std::to_string(i));

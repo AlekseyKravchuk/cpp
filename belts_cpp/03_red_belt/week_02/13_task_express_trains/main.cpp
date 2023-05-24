@@ -59,6 +59,34 @@ GO 5 100
 92
 */
 
+class RouteManagerSlow {
+   public:
+    void AddRoute(int start, int finish) {
+        reachable_lists_[start].push_back(finish);
+        reachable_lists_[finish].push_back(start);
+    }
+    int FindNearestFinish(int start, int finish) const {
+        int result = abs(start - finish);
+        if (reachable_lists_.count(start) < 1) {
+            return result;
+        }
+        const std::vector<int>& reachable_stations = reachable_lists_.at(start);
+        if (!reachable_stations.empty()) {
+            result = std::min(result,
+                              abs(finish - *std::min_element(
+                                               std::begin(reachable_stations),
+                                               std::end(reachable_stations),
+                                               [finish](int lhs, int rhs) {
+                                                   return abs(lhs - finish) < abs(rhs - finish);
+                                               })));
+        }
+        return result;
+    }
+
+   private:
+    std::map<int, std::vector<int>> reachable_lists_;
+};
+
 class RouteManager {
    public:
     void AddRoute(int start, int finish) {
@@ -79,7 +107,7 @@ class RouteManager {
 
         const std::set<int>& reachable_stations = _reachables.at(start);
         if (!reachable_stations.empty()) {
-            auto it = reachable_stations.upper_bound(finish);
+            std::set<int>::const_iterator it = reachable_stations.upper_bound(finish);
 
             if (it == reachable_stations.begin()) {
                 result = std::min(result, abs(finish - *it));
@@ -96,7 +124,25 @@ class RouteManager {
     std::map<int, std::set<int>> _reachables;
 };
 
-void RunBody() {
+void RunSlowStub() {
+    RouteManagerSlow routes;
+    int query_count;
+    std::cin >> query_count;
+
+    for (int query_id = 0; query_id < query_count; ++query_id) {
+        std::string query_type;
+        std::cin >> query_type;
+        int start, finish;
+        std::cin >> start >> finish;
+        if (query_type == "ADD") {
+            routes.AddRoute(start, finish);
+        } else if (query_type == "GO") {
+            std::cout << routes.FindNearestFinish(start, finish) << "\n";
+        }
+    }
+}
+
+void RunSolution() {
     RouteManager routes;
     int query_count;
     std::cin >> query_count;
@@ -119,13 +165,24 @@ int main() {
     std::cin.tie(nullptr);
 
 #ifdef _GLIBCXX_DEBUG
-    REDIRECT_INPUT("input.txt"s);
     {
-        LOG_DURATION("RouteManager queries"s);
-        RunBody();
+        REDIRECT_INPUT("input.txt"s);
+        {
+            LOG_DURATION("Solution"s);
+            RunSolution();
+        }
     }
+
+    {
+        REDIRECT_INPUT("input.txt"s);
+        {
+            LOG_DURATION("SlowStub"s);
+            RunSlowStub();
+        }
+    }
+
 #else
-    RunBody();
+    RunSolution();
 #endif  //_GLIBCXX_DEBUG
     return 0;
 }

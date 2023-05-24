@@ -24,8 +24,8 @@ class LogDuration {
         auto duration = finish - _start;
         std::cerr
             << _message
-            << std::chrono::duration_cast<std::chrono::milliseconds>(duration).count()
-            << " milliseconds"s << std::endl;
+            << std::chrono::duration_cast<std::chrono::microseconds>(duration).count()
+            << " microseconds"s << std::endl;
     }
 
    private:

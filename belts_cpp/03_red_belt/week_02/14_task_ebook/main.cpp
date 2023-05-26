@@ -1,13 +1,15 @@
 #include <algorithm>
+#include <functional>  // std::greater
 #include <iomanip>
 #include <iostream>
 #include <iterator>  // std::distance
 #include <map>
+#include <numeric>  // std::partial_sum
 #include <set>
 #include <utility>
 #include <vector>
 
-// #define _GLIBCXX_DEBUG 1  // включить режим отладки
+#define _GLIBCXX_DEBUG 1  // включить режим отладки
 
 #ifdef _GLIBCXX_DEBUG
 #include "input_redirection.h"
@@ -89,23 +91,23 @@ class ReadingManagerSlow {
     }
 };
 
-class ReadingManager {
+class ReadingManager_V1 {
    public:
-    ReadingManager() = default;
+    ReadingManager_V1() = default;
 
-    void Read(int user_id, int page_count) {
+    void Read(int user_id, int page_count) noexcept {
         if (!_checker.count(user_id)) {  // если пользователя с данным "user_id" ещё нет, то всё тривиально
             _checker.emplace(user_id, page_count);
             _users.emplace(user_id, page_count);
-        } else {                                                          // пользователь (чтец) с таким "user_id" уже существует
-            std::pair<int, int> to_be_deleted = *_checker.find(user_id);  // формируем пару, которую нужно удалить из "_users"
-            _checker.at(user_id) = page_count;                            // актуализируем "_checker"
+        } else {                                                                 // пользователь (чтец) с таким "user_id" уже существует
+            const std::pair<int, int>& to_be_deleted = *_checker.find(user_id);  // формируем пару, которую нужно удалить из "_users"
+            _checker[user_id] = page_count;                                      // актуализируем "_checker"
             _users.erase(to_be_deleted);
             _users.insert({user_id, page_count});  // наконец, актуализируем "_users"
         }
     }
 
-    double Cheer(int user_id) const {
+    double Cheer(int user_id) const noexcept {
         if (_checker.count(user_id) == 0) {
             return 0;
         }
@@ -115,13 +117,13 @@ class ReadingManager {
             return 1;
         }
 
-        int numbers_of_lagging_users = GetNumberOfLaggingUsers(user_id);
-        return static_cast<double>(numbers_of_lagging_users) / (users_count - 1);
+        // int numbers_of_lagging_users = GetNumberOfLaggingUsers(user_id);
+        return static_cast<double>(GetNumberOfLaggingUsers(user_id)) / (users_count - 1);
     }
 
    private:
     struct comp {
-        bool operator()(std::pair<int, int> lhs, std::pair<int, int> rhs) const {
+        bool operator()(const std::pair<int, int>& lhs, const std::pair<int, int>& rhs) const {
             if (lhs.second != rhs.second) {
                 return lhs.second > rhs.second;
             } else {
@@ -135,7 +137,7 @@ class ReadingManager {
     }
 
     int GetNumberOfLaggingUsers(int user_id) const {
-        std::pair<int, int> p = *_checker.find(user_id);
+        const std::pair<int, int>& p = *_checker.find(user_id);
         auto it = _users.upper_bound({0, p.second});
         return std::distance(it, _users.end());
     }
@@ -143,6 +145,64 @@ class ReadingManager {
     // contains following pairs: <user_id, page_count> which are sorted by descending order of page_count
     std::set<std::pair<int, int>, comp> _users{};
 
+    std::map<int, int> _checker{};  // user_id => page_count mapping
+};
+
+class ReadingManager_V2 {
+   public:
+    ReadingManager_V2() = default;
+
+    void Read(int user_id, int page_count) noexcept {
+        // если пользователя с данным "user_id" ещё нет,
+        // то просто добавляем данные в "_checker" и в "_users, пересчитываем partial_sums
+        if (!_checker.count(user_id)) {
+            _checker.emplace(user_id, page_count);
+            _pcounts_to_ids[page_count].insert(user_id);
+        } else {  // пользователь с данным "user_id" уже существует
+            int old_page_count = _checker[user_id];
+            _checker[user_id] = page_count;  // актуализируем "_checker"
+
+            if (_pcounts_to_ids[old_page_count].size() == 1u) {
+                _pcounts_to_ids.erase(old_page_count);
+                _accumulated_sizes.erase(old_page_count);
+            } else {
+                _pcounts_to_ids[old_page_count].erase(user_id);
+            }
+
+            _pcounts_to_ids[page_count].insert(user_id);
+        }
+
+        // после каждой операции "Read" нужно обновить словарь "_accumulated_sizes"
+        UpdateAccumulatedSizes();
+    }
+
+    void UpdateAccumulatedSizes() {
+        int prev_sz = 0;
+        for (auto& [page_count, identifiers] : _pcounts_to_ids) {
+            _accumulated_sizes[page_count] = prev_sz + static_cast<int>(identifiers.size());
+            prev_sz = _accumulated_sizes[page_count];
+        }
+    }
+
+    double Cheer(int user_id) const noexcept {
+        if (_checker.count(user_id) == 0) {
+            return 0;
+        }
+
+        const int users_count = _checker.size();
+        if (users_count == 1) {
+            return 1;
+        }
+
+        int page_count = _checker.at(user_id);
+        int numbers_of_lagging_users = users_count - _accumulated_sizes.at(page_count);
+        
+        return static_cast<double>(numbers_of_lagging_users) / (users_count - 1);
+    }
+
+   private:
+    std::map<int, std::set<int>, std::greater<int>> _pcounts_to_ids{};
+    std::map<int, int, std::greater<int>> _accumulated_sizes;
     std::map<int, int> _checker{};  // user_id => page_count mapping
 };
 
@@ -168,8 +228,30 @@ void RunSlowStub() {
     }
 }
 
-void RunSolution() {
-    ReadingManager manager;
+void RunSolution_V1() {
+    ReadingManager_V1 manager;
+
+    int query_count;
+    std::cin >> query_count;
+
+    for (int query_id = 0; query_id < query_count; ++query_id) {
+        std::string query_type;
+        std::cin >> query_type;
+        int user_id;
+        std::cin >> user_id;
+
+        if (query_type == "READ") {
+            int page_count;
+            std::cin >> page_count;
+            manager.Read(user_id, page_count);
+        } else if (query_type == "CHEER") {
+            std::cout << std::setprecision(6) << manager.Cheer(user_id) << "\n";
+        }
+    }
+}
+
+void RunSolution_V2() {
+    ReadingManager_V2 manager;
 
     int query_count;
     std::cin >> query_count;
@@ -201,8 +283,16 @@ int main() {
     {
         REDIRECT_INPUT("input.txt"s);
         {
-            LOG_DURATION("Solution"s);
-            RunSolution();
+            LOG_DURATION("Solution_V2"s);
+            RunSolution_V2();
+        }
+    }
+
+    {
+        REDIRECT_INPUT("input.txt"s);
+        {
+            LOG_DURATION("Solution_V1"s);
+            RunSolution_V1();
         }
     }
 
@@ -215,7 +305,7 @@ int main() {
     }
 
 #else
-    RunSolution();
+    RunSolution_V1();
 #endif  //_GLIBCXX_DEBUG
     return 0;
 }

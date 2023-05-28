@@ -25,15 +25,28 @@ class ReadingManagerSlow {
           _sorted_users(),
           _user_positions(MAX_USER_COUNT_ + 1, -1) {}
 
-    void Read(int user_id, int page_count) {
+    void Read(int user_id, int new_page_count) {
         if (_user_page_counts[user_id] == 0) {
             AddUser(user_id);
         }
 
-        _user_page_counts[user_id] = page_count;
-        int& position = _user_positions[user_id];
-        while (position > 0 && page_count > _user_page_counts[_sorted_users[position - 1]]) {
-            SwapUsers(position, position - 1);
+        _user_page_counts[user_id] = new_page_count;
+        int& user_rank = _user_positions[user_id];
+
+        while (true) {
+            bool isRankGraterThanZero = user_rank > 0;
+            bool isNeededToSwap = false;
+
+            if (isRankGraterThanZero) {
+                int prev_user_id = _sorted_users[user_rank - 1];
+                isNeededToSwap = new_page_count > _user_page_counts[prev_user_id];
+            }
+
+            if (isRankGraterThanZero && isNeededToSwap) {
+                SwapUsers(user_rank, user_rank - 1);
+            } else {
+                break;
+            }
         }
     }
 
@@ -196,7 +209,7 @@ class ReadingManager_V2 {
 
         int page_count = _checker.at(user_id);
         int numbers_of_lagging_users = users_count - _accumulated_sizes.at(page_count);
-        
+
         return static_cast<double>(numbers_of_lagging_users) / (users_count - 1);
     }
 

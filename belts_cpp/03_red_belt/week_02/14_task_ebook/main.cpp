@@ -219,6 +219,65 @@ class ReadingManager_V2 {
     std::map<int, int> _checker{};  // user_id => page_count mapping
 };
 
+class ReadingManager_V3 {
+   public:
+    ReadingManager_V3()
+        : _uid_to_pagecount(MAX_USER_COUNT_ + 1, 0),
+          _rank_to_uid(),
+          _uid_to_rank(MAX_USER_COUNT_ + 1, -1) {}
+
+    void Read(int user_id, int new_page_count) {
+        if (_uid_to_pagecount[user_id] == 0) {
+            AddUser(user_id);
+        }
+
+        _uid_to_pagecount[user_id] = new_page_count;
+        int& rank = _uid_to_rank[user_id];
+
+        while (rank > 0 && new_page_count > _uid_to_pagecount[_rank_to_uid[rank - 1]]) {
+            SwapUsersByRank(rank, rank - 1);
+        }
+    }
+
+    double Cheer(int uid) const {
+        if (_uid_to_pagecount[uid] == 0) {
+            return 0;
+        }
+
+        const int user_count = GetUserCount();
+        if (user_count == 1) {
+            return 1;
+        }
+
+        return static_cast<double>(user_count - _uid_to_rank[uid] - 1) / (user_count - 1);
+    }
+
+   private:
+    // Статическое поле не принадлежит какому-то конкретному объекту класса. По сути это глобальная переменная, в данном случае константная.
+    // Будь она публичной, к ней можно было бы обратиться снаружи следующим образом: "ReadingManagerSlow::MAX_USER_COUNT"
+    static const int MAX_USER_COUNT_ = 100'000;
+
+    std::vector<int> _uid_to_pagecount;
+    std::vector<int> _rank_to_uid;  // пользователи отсортированы по убыванию количества страниц; "rank" является индексом массива
+    std::vector<int> _uid_to_rank;
+
+    int GetUserCount() const {
+        return _rank_to_uid.size();
+    }
+
+    void AddUser(int user_id) {
+        _rank_to_uid.push_back(user_id);
+        _uid_to_rank[user_id] = _rank_to_uid.size() - 1;
+    }
+
+    void SwapUsersByRank(int lhs_rank, int rhs_rank) {
+        const int lhs_uid = _rank_to_uid[lhs_rank];
+        const int rhs_uid = _rank_to_uid[rhs_rank];
+        std::swap(_rank_to_uid[lhs_rank], _rank_to_uid[rhs_rank]);
+        std::swap(_uid_to_rank[lhs_uid], _uid_to_rank[rhs_uid]);
+    }
+};
+
 void RunSlowStub() {
     ReadingManagerSlow manager;
 
@@ -285,6 +344,28 @@ void RunSolution_V2() {
     }
 }
 
+void RunSolution_V3() {
+    ReadingManager_V3 manager;
+
+    int query_count;
+    std::cin >> query_count;
+
+    for (int query_id = 0; query_id < query_count; ++query_id) {
+        std::string query_type;
+        std::cin >> query_type;
+        int user_id;
+        std::cin >> user_id;
+
+        if (query_type == "READ") {
+            int page_count;
+            std::cin >> page_count;
+            manager.Read(user_id, page_count);
+        } else if (query_type == "CHEER") {
+            std::cout << std::setprecision(6) << manager.Cheer(user_id) << "\n";
+        }
+    }
+}
+
 int main() {
     // Для ускорения чтения данных отключается синхронизация cin и cout с stdio,
     std::ios::sync_with_stdio(false);
@@ -293,6 +374,14 @@ int main() {
     std::cin.tie(nullptr);
 
 #ifdef _GLIBCXX_DEBUG
+    {
+        REDIRECT_INPUT("input.txt"s);
+        {
+            LOG_DURATION("Solution_V3"s);
+            RunSolution_V3();
+        }
+    }
+
     {
         REDIRECT_INPUT("input.txt"s);
         {

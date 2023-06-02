@@ -18,66 +18,53 @@
 
 using namespace std::literals;
 
-class ReadingManager_V2_V2 {
+class ReadingManager_V4 {
    public:
-    ReadingManager_V2_V2() = default;
+    ReadingManager_V4()
+        : _uid_to_pcount(_MAX_USER_COUNT + 1, 0),
+          _pcount_statistics(_MAX_PAGE_COUNT + 1, 0) {}
 
-    void Read(int user_id, int page_count) noexcept {
-        // если пользователя с данным "user_id" ещё нет,
-        // то просто добавляем данные в "_checker" и в "_users, пересчитываем partial_sums
-        if (!_checker.count(user_id)) {
-            _checker.emplace(user_id, page_count);
-            _pcounts_to_ids[page_count].insert(user_id);
-        } else {  // пользователь с данным "user_id" уже существует
-            int old_page_count = _checker[user_id];
-            _checker[user_id] = page_count;  // актуализируем "_checker"
-
-            if (_pcounts_to_ids[old_page_count].size() == 1u) {
-                _pcounts_to_ids.erase(old_page_count);
-                _accumulated_sizes.erase(old_page_count);
-            } else {
-                _pcounts_to_ids[old_page_count].erase(user_id);
-            }
-
-            _pcounts_to_ids[page_count].insert(user_id);
-        }
-
-        // после каждой операции "Read" нужно обновить словарь "_accumulated_sizes"
-        UpdateAccumulatedSizes();
-    }
-
-    void UpdateAccumulatedSizes() {
-        int prev_sz = 0;
-        for (auto& [page_count, identifiers] : _pcounts_to_ids) {
-            _accumulated_sizes[page_count] = prev_sz + static_cast<int>(identifiers.size());
-            prev_sz = _accumulated_sizes[page_count];
+    void Read(int uid, int page_count) {
+        if (_uid_to_pcount[uid] == 0) {
+            _uid_to_pcount[uid] = page_count;
+            ++_pcount_statistics[page_count];
+            ++_user_count;
+        } else {
+            int old_page_count = _uid_to_pcount[uid];
+            --_pcount_statistics[old_page_count];
+            ++_pcount_statistics[page_count];
+            _uid_to_pcount[uid] = page_count;
         }
     }
 
-    double Cheer(int user_id) const noexcept {
-        if (_checker.count(user_id) == 0) {
+    double Cheer(int uid) const {
+        if (_uid_to_pcount[uid] == 0) {
             return 0;
         }
 
-        const int users_count = _checker.size();
-        if (users_count == 1) {
+        if (_user_count == 1u) {
             return 1;
         }
 
-        int page_count = _checker.at(user_id);
-        int numbers_of_lagging_users = users_count - _accumulated_sizes.at(page_count);
-        
-        return static_cast<double>(numbers_of_lagging_users) / (users_count - 1);
+        int page_count = _uid_to_pcount[uid];
+        int x = 0;
+        x = std::accumulate(_pcount_statistics.begin(),
+                        _pcount_statistics.begin() + page_count,
+                        x);
+
+        return static_cast<double>(x) / (_user_count - 1);
     }
 
    private:
-    std::map<int, std::set<int>, std::greater<int>> _pcounts_to_ids{};
-    std::map<int, int, std::greater<int>> _accumulated_sizes;
-    std::map<int, int> _checker{};  // user_id => page_count mapping
+    static const int _MAX_USER_COUNT = 100'000;
+    static const int _MAX_PAGE_COUNT = 1'000;
+    std::vector<int> _uid_to_pcount;
+    std::vector<int> _pcount_statistics;
+    int _user_count = 0;
 };
 
 void RunSolution() {
-    ReadingManager_V2_V2 manager;
+    ReadingManager_V4 manager;
 
     int query_count;
     std::cin >> query_count;
@@ -109,7 +96,7 @@ int main() {
     {
         REDIRECT_INPUT("input.txt"s);
         {
-            LOG_DURATION("Solution_V2"s);
+            LOG_DURATION("Solution_V4"s);
             RunSolution();
         }
     }

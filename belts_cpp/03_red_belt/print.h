@@ -37,3 +37,16 @@ template <class T>
 std::ostream& operator<<(std::ostream& os, const std::vector<T>& v) {
     return os << "["s << Join(v, ", "s) << "]"s;
 }
+
+// перегружаем "operator<<" для "std::map<KeyType, ValueType>"
+template <typename KeyType, typename ValueType>
+std::ostream& operator<<(std::ostream& os, const std::map<KeyType, ValueType> m) {
+    return os << "{"s << Join(m) << "}"s;
+}
+
+// перегружаем "operator<<" для "std::pair<FirstType, SecondType>"
+template <typename FirstType, typename SecondType>
+std::ostream& operator<<(std::ostream& os, const std::pair<const FirstType, SecondType>& p) {
+    os << "("s << p.first << ", "s << p.second << ")"s;
+    return os;
+}

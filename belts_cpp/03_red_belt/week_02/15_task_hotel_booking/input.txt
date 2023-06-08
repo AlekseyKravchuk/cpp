@@ -1,4 +1,4 @@
-15
+35
 BOOK 1 Marriott 1 2
 BOOK 1 Marriott 3 1
 BOOK 1 Marriott 7 3
@@ -12,5 +12,25 @@ BOOK 2 Azimut 3 1
 BOOK 3 Marriott 3 1
 BOOK 3 Marriott 7 1
 BOOK 3 Marriott 8 2
+CLIENTS Marriott
+ROOMS Marriott
+CLIENTS Marriott
+ROOMS Marriott
+CLIENTS Marriott
+ROOMS Marriott
+CLIENTS Marriott
+ROOMS Marriott
+CLIENTS Marriott
+ROOMS Marriott
+CLIENTS Marriott
+ROOMS Marriott
+CLIENTS Marriott
+ROOMS Marriott
+CLIENTS Marriott
+ROOMS Marriott
+CLIENTS Marriott
+ROOMS Marriott
+CLIENTS Marriott
+ROOMS Marriott
 CLIENTS Marriott
 ROOMS Marriott

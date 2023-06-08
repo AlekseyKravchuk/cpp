@@ -17,9 +17,9 @@ using namespace std::literals;
 class BookingManager {
    public:
     // hotel_to_info: hotel_name: pair<set<client_id>, room_counter>
-    using hotel_to_info = std::map<std::string, std::pair<std::set<uint32_t>, uint16_t>>;
+    using hotel_to_info = std::map<std::string, std::pair<std::set<uint32_t>, uint32_t>>;
 
-    void MakeBooking(int64_t time, std::string hotel_name, uint32_t client_id, uint16_t room_count);
+    void MakeBooking(int64_t time, std::string hotel_name, uint32_t client_id, uint32_t room_count);
     size_t GetNumberClientsBookedTimeAgo(std::string hotel_name);
     int64_t GetNumberRoomsBookedTimeAgo(std::string hotel_name);
 
@@ -28,25 +28,25 @@ class BookingManager {
     std::map<int64_t, hotel_to_info> _time_to_event;
 
     void RemoveRedundantEvents(int64_t time);
-    void AddEvent(int64_t time, std::string hotel_name, uint32_t client_id, uint16_t room_count);
+    void AddEvent(int64_t time, std::string hotel_name, uint32_t client_id, uint32_t room_count);
 };
 
 void BookingManager::MakeBooking(int64_t time,
-                                    std::string hotel_name,
-                                    uint32_t client_id,
-                                    uint16_t room_count) {
+                                 std::string hotel_name,
+                                 uint32_t client_id,
+                                 uint32_t room_count) {
     RemoveRedundantEvents(time);
     AddEvent(time, hotel_name, client_id, room_count);
 }
 
 size_t BookingManager::GetNumberClientsBookedTimeAgo(std::string hotel_name) {
-    size_t clients_count = 0;
+    std::set<uint32_t> unique_client_ids;
     for (const auto& [time, hotel_to_statistics] : _time_to_event) {
         if (hotel_to_statistics.count(hotel_name)) {
-            clients_count += hotel_to_statistics.at(hotel_name).first.size();
+            unique_client_ids.insert(hotel_to_statistics.at(hotel_name).first.begin(), hotel_to_statistics.at(hotel_name).first.end());
         }
     }
-    return clients_count;
+    return unique_client_ids.size();
 }
 
 int64_t BookingManager::GetNumberRoomsBookedTimeAgo(std::string hotel_name) {
@@ -73,9 +73,9 @@ void BookingManager::RemoveRedundantEvents(int64_t time) {
 }
 
 void BookingManager::AddEvent(int64_t time,
-                                 std::string hotel_name,
-                                 uint32_t client_id,
-                                 uint16_t room_count) {
+                              std::string hotel_name,
+                              uint32_t client_id,
+                              uint32_t room_count) {
     if (!_time_to_event[time].count(hotel_name)) {
         _time_to_event[time][hotel_name] = std::pair{std::set{client_id}, room_count};
     } else {
@@ -83,7 +83,6 @@ void BookingManager::AddEvent(int64_t time,
         _time_to_event[time][hotel_name].second += room_count;
     }
 }
-
 
 void RunSolution() {
     BookingManager manager;
@@ -101,7 +100,7 @@ void RunSolution() {
             std::cin >> hotel_name;
             uint32_t client_id{};
             std::cin >> client_id;
-            uint16_t room_count{};
+            uint32_t room_count{};
             std::cin >> room_count;
             manager.MakeBooking(time, hotel_name, client_id, room_count);
         } else if (query_type == "CLIENTS"s) {

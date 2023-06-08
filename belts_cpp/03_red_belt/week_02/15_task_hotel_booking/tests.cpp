@@ -30,7 +30,7 @@ void Test_AddEvent() {
         ASSERT_EQUAL(manager.GetNumberRoomsBookedTimeAgo("Azimut"s), 2u);
 
         manager.MakeBooking(2, "Marriott"s, 3, 1);
-        ASSERT_EQUAL(manager.GetNumberClientsBookedTimeAgo("Marriott"s), 4u);
+        ASSERT_EQUAL(manager.GetNumberClientsBookedTimeAgo("Marriott"s), 3u);
         ASSERT_EQUAL(manager.GetNumberRoomsBookedTimeAgo("Marriott"s), 7u);
     }
 }

@@ -1,8 +1,8 @@
 #include <algorithm>
-#include <queue>
 #include <iomanip>
 #include <iostream>
 #include <map>
+#include <queue>
 #include <set>
 #include <string>
 
@@ -13,20 +13,58 @@
 #include "log_duration.h"
 #endif  //_GLIBCXX_DEBUG
 
+/*
+================================ Оценка сложности ================================
+Сложность O(QL*logQ):
+Исходя из кода в main, можно заметить, что общая сложность определяется как суммарная сложность
+всех вызовов методов Book, ComputeClientCount и ComputeRoomCount класса HotelManager, которые определяются значением ключа query_type.
+Оценим суммарные сложности всех потенциальных вызовов каждого из указанных методов, опуская несущественные, с точки зрения асимптотики,
+участки кода.
+
+Book: Поиск названия отеля по словарю hotels_ : O(L logQ). Полагаем, что отелей не могло быть создано больше, чем было запросов.
+Запросов по условию не более Q. O(L) присутствует в оценке, так как для поиска в map'е мы сравниваем между собой строковые ключи,
+длина которых не превосходит L.
+
+Вызов метода Book класса HotelInfo. Поиск клиента в словаре client_booking_counts_ займет не более O(logQ).
+Клиентов, вообще говоря, также не могло быть создано больше, чем было запросов.
+Итого, суммарная оценка одного вызова метода Book класса HotelManager: O(L logQ) + O(logQ) = O(L logQ) путём поглощения.
+Всего вызовов метода Book класса HotelManager не могло быть более Q: таким образом, итоговая оценка сложности всех потенциальных
+вызовов указанного метода Book: O(QL logQ).
+
+ComputeClientCount, ComputeRoomCount: Сложность работы данных методов, вообще говоря, определяется в обоих случаях,
+как и в случае с методом Book, суммой сложности поиска названия отеля по словарю hotels_ и сложности метода RemoveOldBookings.
+
+Сложность RemoveOldBookings, в свою очередь, зависит от сложности метода PopBooking.
+При этом, несмотря на цикл, суммарно метод RemoveOldBookings вызовет метод PopBooking за время работы приложения не более Q раз,
+так как каждое добавленное событие может быть удалено не более одного раза. Сложность метода PopBooking зависит от поиска и
+удаления в словаре client_booking_counts_. Поиск оценивается, как O(logQ), удаление — аналогично. 
+Суммарное время работы PopBooking: O(logQ) + O(logQ) = O(logQ) путём поглощения.
+Таким образом, итоговая оценка сложности всех потенциальных вызовов метода RemoveOldBooking: O(Q logQ),
+а методов ComputeClientCount, ComputeRoomCount: O(QL logQ) + O(Q logQ) = O(QL log Q) путём поглощения.
+
+Итого, путём поглощения получаем итоговую оценку O(QL logQ).
+Величины T, C и W в оценке сложности не участвуют: T и C определяют лишь необходимую размерность типов,
+а W влияет лишь на количество удалений: чем больше W, тем меньше в конечном счёте будет вызовов методов PopBooking.
+*/
+
 using namespace std::literals;
 
 class HotelManager {
    public:
-    void Book(int64_t time, const std::string& hotel_name,
-              int client_id, int room_count) {
-        current_time_ = time;
-        hotels_[hotel_name].Book({time, client_id, room_count});
+    void Book(int64_t time,
+              const std::string& hotel_name,
+              int client_id,
+              int room_count) {
+        _current_time = time;
+        _hotels[hotel_name].Book({time, client_id, room_count});
     }
+
     int ComputeClientCount(const std::string& hotel_name) {
-        return hotels_[hotel_name].ComputeClientCount(current_time_);
+        return _hotels[hotel_name].ComputeClientCount(_current_time);
     }
+
     int ComputeRoomCount(const std::string& hotel_name) {
-        return hotels_[hotel_name].ComputeRoomCount(current_time_);
+        return _hotels[hotel_name].ComputeRoomCount(_current_time);
     }
 
    private:
@@ -39,45 +77,47 @@ class HotelManager {
     class HotelInfo {
        public:
         void Book(const Booking& booking) {
-            last_bookings_.push(booking);
-            room_count_ += booking.room_count;
-            ++client_booking_counts_[booking.client_id];
+            _last_bookings.push(booking);
+            _room_count += booking.room_count;
+            ++_client_booking_counts[booking.client_id];
         }
+
         int ComputeClientCount(int64_t current_time) {
             RemoveOldBookings(current_time);
-            return client_booking_counts_.size();
+            return _client_booking_counts.size();
         }
+
         int ComputeRoomCount(int64_t current_time) {
             RemoveOldBookings(current_time);
-            return room_count_;
+            return _room_count;
         }
 
        private:
         static const int TIME_WINDOW_SIZE = 86400;
-        std::queue<Booking> last_bookings_;
-        int room_count_ = 0;
-        std::map<int, int> client_booking_counts_;
+        std::queue<Booking> _last_bookings;
+        int _room_count = 0;
+        std::map<int, int> _client_booking_counts;
 
         void PopBooking() {
-            const Booking& booking = last_bookings_.front();
-            room_count_ -= booking.room_count;
+            const Booking& booking = _last_bookings.front();
+            _room_count -= booking.room_count;
             const auto client_stat_it =
-                client_booking_counts_.find(booking.client_id);
+                _client_booking_counts.find(booking.client_id);
             if (--client_stat_it->second == 0) {
-                client_booking_counts_.erase(client_stat_it);
+                _client_booking_counts.erase(client_stat_it);
             }
-            last_bookings_.pop();
+            _last_bookings.pop();
         }
         void RemoveOldBookings(int64_t current_time) {
             while (
-                !last_bookings_.empty() && last_bookings_.front().time <= current_time - TIME_WINDOW_SIZE) {
+                !_last_bookings.empty() && _last_bookings.front().time <= current_time - TIME_WINDOW_SIZE) {
                 PopBooking();
             }
         }
     };
 
-    int64_t current_time_ = 0;
-    std::map<std::string, HotelInfo> hotels_;
+    int64_t _current_time = 0;
+    std::map<std::string, HotelInfo> _hotels;
 };
 
 void RunSolution() {

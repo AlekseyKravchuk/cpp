@@ -9,10 +9,6 @@
 // обменивает местами значения, на которые указывают указатели first и second
 template <typename T>
 void Swap(T* first, T* second) {
-    // T tmp{};
-    // tmp = *first;
-    // *first = *second;
-    // *second = tmp;
     std::swap(*first, *second);
 }
 
@@ -34,24 +30,26 @@ template <typename T>
 void ReversedCopy(T* src, size_t count, T* dst) {
     T* src_end = src + count;
     T* dst_end = dst + count;
-
     T* max_of_starts = std::max(src, dst);
     T* min_of_ends = std::min(src_end, dst_end);
 
-    // Если дипазоны НЕ перекрываются, используем стандартный алгоритм std::reverse_copy
+    // Если дипазоны НЕ перекрываются, то есть если max(L1, L2) > min(R1, R2), вызываем стандартный алгоритм std::copy_reverse
     if (max_of_starts > min_of_ends) {
-        std::reverse_copy(src, src_end, dst);
+        std::reverse_copy(src, src + count, dst);
         return;
     }
 
-    // Если дипазоны перекрываются, т.е. max_of_starts < min_of_ends (бОльшее из их начал меньше, чем меньший из их концов)
+    // ====================== Если дипазоны ПЕРЕКРЫВАЮТСЯ ======================
+    // УСЛОВИЕ ПЕРЕКРЫТИЯ ДИАПАЗОНОВ:
+    // если дипазоны перекрываются, то бОльшее их начало будет меньше, чем меньший из их концов: max(L1, L2) < min(R1, R2)
+
     T* ovelapped_begin = max_of_starts;
     T* ovelapped_end = min_of_ends;
-
-    // изменяем порядок следования элементов в перекрывающейся части (overlapped part)
     std::reverse(ovelapped_begin, ovelapped_end);
 
-    // в зависимости от расположения дипазонов [src, src_end) и [dst, dst_end) вызываем std::reverse_copy с нужными параметрами
+    // после того, как привели к требуемому виду перекрывающуюся часть (overlapping part)
+    // требуется установить порядок следования диапазонов [src, src_end) и [dst, dst_end),
+    // после чего выполнить необходимое копирование оставшейся необработанной части
     if (dst > src) {
         std::reverse_copy(src, dst, src_end);
     } else {
@@ -59,12 +57,17 @@ void ReversedCopy(T* src, size_t count, T* dst) {
     }
 }
 
-// // ========== Простое и элегантное решение, которое проходит грейдер ==========
+// // =================== Простое и элегантное решение ===================
 // template <typename T>
 // void ReversedCopy(T* source, size_t count, T* destination) {
-//     std::vector<T> temp(source, source + count);
-//     std::move(temp.rbegin(), temp.rend(), destination);
+//     std::vector<T> v(source, source + count);
+
+//     // std::move( InputIt first, InputIt last, OutputIt d_first ) defined in header <algorithm>
+//     // it moves the elements in the range [first, last), to another range beginning at "d_first",
+//     // starting from "first" and proceeding to "last - 1".
+//     std::move(v.rbegin(), v.rend(), destination);
 // }
+
 
 void TestSwap() {
     int a = 1;

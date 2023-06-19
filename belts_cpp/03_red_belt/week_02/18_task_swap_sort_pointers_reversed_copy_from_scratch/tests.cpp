@@ -1,70 +1,5 @@
-#include <algorithm>  // std::max, std::sort
-#include <cstddef>    // ptrdiff_t
-#include <string>
-#include <utility>  // std::move
-#include <vector>
-
 #include "test_runner.h"
-
-// обменивает местами значения, на которые указывают указатели first и second
-template <typename T>
-void Swap(T* first, T* second) {
-    // T tmp{};
-    // tmp = *first;
-    // *first = *second;
-    // *second = tmp;
-    std::swap(*first, *second);
-}
-
-// сортирует указатели по значениям, на которые они указывают
-template <typename T>
-void SortPointers(std::vector<T*>& pointers) {
-    std::sort(pointers.begin(), pointers.end(),
-              [](T* lhs_ptr, T* rhs_ptr) {
-                  return *lhs_ptr < *rhs_ptr;
-              });
-}
-
-// копирует в обратном порядке count элементов, начиная с адреса в указателе src, в область памяти, начинающуюся по адресу dst.
-// При этом:
-// 1. каждый объект из диапазона [src; src + count) должен быть скопирован не более одного раза;
-// 2. диапазоны [src; src + count) и [dst; dst + count) могут пересекаться
-// 3. элементы в части диапазона [src; src + count), которая не пересекается с [dst; dst + count), должны остаться неизменными.
-template <typename T>
-void ReversedCopy(T* src, size_t count, T* dst) {
-    T* src_end = src + count;
-    T* dst_end = dst + count;
-
-    T* max_of_starts = std::max(src, dst);
-    T* min_of_ends = std::min(src_end, dst_end);
-
-    // Если дипазоны НЕ перекрываются, используем стандартный алгоритм std::reverse_copy
-    if (max_of_starts > min_of_ends) {
-        std::reverse_copy(src, src_end, dst);
-        return;
-    }
-
-    // Если дипазоны перекрываются, т.е. max_of_starts < min_of_ends (бОльшее из их начал меньше, чем меньший из их концов)
-    T* ovelapped_begin = max_of_starts;
-    T* ovelapped_end = min_of_ends;
-
-    // изменяем порядок следования элементов в перекрывающейся части (overlapped part)
-    std::reverse(ovelapped_begin, ovelapped_end);
-
-    // в зависимости от расположения дипазонов [src, src_end) и [dst, dst_end) вызываем std::reverse_copy с нужными параметрами
-    if (dst > src) {
-        std::reverse_copy(src, dst, src_end);
-    } else {
-        std::reverse_copy(dst_end, src_end, dst);
-    }
-}
-
-// // ========== Простое и элегантное решение, которое проходит грейдер ==========
-// template <typename T>
-// void ReversedCopy(T* source, size_t count, T* destination) {
-//     std::vector<T> temp(source, source + count);
-//     std::move(temp.rbegin(), temp.rend(), destination);
-// }
+#include "functions.h"
 
 void TestSwap() {
     int a = 1;
@@ -220,21 +155,4 @@ void TestReverseCopy_Overlapping_dst_equals_src() {
 
         delete[] source;
     }
-}
-
-int main() {
-    TestRunner tr;
-    RUN_TEST(tr, TestSwap);
-    RUN_TEST(tr, TestSortPointers);
-
-    RUN_TEST(tr, TestReverseCopyStepik);
-
-    RUN_TEST(tr, TestReverseCopy_Non_Overlapping_src_dst);
-    RUN_TEST(tr, TestReverseCopy_Non_Overlapping_dst_src);
-
-    RUN_TEST(tr, TestReverseCopy_Overlapping_src_dst);
-    RUN_TEST(tr, TestReverseCopy_Overlapping_dst_src);
-    // RUN_TEST(tr, TestReverseCopy_Overlapping_dst_equals_src);
-
-    return 0;
 }

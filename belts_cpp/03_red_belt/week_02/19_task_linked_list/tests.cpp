@@ -67,3 +67,4 @@ void TestPopFront() {
     }
     ASSERT(list.GetHead() == nullptr);
 }
+

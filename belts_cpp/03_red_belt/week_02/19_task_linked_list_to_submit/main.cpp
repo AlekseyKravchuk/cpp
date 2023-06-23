@@ -7,8 +7,8 @@ template <typename T>
 class LinkedList {
    public:
     struct Node {
-        T value;
-        Node* next = nullptr;
+        T value{};
+        Node* next{nullptr};
     };
 
     ~LinkedList();
@@ -23,19 +23,24 @@ class LinkedList {
 
    private:
     Node* _head = nullptr;
+    std::set<Node*> _nodes_pointers;
 };
 
 template <typename T>
 void LinkedList<T>::PushFront(const T& value) {
-    if (!_head) {
+    if (_head == nullptr) {
         _head = new Node;
         _head->value = value;
+
+        // =====================
+        // _nodes_pointers.insert(_head);
     } else {
         Node* p_new_node = new Node;
         p_new_node->value = value;
 
         p_new_node->next = _head;
         _head = p_new_node;
+        // _nodes_pointers.insert(p_new_node);  // <=====================
     }
 }
 
@@ -46,35 +51,48 @@ void LinkedList<T>::InsertAfter(Node* node, const T& value) {
         return;
     }
 
-    Node* p_current = _head;
     Node* p_new_node = new Node;
     p_new_node->value = value;
+    // _nodes_pointers.insert(p_new_node);  // <=====================
 
-    while (p_current != node) {
-        p_current = p_current->next;
+    // if (!_nodes_pointers.count(node)) {  // <=====================
+    //     return;
+    // }
+
+    if (node->next == nullptr) {
+        node->next = p_new_node;
+        return;
     }
 
-    p_new_node->next = p_current->next;
-    p_current->next = p_new_node;
+    p_new_node->next = node->next;
+    node->next = p_new_node;
 }
 
 template <typename T>
 void LinkedList<T>::RemoveAfter(Node* node) {
+    if (_head == nullptr) {
+        return;
+    }
+
     if (node == nullptr) {
         PopFront();
     }
 
-    if (node->next == nullptr || !_head) {
+    // if (!_nodes_pointers.count(node)) {  // <=====================
+    //     return;
+    // }
+
+    if (node->next == nullptr) {
         return;
     }
 
-    Node* p_current = _head;
-    while (p_current != node) {
-        p_current = p_current->next;
-    }
+    Node* p_to_delete = node->next;
+    node->next = p_to_delete->next;
 
-    Node* p_to_delete = p_current->next;
-    p_current->next = p_to_delete->next;
+    // // =====================
+    // _nodes_pointers.erase(p_to_delete);
+    // // =====================
+
     delete p_to_delete;
 }
 
@@ -85,6 +103,10 @@ void LinkedList<T>::PopFront() {
     }
 
     Node* p_next_to_head = _head->next;
+    // // =====================
+    // _nodes_pointers.erase(_head);
+    // // =====================
+
     delete _head;
     _head = p_next_to_head;
 }
@@ -166,15 +188,26 @@ void TestRemoveAfter() {
 }
 
 void TestPopFront() {
-    LinkedList<int> list;
+    {
+        LinkedList<int> list;
 
-    for (int i = 1; i <= 5; ++i) {
-        list.PushFront(i);
+        for (int i = 1; i <= 5; ++i) {
+            list.PushFront(i);
+        }
+        for (int i = 1; i <= 5; ++i) {
+            list.PopFront();
+        }
+        ASSERT(list.GetHead() == nullptr);
     }
-    for (int i = 1; i <= 5; ++i) {
+
+    {
+        LinkedList<int> list;
+        list.PushFront(22);
         list.PopFront();
+        list.PopFront();
+
+        ASSERT(list.GetHead() == nullptr);
     }
-    ASSERT(list.GetHead() == nullptr);
 }
 
 int main() {

@@ -18,20 +18,29 @@ void TestPushFront() {
 }
 
 void TestInsertAfter() {
-    LinkedList<std::string> list;
+    {
+        LinkedList<std::string> list;
 
-    list.PushFront("a");
-    auto head = list.GetHead();
-    ASSERT(head);
-    ASSERT_EQUAL(head->value, "a");
+        list.PushFront("a");
+        auto head = list.GetHead();
+        ASSERT(head);
+        ASSERT_EQUAL(head->value, "a");
 
-    list.InsertAfter(head, "b");
-    const std::vector<std::string> expected1 = {"a", "b"};
-    ASSERT_EQUAL(ToVector(list), expected1);
+        list.InsertAfter(head, "b");
+        const std::vector<std::string> expected1 = {"a", "b"};
+        ASSERT_EQUAL(ToVector(list), expected1);
 
-    list.InsertAfter(head, "c");
-    const std::vector<std::string> expected2 = {"a", "c", "b"};
-    ASSERT_EQUAL(ToVector(list), expected2);
+        list.InsertAfter(head, "c");
+        const std::vector<std::string> expected2 = {"a", "c", "b"};
+        ASSERT_EQUAL(ToVector(list), expected2);
+    }
+
+    {
+        LinkedList<std::string> list;
+
+        auto head = list.GetHead();
+        list.InsertAfter(head, "a");
+    }
 }
 
 void TestRemoveAfter() {
@@ -67,4 +76,3 @@ void TestPopFront() {
     }
     ASSERT(list.GetHead() == nullptr);
 }
-

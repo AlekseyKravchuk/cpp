@@ -1,13 +1,14 @@
 #pragma once
 
+#include <map>
 #include <vector>
 
 template <typename T>
 class LinkedList {
    public:
     struct Node {
-        T value;
-        Node* next = nullptr;
+        T value{};
+        Node* next{nullptr};
     };
 
     ~LinkedList();
@@ -45,12 +46,21 @@ void LinkedList<T>::InsertAfter(Node* node, const T& value) {
         return;
     }
 
-    Node* p_current = _head;
+    if (_head == nullptr) {
+        return;
+    }
+
     Node* p_new_node = new Node;
     p_new_node->value = value;
+    Node* p_current = _head;
 
-    while (p_current != node) {
+    while (p_current != node && p_current->next != nullptr) {
         p_current = p_current->next;
+    }
+
+    if (p_current->next == nullptr) {
+        p_current->next = p_new_node;
+        return;
     }
 
     p_new_node->next = p_current->next;
@@ -59,17 +69,21 @@ void LinkedList<T>::InsertAfter(Node* node, const T& value) {
 
 template <typename T>
 void LinkedList<T>::RemoveAfter(Node* node) {
+    if (_head == nullptr) {
+        return;
+    }
+
     if (node == nullptr) {
         PopFront();
     }
 
-    if (node->next == nullptr || !_head) {
-        return;
+    Node* p_current = _head;
+    while (p_current != node && p_current->next != nullptr) {
+        p_current = p_current->next;
     }
 
-    Node* p_current = _head;
-    while (p_current != node) {
-        p_current = p_current->next;
+    if (p_current->next == nullptr) {
+        return;
     }
 
     Node* p_to_delete = p_current->next;

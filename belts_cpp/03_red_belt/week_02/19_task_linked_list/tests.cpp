@@ -37,10 +37,56 @@ void TestInsertAfter() {
 
     {
         LinkedList<std::string> list;
-
+        list.PushFront("a");
         auto head = list.GetHead();
-        list.InsertAfter(head, "a");
+        list.InsertAfter(head, "b");
         ASSERT_EQUAL(head->value, "a");
+
+        auto head2 = list.GetHead();
+        list.InsertAfter(head2, "c");
+        const std::vector<std::string> expected2 = {"a", "c", "b"};
+        ASSERT_EQUAL(ToVector(list), expected2);
+
+        auto last = list.GetHead()->next->next;
+        list.InsertAfter(last, "d");
+        const std::vector<std::string> expected3 = {"a", "c", "b", "d"};
+        ASSERT_EQUAL(ToVector(list), expected3);
+
+        list.PushFront("k");
+        const std::vector<std::string> expected4 = {"k", "a", "c", "b", "d"};
+        ASSERT_EQUAL(ToVector(list), expected4);
+
+        list.InsertAfter(nullptr, "M");
+        const std::vector<std::string> expected5 = {"M", "k", "a", "c", "b", "d"};
+        ASSERT_EQUAL(ToVector(list), expected5);
+
+        list.InsertAfter(list.GetHead()->next->next->next->next->next, "J");
+        const std::vector<std::string> expected6 = {"M", "k", "a", "c", "b", "d", "J"};
+        ASSERT_EQUAL(ToVector(list), expected6);
+
+        list.RemoveAfter(list.GetHead());
+        const std::vector<std::string> expected7 = {"M", "a", "c", "b", "d", "J"};
+        ASSERT_EQUAL(ToVector(list), expected7);
+
+        list.RemoveAfter(list.GetHead()->next);
+        const std::vector<std::string> expected8 = {"M", "a", "b", "d", "J"};
+        ASSERT_EQUAL(ToVector(list), expected8);
+
+        list.PopFront();
+        const std::vector<std::string> expected9 = {"a", "b", "d", "J"};
+        ASSERT_EQUAL(ToVector(list), expected9);
+
+        list.RemoveAfter(list.GetHead()->next->next->next);
+        const std::vector<std::string> expected10 = {"a", "b", "d", "J"};
+        ASSERT_EQUAL(ToVector(list), expected10);
+
+        list.RemoveAfter(list.GetHead()->next->next);
+        const std::vector<std::string> expected11 = {"a", "b", "d"};
+        ASSERT_EQUAL(ToVector(list), expected11);
+
+        list.RemoveAfter(nullptr);
+        const std::vector<std::string> expected12 = {"b", "d"};
+        ASSERT_EQUAL(ToVector(list), expected12);
     }
 }
 

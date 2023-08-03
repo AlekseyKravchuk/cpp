@@ -41,6 +41,11 @@ std::ostream& operator<<(std::ostream& os, const std::vector<T>& v) {
     return os << "["s << Join(v, ", "s) << "]"s;
 }
 
+template <class T>
+std::ostream& operator<<(std::ostream& os, const std::list<T>& lst) {
+    return os << "list["s << Join(lst, ", "s) << "]"s;
+}
+
 // перегружаем "operator<<" для "std::map<KeyType, ValueType>"
 template <typename KeyType, typename ValueType>
 std::ostream& operator<<(std::ostream& os, const std::map<KeyType, ValueType> m) {

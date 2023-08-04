@@ -10,6 +10,7 @@ void TestFunctionality() {
     }
 
     // Текущее состояние редактора: `hello, world|`
+    // буфер пуст
     for (size_t i = 0; i < text.size(); ++i) {
         editor.Left();
     }
@@ -47,11 +48,19 @@ void TestEditing() {
 
         const size_t text_len = 12;
         const size_t first_part_len = 7;
-        TypeText(editor, "hello, world");
+
+        TypeText(editor, "hello, world"s);
+
+        // Текущее состояние редактора: `hello, world|`
         for (size_t i = 0; i < text_len; ++i) {
             editor.Left();
         }
+
+        // Текущее состояние редактора: `|hello, world`
         editor.Cut(first_part_len);
+
+        // Текущее состояние редактора: `|world`
+        // в буфере обмена находится текст `hello, `
         for (size_t i = 0; i < text_len - first_part_len; ++i) {
             editor.Right();
         }

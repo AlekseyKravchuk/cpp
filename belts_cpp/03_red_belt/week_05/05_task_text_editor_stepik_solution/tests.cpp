@@ -10,6 +10,7 @@ void TestFunctionality() {
     }
 
     // Текущее состояние редактора: `hello, world|`
+    // буфер пуст
     for (size_t i = 0; i < text.size(); ++i) {
         editor.Left();
     }
@@ -41,7 +42,6 @@ void TestFunctionality() {
     std::cout << editor.GetText();
 }
 
-// !!!!!!!!!!!!! TODO:
 void TestEditing() {
     {
         Editor editor;

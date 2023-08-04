@@ -1,8 +1,7 @@
 #include <algorithm>
-#include <deque>
 #include <iterator>  // std::inserter, std::distance
 #include <string>
-#include <vector>
+#include <list>
 
 #include "test_runner.h"
 
@@ -10,72 +9,67 @@ using namespace std::literals;
 
 class Editor {
    public:
-    Editor() = default;            // конструктор по умолчанию
-    void Left();                   // сдвинуть курсор влево
-    void Right();                  // сдвинуть курсор вправо
-    void Insert(char token);       // вставить символ token
-    void Cut(size_t tokens = 1);   // вырезать не более tokens символов, начиная с текущей позиции курсора
-    void Copy(size_t tokens = 1);  // cкопировать не более tokens символов, начиная с текущей позиции курсора
-    void Paste();                  // вставить содержимое буфера в текущую позицию курсора
-    std::string GetText() const;   // получить текущее содержимое текстового редактора
+    Editor() = default;                      // конструктор по умолчанию
+    void Left();                             // сдвинуть курсор влево
+    void Right();                            // сдвинуть курсор вправо
+    void Insert(char token);                 // вставить символ token
+    void Cut(size_t number_of_tokens = 1);   // вырезать не более number_of_tokens символов, начиная с текущей позиции курсора
+    void Copy(size_t number_of_tokens = 1);  // cкопировать не более number_of_tokens символов, начиная с текущей позиции курсора
+    void Paste();                            // вставить содержимое буфера в текущую позицию курсора
+    std::string GetText() const;             // получить текущее содержимое текстового редактора
 
    private:
-    uint64_t _cursor_pos{};
-    std::vector<char> _text;
-    std::vector<char> _cliboard;
+    std::list<char> _text{};
+    std::string _buf{};
+    uint64_t _pos{};
+    std::list<char>::iterator _it_pos{std::begin(_text)};
 };
 
 void Editor::Left() {
-    if (_cursor_pos) {
-        --_cursor_pos;
+    if (_it_pos != _text.begin()) {
+        --_it_pos;
+        --_pos;
     }
 }
 
 void Editor::Right() {
-    if (_cursor_pos != _text.size()) {
-        ++_cursor_pos;
+    if (_it_pos != _text.end()) {
+          ++_it_pos;
+          ++_pos;
     }
 }
 
 void Editor::Insert(char token) {
-    auto it = _text.begin();
-    _text.insert(it + _cursor_pos, token);
-    ++_cursor_pos;
+    _it_pos = _text.insert(_it_pos, token);
+    ++_it_pos;
+    ++_pos;
 }
 
-void Editor::Cut(size_t tokens) {
-    _cliboard.clear();                           // сбрасываем буфер обмена
-    auto it_from = _text.begin() + _cursor_pos;  // получаем итератор на начало копируемого диапазона
+void Editor::Cut(size_t num_of_tokens) {
+    _buf.clear();  // сбрасываем буфер обмена
 
-    if (tokens > (_text.size() - _cursor_pos)) {
-        std::copy(it_from, _text.end(), std::inserter(_cliboard, _cliboard.begin()));
-        _text.erase(it_from, _text.end());
-    } else {
-        std::copy(it_from, it_from + tokens, std::inserter(_cliboard, _cliboard.begin()));
-        _text.erase(it_from, it_from + tokens);
-    }
+    std::list<char>::iterator it_to = (num_of_tokens > (_text.size() - _pos)) ? std::end(_text)
+                                                                              : std::next(_it_pos, num_of_tokens);
+    // _buf = {std::make_move_iterator(_it_pos), std::make_move_iterator(it_to)};
+    _buf = std::string{_it_pos, it_to};
+    _it_pos = _text.erase(_it_pos, it_to);
 }
 
-void Editor::Copy(size_t tokens) {
-    _cliboard.clear();                           // сбрасываем буфер обмена
-    auto it_from = _text.begin() + _cursor_pos;  // получаем итератор на начало копируемого диапазона
+void Editor::Copy(size_t num_of_tokens) {
+    _buf.clear();  // сбрасываем буфер обмена
 
-    if (tokens > (_text.size() - _cursor_pos)) {
-        std::copy(it_from, _text.end(), std::inserter(_cliboard, _cliboard.begin()));
-    } else {
-        std::copy(it_from, it_from + tokens, std::inserter(_cliboard, _cliboard.begin()));
-    }
+    std::list<char>::iterator it_to = (num_of_tokens > (_text.size() - _pos)) ? std::end(_text)
+                                                                              : std::next(_it_pos, num_of_tokens);
+    _buf = {_it_pos, it_to};
 }
 
 // вставить содержимое буфера в текущую позицию курсора
 void Editor::Paste() {
-    // Вставка пустого фрагмента не имеет эффекта
-    if (_cliboard.empty()) {
-        return;
+    if (!_buf.empty()) {  // Вставка пустого фрагмента не имеет эффекта
+        _it_pos = _text.insert(_it_pos, _buf.begin(), _buf.end());
+        std::advance(_it_pos, _buf.size());
+        _pos += _buf.size();
     }
-
-    _text.insert(_text.begin() + _cursor_pos, _cliboard.begin(), _cliboard.end());
-    _cursor_pos += std::distance(_cliboard.begin(), _cliboard.end());
 }
 
 // получить текущее содержимое текстового редактора

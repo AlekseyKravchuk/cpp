@@ -75,22 +75,30 @@ std::vector<std::string_view> SplitIntoWords_V2_string_view(const std::string& s
 }
 
 std::vector<std::string_view> SplitIntoWords_V3_string_view(const std::string& str) {
+    // в данном случае "str" указывает на диапазон ещё не обработанных символов,
+    // т.е. в данном случае мы двигаем левую границу самого string_view
     std::string_view s_view = str;
+
     std::vector<std::string_view> result;
 
     while (true) {
         // ищем первый пробел в ещё не обработанной части
         size_t space_pos = s_view.find(' ');
 
+        // Если пробел был найден, то "space_pos" - это его позиция в "string_view", а также расстояние до него (длина слова).
+        // А если пробел на нашелся, то метод "substr" будет вызван от (0, npos), т.е. для всей стоки
         result.push_back(s_view.substr(0, space_pos));
 
         if (space_pos == s_view.npos) {
             break;
         } else {
+            // учитываем все имеющиеся пробелы
             while (s_view[space_pos] == ' ') {
                 ++space_pos;
             }
-            s_view.remove_prefix(space_pos);
+
+            // откусываем от "string_view" уже обработанный кусок 
+            s_view.remove_prefix(space_pos);  // в качестве параметра указываем длину префикса, который нужно откусить
         }
     }
 

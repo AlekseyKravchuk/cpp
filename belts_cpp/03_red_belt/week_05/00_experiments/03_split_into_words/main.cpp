@@ -8,10 +8,12 @@
 #include <string_view>
 #include <vector>
 
-#include "../../print.h"
+#include "../../../log_duration.h"
+#include "../../../print.h"
 
 using namespace std::literals;
 
+// решение задачи из второго курса
 std::vector<std::string> SplitIntoWords_V1(const std::string& str) {
     std::vector<std::string> result;
 
@@ -45,7 +47,7 @@ std::vector<std::string_view> SplitIntoWords_V2_string_view(const std::string& s
     size_t pos = 0;
 
     // позиция "за концом" - аналог итератора "one past the end"
-    const size_t pos_end = s_view.npos;
+    const size_t pos_end = s_view.npos;  // константу "npos" можно получить с помощью любой строки или string_view
 
     while (true) {
         // std::string_view("что_искать", "начиная_с_какой_позиции_искать")
@@ -55,9 +57,10 @@ std::vector<std::string_view> SplitIntoWords_V2_string_view(const std::string& s
         // Метод "substr" возвращает "string_view" на подстроку.
         // начинаем подстроку с позиции "pos", а 2-ой аргумент - это длина этой подстроки,
         // также нужно учесть случай, когда пробел не нашелся и "space_pos" == "npos"
-        result.push_back(space_pos == pos_end ? s_view.substr(pos, pos_end)
-                                              : s_view.substr(pos, space_pos - pos));
+        result.push_back(space_pos == pos_end ? s_view.substr(pos, pos_end)            // подстрока от текущей позиции до конца
+                                              : s_view.substr(pos, space_pos - pos));  // подстрока от текущей позиции длины "space_pos - pos"
 
+        // после того как очередное слово добавлено, нужно проверить, не дошли ли мы до конца строки (пробел не нашелся и вернулось "npos")
         if (space_pos == pos_end) {
             break;
         } else {
@@ -78,7 +81,7 @@ std::vector<std::string_view> SplitIntoWords_V3_string_view(const std::string& s
     while (true) {
         // ищем первый пробел в ещё не обработанной части
         size_t space_pos = s_view.find(' ');
-        
+
         result.push_back(s_view.substr(0, space_pos));
 
         if (space_pos == s_view.npos) {
@@ -131,17 +134,46 @@ std::vector<std::string> SplitIntoWords_V6(const std::string& str) {
     return results;
 }
 
+// генерирует текст из 10 миллионов букв 'a' и разбивающаяя его пробелами через каждые 100 символов
+std::string GenerateText() {
+    const int SIZE = 10'000'000;
+    std::string text(SIZE, 'a');
+
+    for (int i = 100; i < SIZE; i += 100) {
+        text[i] = ' ';
+    }
+
+    return text;
+}
+
 int main() {
-    std::cout << "Boost version: "s << BOOST_LIB_VERSION << '\n';
-    std::string str = "some     words to    be      splitted into         words"s;
-    // std::string s = "some, words, to, be, splitted, into, words"s;
+    // {
+    //     std::cout << "Boost version: "s << BOOST_LIB_VERSION << '\n';
+    //     std::string str = "some     words to    be      splitted into         words"s;
+    //     // std::string s = "some, words, to, be, splitted, into, words"s;
 
-    // boost::algorithm::trim(str);
-    // std::cout << "Trimmed string: "s << str << std::endl;
+    //     // boost::algorithm::trim(str);
+    //     // std::cout << "Trimmed string: "s << str << std::endl;
 
-    std::vector<std::string_view> v = SplitIntoWords_V3_string_view(str);
+    //     std::vector<std::string_view> v = SplitIntoWords_V3_string_view(str);
 
-    std::cout << "Content of vector containing words: "s << v << std::endl;
+    //     std::cout << "Content of vector containing words: "s << v << std::endl;
+    // }
+
+    {
+        const std::string text = GenerateText();
+        {
+            LOG_DURATION("string"s);
+            const auto words = SplitIntoWords_V1(text);
+            std::cout << words[0] << "\n";
+        }
+
+        {
+            LOG_DURATION("string_view"s);
+            const auto words = SplitIntoWords_V2_string_view(text);
+            std::cout << words[0] << "\n";
+        }
+    }
 
     return 0;
 }

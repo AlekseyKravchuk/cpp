@@ -74,11 +74,43 @@ std::vector<std::string_view> SplitIntoWords_V2_string_view(const std::string& s
     return result;
 }
 
+// в эту функцию обязательно нужно передать ссылку на строку, "std::string_view" сюда передать нельзя
 std::vector<std::string_view> SplitIntoWords_V3_string_view(const std::string& str) {
     // в данном случае "str" указывает на диапазон ещё не обработанных символов,
     // т.е. в данном случае мы двигаем левую границу самого string_view
     std::string_view s_view = str;
 
+    std::vector<std::string_view> result;
+
+    while (true) {
+        // ищем первый пробел в ещё не обработанной части
+        size_t space_pos = s_view.find(' ');
+
+        // Если пробел был найден, то "space_pos" - это его позиция в "string_view", а также расстояние до него (длина слова).
+        // А если пробел не нашелся, то метод "substr" будет вызван от (0, npos), т.е. для всей стоки
+        result.push_back(s_view.substr(0, space_pos));
+
+        if (space_pos == s_view.npos) {
+            break;
+        } else {
+            // учитываем все имеющиеся пробелы
+            while (s_view[space_pos] == ' ') {
+                ++space_pos;
+            }
+
+            // откусываем от "string_view" уже обработанный кусок
+            s_view.remove_prefix(space_pos);  // в качестве параметра указываем длину префикса, который нужно откусить
+        }
+    }
+
+    return result;
+}
+
+// в эту функцию можно передавать как "const std::string&", так и "std::string_view"
+// передаем "string_view" по значению в качестве параметра функции
+std::vector<std::string_view> SplitIntoWords_V4_string_view(std::string_view s_view) {
+    // в данном случае "s_view" указывает на диапазон ещё не обработанных символов,
+    // т.е. в данном случае мы двигаем левую границу самого "string_view"
     std::vector<std::string_view> result;
 
     while (true) {
@@ -97,7 +129,7 @@ std::vector<std::string_view> SplitIntoWords_V3_string_view(const std::string& s
                 ++space_pos;
             }
 
-            // откусываем от "string_view" уже обработанный кусок 
+            // откусываем от "string_view" уже обработанный кусок
             s_view.remove_prefix(space_pos);  // в качестве параметра указываем длину префикса, который нужно откусить
         }
     }
@@ -168,18 +200,45 @@ int main() {
     //     std::cout << "Content of vector containing words: "s << v << std::endl;
     // }
 
+    // {
+    //     const std::string text = GenerateText();
+    //     {
+    //         LOG_DURATION("string"s);
+    //         const auto words = SplitIntoWords_V1(text);
+    //         std::cout << words[0] << "\n";
+    //     }
+
+    //     {
+    //         LOG_DURATION("string_view"s);
+    //         const auto words = SplitIntoWords_V2_string_view(text);
+    //         std::cout << words[0] << "\n";
+    //     }
+
+    //     {
+    //         LOG_DURATION("string_view_sview_as_parameter"s);
+    //         const auto words = SplitIntoWords_V2_string_view(text);
+    //         std::cout << words[0] << "\n";
+    //     }
+    // }
+
     {
-        const std::string text = GenerateText();
+        const std::string text = "aba caba    daba   eba";
         {
             LOG_DURATION("string"s);
             const auto words = SplitIntoWords_V1(text);
-            std::cout << words[0] << "\n";
+            std::cout << words << "\n";
         }
 
         {
             LOG_DURATION("string_view"s);
             const auto words = SplitIntoWords_V2_string_view(text);
-            std::cout << words[0] << "\n";
+            std::cout << words << "\n";
+        }
+
+        {
+            LOG_DURATION("string_view_sview_as_parameter"s);
+            const auto words = SplitIntoWords_V4_string_view(text);
+            std::cout << words << "\n";
         }
     }
 

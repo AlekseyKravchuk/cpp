@@ -20,7 +20,7 @@ void TestParsing() {
 
     std::stringstream iss(input);
     std::vector<std::string> lines;
-    const std::string whitespaces_list = " "s;
+    const std::string whitespaces_list = " ";
 
     for (std::string line; std::getline(iss, line);) {
         // trim leading whitespaces
@@ -50,9 +50,9 @@ void TestParsing() {
         {"GET", "/", "HTTP/1.1"},
         {"GET", "/", "HTTP/1.1"},
         {"GET", "/help", "HTTP/1.1"},
-        {"GET", "/upyachka", "HTTP/1.1"},
-        {"GET", "/unexpected", "HTTP/1.1"},
-        {"HEAD", "/", "HTTP/1.1"}};
+        {"GET", "unknown", "HTTP/1.1"},
+        {"GET", "unknown", "HTTP/1.1"},
+        {"UNKNOWN", "/", "HTTP/1.1"}};
 
     std::vector<HttpRequest> parsed_requests;
     for (std::string_view line_view : lines) {

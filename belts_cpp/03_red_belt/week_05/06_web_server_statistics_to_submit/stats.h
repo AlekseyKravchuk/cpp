@@ -42,10 +42,5 @@ class Stats {
         {"unknown", 0}};
 };
 
-std::string_view FindMethodFromSupported(std::string_view s_view);
-
-std::string_view FindUriFromSupported(std::string_view s_view);
-
-std::string_view FindProtocolFromSupported(std::string_view s_view);
-
 HttpRequest ParseRequest(std::string_view line);
+extern std::set<std::string> UNSUPPORTED_STORAGE;

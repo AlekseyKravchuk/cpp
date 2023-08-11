@@ -4,16 +4,23 @@ std::set<std::string_view> SUPPORTED_METHODS = {"GET", "POST", "PUT", "DELETE"};
 std::set<std::string_view> SUPPORTED_URIs = {"/", "/order", "/product", "/basket", "/help"};
 std::set<std::string_view> SUPPORTED_PROTOCOLS = {"HTTP/1.1"};
 
-std::string_view UNKNOWN_METHOD = "UNKNOWN";
-std::string_view UNKNOWN_URI = "unknown";
-std::string_view UNKNOWN_PROTOCOL = "unknown_protocol";
+// глобальное хранилище для хранения названий неподдерживаемых методов, URI и протоколов
+std::set<std::string> UNSUPPORTED_STORAGE{};
 
 void Stats::AddMethod(std::string_view method) {
-    ++_method_stats[method];
+    if (SUPPORTED_METHODS.count(method)) {
+        ++_method_stats[method];
+    } else {
+        ++_method_stats["UNKNOWN"];
+    }
 }
 
 void Stats::AddUri(std::string_view uri) {
-    ++_uri_stats[uri];
+    if (SUPPORTED_URIs.count(uri)) {
+        ++_uri_stats[uri];
+    } else {
+        ++_uri_stats["unknown"];
+    }
 }
 
 const std::map<std::string_view, int>& Stats::GetMethodStats() const {
@@ -66,18 +73,28 @@ void trim(std::string_view& s) {
 HttpRequest ParseRequest(std::string_view line) {
     trim(line);
     std::vector<std::string_view> words = SplitIntoWords(line);
+    std::string_view method{}, uri{}, protocol{};
 
-    std::string_view method = SUPPORTED_METHODS.count(words[0])
-                                  ? *SUPPORTED_METHODS.find(words[0])
-                                  : UNKNOWN_METHOD;
+    if (SUPPORTED_METHODS.count(words[0])) {
+        method = *SUPPORTED_METHODS.find(words[0]);
+    } else {
+        UNSUPPORTED_STORAGE.insert(std::string(words[0]));
+        method = *UNSUPPORTED_STORAGE.find(std::string(words[0]));
+    }
 
-    std::string_view uri = SUPPORTED_URIs.count(words[1])
-                               ? *SUPPORTED_URIs.find(words[1])
-                               : UNKNOWN_URI;
+    if (SUPPORTED_URIs.count(words[1])) {
+        uri = *SUPPORTED_URIs.find(words[1]);
+    } else {
+        UNSUPPORTED_STORAGE.insert(std::string(words[1]));
+        uri = *UNSUPPORTED_STORAGE.find(std::string(words[1]));
+    }
 
-    std::string_view protocol = SUPPORTED_PROTOCOLS.count(words[2])
-                                    ? *SUPPORTED_PROTOCOLS.find(words[2])
-                                    : UNKNOWN_PROTOCOL;
+    if (SUPPORTED_PROTOCOLS.count(words[2])) {
+        protocol = *SUPPORTED_PROTOCOLS.find(words[2]);
+    } else {
+        UNSUPPORTED_STORAGE.insert(std::string(words[2]));
+        protocol = *UNSUPPORTED_STORAGE.find(std::string(words[2]));
+    }
 
     return {method, uri, protocol};
 }

@@ -1,46 +1,56 @@
 #pragma once
 
+#include <array>
 #include <map>
-#include <set>
 #include <string_view>
-#include <vector>
 
 #include "http_request.h"
+using namespace std;
+
+class StatPiece {
+   public:
+    template <typename Container>
+    StatPiece(const Container& known_keys, string_view default_key)
+        : default_key(default_key) {
+        counts[default_key] = 0;
+        for (string_view key : known_keys) {
+            counts[key] = 0;
+        }
+    }
+
+    void Add(string_view value);
+
+    const map<string_view, int>& GetValues() const {
+        return counts;
+    }
+
+   private:
+    const string_view default_key;
+    map<string_view, int> counts;
+};
 
 class Stats {
    public:
-    // если метод протокола HTTP, переданный в метод AddMethod, не поддерживается нашим сервером,
-    // то нужно на единицу увеличить счётчик для метода «UNKNOWN» (подробнее см. юнит-тесты в заготовке решения);
-    void AddMethod(std::string_view method);
+    Stats() = default;
 
-    // если URI, переданный в метод AddUri, не поддерживается нашим сервером, то нужно на единицу увеличить счётчик для URI «unknown».
-    void AddUri(std::string_view uri);
-
-    // метод GetMethodStats возвращает словарь, в котором для каждого метода хранится,
-    // сколько раз он встретился в качестве аргумента метода AddMethod;
-    const std::map<std::string_view, int>& GetMethodStats() const;
-
-    // метод GetUriStats работает аналогично для URI;
-    const std::map<std::string_view, int>& GetUriStats() const;
-
-    friend HttpRequest ParseRequest(std::string_view line);
+    void AddMethod(string_view method);
+    void AddUri(string_view uri);
+    const map<string_view, int>& GetMethodStats() const;
+    const map<string_view, int>& GetUriStats() const;
 
    private:
-    std::map<std::string_view, int> _method_stats = {
-        {"GET", 0},
-        {"POST", 0},
-        {"PUT", 0},
-        {"DELETE", 0},
-        {"UNKNOWN", 0}};
+    // Ключевое слово inline позволяет определить статические члены
+    // known_methods, default_method и т.д. здесь, в .h-файле. Без
+    // него нам бы пришлось объявить их здесь, а определеление вынести
+    // в stats.cpp
+    inline static const array<string, 4> known_methods = {"GET", "POST", "DELETE", "PUT"};
+    inline static const string default_method = "UNKNOWN";
 
-    std::map<std::string_view, int> _uri_stats = {
-        {"/", 0},
-        {"/order", 0},
-        {"/product", 0},
-        {"/basket", 0},
-        {"/help", 0},
-        {"unknown", 0}};
+    inline static const array<string, 5> known_uris = {"/", "/product", "/basket", "/help", "/order"};
+    inline static const string default_uri = "unknown";
+
+    StatPiece methods{known_methods, default_method};
+    StatPiece uris{known_uris, default_uri};
 };
 
-HttpRequest ParseRequest(std::string_view line);
-extern std::set<std::string> UNSUPPORTED_STORAGE;
+HttpRequest ParseRequest(string_view line);

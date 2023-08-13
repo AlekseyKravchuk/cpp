@@ -1,100 +1,46 @@
 #include "stats.h"
 
-std::set<std::string_view> SUPPORTED_METHODS = {"GET", "POST", "PUT", "DELETE"};
-std::set<std::string_view> SUPPORTED_URIs = {"/", "/order", "/product", "/basket", "/help"};
-std::set<std::string_view> SUPPORTED_PROTOCOLS = {"HTTP/1.1"};
+void Stats::AddMethod(string_view method) {
+    methods.Add(method);
+}
 
-// глобальное хранилище для хранения названий неподдерживаемых методов, URI и протоколов
-std::set<std::string> UNSUPPORTED_STORAGE{};
+void Stats::AddUri(string_view uri) {
+    uris.Add(uri);
+}
 
-void Stats::AddMethod(std::string_view method) {
-    if (SUPPORTED_METHODS.count(method)) {
-        ++_method_stats[method];
-    } else {
-        ++_method_stats["UNKNOWN"];
+const map<string_view, int>& Stats::GetMethodStats() const {
+    return methods.GetValues();
+}
+
+const map<string_view, int>& Stats::GetUriStats() const {
+    return uris.GetValues();
+}
+
+void LeftStrip(string_view& sv) {
+    while (!sv.empty() && isspace(sv[0])) {
+        sv.remove_prefix(1);
     }
 }
 
-void Stats::AddUri(std::string_view uri) {
-    if (SUPPORTED_URIs.count(uri)) {
-        ++_uri_stats[uri];
-    } else {
-        ++_uri_stats["unknown"];
-    }
-}
+string_view ReadToken(string_view& sv) {
+    LeftStrip(sv);
 
-const std::map<std::string_view, int>& Stats::GetMethodStats() const {
-    return _method_stats;
-}
-
-const std::map<std::string_view, int>& Stats::GetUriStats() const {
-    return _uri_stats;
-}
-
-std::vector<std::string_view> SplitIntoWords(std::string_view s_view) {
-    std::vector<std::string_view> result;
-
-    while (true) {
-        size_t space_pos = s_view.find(' ');
-        result.push_back(s_view.substr(0, space_pos));
-
-        if (space_pos == s_view.npos) {
-            break;
-        } else {
-            while (s_view[space_pos] == ' ') {
-                ++space_pos;
-            }
-
-            // откусываем от "string_view" уже обработанный кусок
-            s_view.remove_prefix(space_pos);  // в качестве параметра указываем длину префикса, который нужно откусить
-        }
-    }
-
+    auto pos = sv.find(' ');
+    auto result = sv.substr(0, pos);
+    sv.remove_prefix(pos != sv.npos ? pos : sv.size());
     return result;
 }
 
-// remove leading and trailing whitespaces
-void trim(std::string_view& s) {
-    // remove leading whitespaces
-    size_t pos = s.find_first_not_of(" ");
-    if (pos != s.npos) {
-        s.remove_prefix(pos);
-    }
-
-    // remove trailing whitespaces
-    pos = s.find_last_not_of(" ");
-    if (pos != s.npos) {
-        s.remove_suffix(s.size() - (pos + 1));
-    } else {
-        s.remove_suffix(s.size());  // строка состоит только из пробельных символов
-    }
+HttpRequest ParseRequest(string_view line) {
+    auto method = ReadToken(line);
+    auto uri = ReadToken(line);
+    return {method, uri, ReadToken(line)};
 }
 
-HttpRequest ParseRequest(std::string_view line) {
-    trim(line);
-    std::vector<std::string_view> words = SplitIntoWords(line);
-    std::string_view method{}, uri{}, protocol{};
-
-    if (SUPPORTED_METHODS.count(words[0])) {
-        method = *SUPPORTED_METHODS.find(words[0]);
+void StatPiece::Add(string_view value) {
+    if (auto it = counts.find(value); it != counts.end()) {
+        ++it->second;
     } else {
-        UNSUPPORTED_STORAGE.insert(std::string(words[0]));
-        method = *UNSUPPORTED_STORAGE.find(std::string(words[0]));
+        ++counts[default_key];
     }
-
-    if (SUPPORTED_URIs.count(words[1])) {
-        uri = *SUPPORTED_URIs.find(words[1]);
-    } else {
-        UNSUPPORTED_STORAGE.insert(std::string(words[1]));
-        uri = *UNSUPPORTED_STORAGE.find(std::string(words[1]));
-    }
-
-    if (SUPPORTED_PROTOCOLS.count(words[2])) {
-        protocol = *SUPPORTED_PROTOCOLS.find(words[2]);
-    } else {
-        UNSUPPORTED_STORAGE.insert(std::string(words[2]));
-        protocol = *UNSUPPORTED_STORAGE.find(std::string(words[2]));
-    }
-
-    return {method, uri, protocol};
 }

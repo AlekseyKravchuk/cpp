@@ -1,12 +1,5 @@
 #include "stats.h"
 
-std::set<std::string_view> SUPPORTED_METHODS = {"GET", "POST", "PUT", "DELETE"};
-std::set<std::string_view> SUPPORTED_URIs = {"/", "/order", "/product", "/basket", "/help"};
-std::set<std::string_view> SUPPORTED_PROTOCOLS = {"HTTP/1.1"};
-
-// глобальное хранилище для хранения названий неподдерживаемых методов, URI и протоколов
-std::set<std::string> UNSUPPORTED_STORAGE{};
-
 void Stats::AddMethod(std::string_view method) {
     if (SUPPORTED_METHODS.count(method)) {
         ++_method_stats[method];

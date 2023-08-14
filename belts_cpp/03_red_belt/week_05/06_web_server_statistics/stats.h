@@ -43,4 +43,12 @@ class Stats {
 };
 
 HttpRequest ParseRequest(std::string_view line);
-extern std::set<std::string> UNSUPPORTED_STORAGE;
+
+// Ключевое слово inline позволяет определить статические члены SUPPORTED_METHODS, SUPPORTED_URIs, SUPPORTED_PROTOCOLS, UNSUPPORTED_STORAG
+// здесь, в .h-файле. Без "inline" нам бы пришлось объявить их здесь (с помощью ключевого слова "extern"), а определеление вынести в stats.cpp
+inline static const std::set<std::string_view> SUPPORTED_METHODS = {"GET", "POST", "PUT", "DELETE"};
+inline static const std::set<std::string_view> SUPPORTED_URIs = {"/", "/order", "/product", "/basket", "/help"};
+inline static const std::set<std::string_view> SUPPORTED_PROTOCOLS = {"HTTP/1.1"};
+
+// глобальное хранилище для хранения названий неподдерживаемых методов, URI и протоколов
+inline static std::set<std::string> UNSUPPORTED_STORAGE{};

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iostream>
+#include <list>
 #include <map>
 #include <sstream>
 #include <string>
@@ -38,7 +39,8 @@ std::string Join(Collection collection, const std::string& delimeter = " "s) {
 
 template <class T>
 std::ostream& operator<<(std::ostream& os, const std::vector<T>& v) {
-    return os << "["s << Join(v, ", "s) << "]"s;
+    os << "["s << Join(v, ", "s) << "]"s;
+    return os;
 }
 
 template <class T>

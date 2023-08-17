@@ -47,7 +47,7 @@ void Assert(bool bool_value_to_check, const std::string& hint = {});
 
 // AssertEqual должна сравнивать аргументы любых типов
 template <typename T, typename U>
-void AssertEqual(T t, U u, const std::string hint = {}) {
+void AssertEqual(const T& t, const U& u, const std::string& hint = {}) {
     if (t != u) {
         std::ostringstream oss;
         oss << "Assertion failed: " << t << " != " << u

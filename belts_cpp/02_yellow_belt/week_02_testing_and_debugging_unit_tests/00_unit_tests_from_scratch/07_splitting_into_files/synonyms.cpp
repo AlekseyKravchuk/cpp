@@ -3,12 +3,12 @@
 void AddSynonyms(Synonyms& synonyms,
                  const std::string& first_word,
                  const std::string& second_word) {
-    synonyms[first_word].insert(second_word);
-    synonyms[second_word].insert(first_word);
-
-    // // код с преднамеренно внесенной ошибкой
     // synonyms[first_word].insert(second_word);
-    // synonyms[second_word].insert(second_word);
+    // synonyms[second_word].insert(first_word);
+
+    // код с преднамеренно внесенной ошибкой
+    synonyms[first_word].insert(second_word);
+    synonyms[second_word].insert(second_word);
 }
 
 size_t GetSynonymsCount(Synonyms& synonyms,

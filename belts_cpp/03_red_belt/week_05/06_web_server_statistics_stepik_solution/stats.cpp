@@ -17,7 +17,7 @@ const std::map<std::string_view, int>& Stats::GetUriStats() const {
 }
 
 void LeftStrip(std::string_view& sv) {
-    while (!sv.empty() && isspace(sv[0])) {
+    while (!sv.empty() && std::isspace(sv[0])) {
         sv.remove_prefix(1);
     }
 }

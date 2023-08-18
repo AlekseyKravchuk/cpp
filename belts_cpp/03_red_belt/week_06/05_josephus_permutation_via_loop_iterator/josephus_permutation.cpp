@@ -2,31 +2,36 @@
 #include <iterator>  // std::move_iterator
 #include <list>
 #include <numeric>
+#include <utility>  // std::move
 #include <vector>
 
 #include "test_runner.h"
 
+// Вспомогательная функция, позволяющая «зациклить» список
+template <typename Container, typename ForwardIt>
+ForwardIt LoopIterator(Container& container, ForwardIt pos) {
+    return pos == container.end() ? container.begin() : pos;
+}
+
 template <typename RandomIt>
 void MakeJosephusPermutation(RandomIt first, RandomIt last, uint32_t step_size) {
-    // Тип переупорядочиваемых объектов можно получить с помощью выражения "typename RandomIt::value_type"
     std::list<typename RandomIt::value_type> pool(make_move_iterator(first), make_move_iterator(last));
-    size_t cur_pos = 0;
+    auto cur_pos = pool.begin();
 
     while (!pool.empty()) {
-        auto it = pool.begin();
+        *first++ = std::move(*cur_pos);
 
-        advance(it, cur_pos);
-
-        // Вызывая функцию move для обычного объекта, просто приводим его к типу "rvalue-ссылки".
-        // "rvalue-cсылки" позволяют компилятору разобраться, нужно ли ему вызывать "конструктор копирования" или "конструктор перемещения".
-        *(first++) = std::move(*it);
-        it = pool.erase(it);
-
-        if (pool.empty()) {
+        if (pool.size() == 1) {
             break;
         }
 
-        cur_pos = (cur_pos + step_size - 1) % pool.size();
+        const auto next_pos = LoopIterator(pool, std::next(cur_pos));
+        pool.erase(cur_pos);
+        cur_pos = next_pos;
+
+        for (uint32_t step_index = 1; step_index < step_size; ++step_index) {
+            cur_pos = LoopIterator(pool, std::next(cur_pos));
+        }
     }
 }
 
@@ -43,6 +48,7 @@ void TestIntVector() {
         MakeJosephusPermutation(begin(numbers_copy), end(numbers_copy), 1);
         ASSERT_EQUAL(numbers_copy, numbers);
     }
+
     {
         std::vector<int> numbers_copy = numbers;
         MakeJosephusPermutation(std::begin(numbers_copy), std::end(numbers_copy), 3);
@@ -50,16 +56,12 @@ void TestIntVector() {
     }
 }
 
-// Это специальный тип, который поможет вам убедиться, что ваша реализация
-// функции MakeJosephusPermutation не выполняет копирование объектов.
-// Сейчас вы, возможно, не понимаете как он устроен, однако мы расскажем,
-// почему он устроен именно так, далее в блоке про move-семантику —
+// Это специальный тип, который поможет вам убедиться, что ваша реализация функции MakeJosephusPermutation не выполняет копирование объектов.
+// Сейчас вы, возможно, не понимаете как он устроен, однако мы расскажем, почему он устроен именно так, далее в блоке про move-семантику —
 // в видео «Некопируемые типы»
 
 struct NoncopyableInt {
     int value;
-
-    // NoncopyableInt(int a) : value(a) {}
 
     NoncopyableInt(const NoncopyableInt&) = delete;
     NoncopyableInt& operator=(const NoncopyableInt&) = delete;
@@ -100,5 +102,6 @@ int main() {
     TestRunner tr;
     RUN_TEST(tr, TestIntVector);
     RUN_TEST(tr, TestAvoidsCopying);
+    
     return 0;
 }

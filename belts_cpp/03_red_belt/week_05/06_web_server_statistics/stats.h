@@ -4,6 +4,7 @@
 #include <set>
 #include <string_view>
 #include <vector>
+#include <string>
 
 #include "http_request.h"
 

@@ -12,7 +12,7 @@ void TestAddSynonyms() {
             {"a", {"b"}},
             {"b", {"a"}}};
 
-        AssertEqual(empty, expected, "add synonyms empty");
+        ASSERT_EQUAL(empty, expected);
     }
 
     {
@@ -27,14 +27,14 @@ void TestAddSynonyms() {
             {"b", {"a", "c"}},
             {"c", {"a", "b"}}};
 
-        AssertEqual(synonyms, expected, "add synonyms NOT empty");
+        ASSERT_EQUAL(synonyms, expected);
     }
 }
 
 void TestCount() {
     {
         Synonyms empty;
-        AssertEqual(GetSynonymsCount(empty, "a"), 0u, "count for empty");
+        ASSERT_EQUAL(GetSynonymsCount(empty, "a"), 0u);
     }
 
     {
@@ -43,9 +43,9 @@ void TestCount() {
             {"b", {"a"}},
             {"c", {"a"}}};
 
-        AssertEqual(GetSynonymsCount(synonyms, "a"), 2u, "count for a");
-        AssertEqual(GetSynonymsCount(synonyms, "b"), 1u, "count for b");
-        AssertEqual(GetSynonymsCount(synonyms, "z"), 0u, "count for z");
+        ASSERT_EQUAL(GetSynonymsCount(synonyms, "a"), 2u);
+        ASSERT_EQUAL(GetSynonymsCount(synonyms, "b"), 1u);
+        ASSERT_EQUAL(GetSynonymsCount(synonyms, "z"), 0u);
     }
 }
 
@@ -53,8 +53,8 @@ void TestAreSynonyms() {
     {
         Synonyms emtpy;
 
-        Assert(!AreSynonyms(emtpy, "a", "b"), "are synonyms a, b");
-        Assert(!AreSynonyms(emtpy, "b", "a"), "are synonyms b, a");
+        ASSERT(!AreSynonyms(emtpy, "a", "b"));
+        ASSERT(!AreSynonyms(emtpy, "b", "a"));
     }
 
     {
@@ -63,15 +63,12 @@ void TestAreSynonyms() {
             {"b", {"a"}},
             {"c", {"a"}}};
 
-        Assert(AreSynonyms(synonyms, "a", "b"), "are synonyms: a, b");
-        Assert(AreSynonyms(synonyms, "b", "a"), "are synonyms: b, a");
-        Assert(AreSynonyms(synonyms, "a", "c"), "are synonyms: a, c");
-        Assert(AreSynonyms(synonyms, "c", "a"), "are synonyms: c, a");
-        Assert(!AreSynonyms(synonyms, "b", "c"), "are synonyms: b, c");
-        Assert(!AreSynonyms(synonyms, "c", "b"), "are synonyms: c, b");
+        ASSERT(AreSynonyms(synonyms, "a", "b"));
+        ASSERT(AreSynonyms(synonyms, "b", "a"));
+        ASSERT(AreSynonyms(synonyms, "a", "c"));
+        ASSERT(AreSynonyms(synonyms, "c", "a"));
+        ASSERT(!AreSynonyms(synonyms, "b", "c"));
+        ASSERT(!AreSynonyms(synonyms, "c", "b"));
     }
 }
-
-
-
 // ============================ END of TESTS ============================

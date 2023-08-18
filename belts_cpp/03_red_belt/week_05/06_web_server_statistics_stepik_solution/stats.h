@@ -1,7 +1,9 @@
 #pragma once
 
 #include <array>
+#include <cctype>  // std::isspace
 #include <map>
+#include <string>
 #include <string_view>
 
 #include "http_request.h"
@@ -12,7 +14,7 @@ class StatPiece {
     StatPiece(const Container& known_keys, std::string_view default_key)
         : _default_key(default_key) {
         _counts[default_key] = 0;
-        
+
         for (std::string_view key : known_keys) {
             _counts[key] = 0;
         }

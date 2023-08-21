@@ -12,6 +12,9 @@ class SimpleVector {
     SimpleVector(const SimpleVector<T>& other);
     SimpleVector(std::initializer_list<T> values);
     SimpleVector<T>& operator=(const SimpleVector<T>& other);
+
+    SimpleVector(SimpleVector<T>&& other);                // move constructor
+    SimpleVector<T>& operator=(SimpleVector<T>&& other);  // move assignment operator
     ~SimpleVector();
 
     T& operator[](size_t index);
@@ -32,16 +35,16 @@ class SimpleVector {
     void Swap(SimpleVector<T>& rhs);
 
    private:
+    T* _data{nullptr};
     size_t _size{};
     size_t _capacity{};
-    T* _data{nullptr};
 };
 
 template <typename T>
 SimpleVector<T>::SimpleVector(size_t size)
-    : _size(size),
-      _capacity(size),
-      _data(new T[size]) {}
+    : _data(new T[size]),
+      _size(size),
+      _capacity(size) {}
 
 template <typename T>
 SimpleVector<T>::SimpleVector(std::initializer_list<T> values)
@@ -51,9 +54,9 @@ SimpleVector<T>::SimpleVector(std::initializer_list<T> values)
 
 template <typename T>
 SimpleVector<T>::SimpleVector(const SimpleVector& other)
-    : _size(other.Size()),
-      _capacity(other.Capacity()),
-      _data(new T[other.Capacity()]) {
+    : _data(new T[other.Capacity()]),
+      _size(other.Size()),
+      _capacity(other.Capacity()) {
     std::copy(other.begin(), other.end(), begin());
 }
 
@@ -69,6 +72,31 @@ SimpleVector<T>& SimpleVector<T>::operator=(const SimpleVector<T>& rhs) {
     // Применение идиомы COPY-AND-SWAP позволяет достичь следующих двух целей:
     //  - избегаем дублирования кода в конструкторе копирования и операторе присваивания
     //  - обеспечиваем согласованное поведение конструктора копирования и оператора присваивания
+
+    return *this;
+}
+
+template <typename T>
+SimpleVector<T>::SimpleVector(SimpleVector<T>&& other)
+    : _data(other._data),
+      _size(other._size),
+      _capacity(other._capacity) {
+    other._data = nullptr;
+    other._size = 0;
+    other._capacity = 0;
+}
+
+template <typename T>
+SimpleVector<T>& SimpleVector<T>::operator=(SimpleVector<T>&& other) {
+    delete[] _data;
+
+    _data = other._data;
+    _size = other._size;
+    _capacity = other._capacity;
+
+    other._data = nullptr;
+    other._size = 0;
+    other._capacity = 0;
 
     return *this;
 }
@@ -122,7 +150,7 @@ void SimpleVector<T>::PushBack(const T& value) {
 
 template <typename T>
 void SimpleVector<T>::Swap(SimpleVector<T>& rhs) {
+    std::swap(_data, rhs._data);
     std::swap(_size, rhs._size);
     std::swap(_capacity, rhs._capacity);
-    std::swap(_data, rhs._data);
 }

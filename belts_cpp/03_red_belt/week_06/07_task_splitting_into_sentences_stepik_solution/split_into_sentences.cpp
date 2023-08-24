@@ -1,54 +1,46 @@
 #include <algorithm>
-#include <iterator>  // std::make_move_iterator
-#include <ostream>
+#include <iterator>
 #include <vector>
+#include <utility>  // std::move
 
 #include "test_runner.h"
 
-// Объявляем "Sentence<Token>" для произвольного типа "Token" синонимом "std::vector<Token>".
+// Объявляем Sentence<Token> для произвольного типа Token синонимом vector<Token>.
 // Благодаря этому в качестве возвращаемого значения функции можно указать не малопонятный вектор векторов,
 // а вектор предложений — vector<Sentence<Token>>.
 template <typename Token>
 using Sentence = std::vector<Token>;
 
-// Класс Token имеет метод "bool IsEndSentencePunctuation() const"
+template <typename TokenForwardIt>
+TokenForwardIt FindSentenceEnd(TokenForwardIt tokens_begin, TokenForwardIt tokens_end) {
+    const TokenForwardIt before_sentence_end =
+        std::adjacent_find(tokens_begin, tokens_end,
+                      [](const auto& left_token, const auto& right_token) {
+                          return left_token.IsEndSentencePunctuation() && !right_token.IsEndSentencePunctuation();
+                      });
+                      
+    return before_sentence_end == tokens_end
+               ? tokens_end
+               : std::next(before_sentence_end);
+}
+
+// Класс Token имеет метод bool IsEndSentencePunctuation() const
 template <typename Token>
 std::vector<Sentence<Token>> SplitIntoSentences(std::vector<Token> tokens) {
-    // Напишите реализацию функции, не копируя объекты типа Token
     std::vector<Sentence<Token>> sentences;
+    auto tokens_begin = std::begin(tokens);
+    const auto tokens_end = std::end(tokens);
 
-    auto is_punctuation = [](Token& token) {
-        return token.IsEndSentencePunctuation();
-    };
+    while (tokens_begin != tokens_end) {
+        const auto sentence_end = FindSentenceEnd(tokens_begin, tokens_end);
+        Sentence<Token> sentence;
 
-    auto is_normal = [](Token& token) {
-        return !token.IsEndSentencePunctuation();
-    };
-
-    bool isFirst = true;
-    for (auto it = tokens.begin(); it != tokens.end();) {
-        if (isFirst) {
-            if (it->IsEndSentencePunctuation()) {
-                auto it_normal_starts = std::find_if(it, tokens.end(), is_normal);
-                sentences.push_back({std::make_move_iterator(it), make_move_iterator(it_normal_starts)});
-                it = it_normal_starts;
-                isFirst = false;
-                continue;
-            }
+        for (; tokens_begin != sentence_end; ++tokens_begin) {
+            sentence.push_back(std::move(*tokens_begin));
         }
 
-        auto it_punct_starts = std::find_if(it, tokens.end(), is_punctuation);
-        if (it_punct_starts == tokens.end()) {
-            // знаков пунктуации больше нет, возможно дошли до последнего нормального токена
-            sentences.push_back({std::make_move_iterator(it), make_move_iterator(it_punct_starts)});
-            break;
-        }
-
-        auto it_normal_starts = std::find_if(it_punct_starts, tokens.end(), is_normal);
-        sentences.push_back({std::make_move_iterator(it), make_move_iterator(it_normal_starts)});
-        it = it_normal_starts;
+        sentences.push_back(move(sentence));
     }
-
     return sentences;
 }
 
@@ -59,7 +51,6 @@ struct TestToken {
     bool IsEndSentencePunctuation() const {
         return is_end_sentence_punctuation;
     }
-
     bool operator==(const TestToken& other) const {
         return data == other.data && is_end_sentence_punctuation == other.is_end_sentence_punctuation;
     }
@@ -70,7 +61,8 @@ std::ostream& operator<<(std::ostream& stream, const TestToken& token) {
 }
 
 // Тест содержит копирования объектов класса TestToken.
-// Для проверки отсутствия копирований в функции SplitIntoSentences необходимо написать отдельный тест.
+// Для проверки отсутствия копирований в функции SplitIntoSentences
+// необходимо написать отдельный тест.
 void TestSplitting() {
     ASSERT_EQUAL(
         SplitIntoSentences(std::vector<TestToken>({{"Split"}, {"into"}, {"sentences"}, {"!"}})),

@@ -1,7 +1,7 @@
 #include <algorithm>
 #include <iterator>
-#include <vector>
 #include <utility>  // std::move
+#include <vector>
 
 #include "test_runner.h"
 
@@ -15,13 +15,12 @@ template <typename TokenForwardIt>
 TokenForwardIt FindSentenceEnd(TokenForwardIt tokens_begin, TokenForwardIt tokens_end) {
     const TokenForwardIt before_sentence_end =
         std::adjacent_find(tokens_begin, tokens_end,
-                      [](const auto& left_token, const auto& right_token) {
-                          return left_token.IsEndSentencePunctuation() && !right_token.IsEndSentencePunctuation();
-                      });
-                      
-    return before_sentence_end == tokens_end
-               ? tokens_end
-               : std::next(before_sentence_end);
+                           [](const auto& left_token, const auto& right_token) {
+                               return left_token.IsEndSentencePunctuation() && !right_token.IsEndSentencePunctuation();
+                           });
+
+    return (before_sentence_end == tokens_end) ? tokens_end
+                                               : std::next(before_sentence_end);
 }
 
 // Класс Token имеет метод bool IsEndSentencePunctuation() const
@@ -33,14 +32,11 @@ std::vector<Sentence<Token>> SplitIntoSentences(std::vector<Token> tokens) {
 
     while (tokens_begin != tokens_end) {
         const auto sentence_end = FindSentenceEnd(tokens_begin, tokens_end);
-        Sentence<Token> sentence;
-
-        for (; tokens_begin != sentence_end; ++tokens_begin) {
-            sentence.push_back(std::move(*tokens_begin));
-        }
-
-        sentences.push_back(move(sentence));
+        sentences.push_back(Sentence<Token>(std::make_move_iterator(tokens_begin),
+                                            std::make_move_iterator(sentence_end)));
+        tokens_begin = sentence_end;
     }
+
     return sentences;
 }
 

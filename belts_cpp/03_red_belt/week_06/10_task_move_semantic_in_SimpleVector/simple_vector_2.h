@@ -1,29 +1,29 @@
-#pragma once
-
 #include <algorithm>
-#include <cstddef>  // size_t
-#include <stdexcept>
+#include <utility>  // std::move
+// #include <cstdint>
+
+// Реализуйте SimpleVector в этом файле и отправьте его на проверку
 
 template <typename T>
 class SimpleVector {
    public:
     SimpleVector() = default;
     explicit SimpleVector(size_t size);
-    
-    SimpleVector(const SimpleVector<T>& other);
-    SimpleVector(std::initializer_list<T> values);
+
+    SimpleVector(const SimpleVector<T>&);
+
     SimpleVector<T>& operator=(const SimpleVector<T>& other);
 
-    SimpleVector(SimpleVector<T>&& other);                // move constructor
-    SimpleVector<T>& operator=(SimpleVector<T>&& other);  // move assignment operator
+    SimpleVector(SimpleVector<T>&& other);
+    SimpleVector<T>& operator=(SimpleVector<T>&& other);
     ~SimpleVector();
 
     T& operator[](size_t index);
 
-    // ======== Пара неконстантных методов "begin" и "end" ========
+    // ============================== Пара неконстантных методов "begin" и "end" ===============================
     T* begin();
     T* end();
-    // ============================================================
+    // =========================================================================================================
 
     // ======== Пара КОНСТАНТНЫХ методов "begin" и "end" (возвращают указатель на КОНСТАНТНОЕ значение) ========
     const T* begin() const;
@@ -33,7 +33,10 @@ class SimpleVector {
     size_t Size() const;
     size_t Capacity() const;
     void PushBack(const T& value);
+    void PushBack(T&& value);
     void Swap(SimpleVector<T>& rhs);
+
+    // При необходимости перегрузите существующие публичные методы
 
    private:
     T* _data{nullptr};
@@ -48,33 +51,11 @@ SimpleVector<T>::SimpleVector(size_t size)
       _capacity(size) {}
 
 template <typename T>
-SimpleVector<T>::SimpleVector(std::initializer_list<T> values)
-    : SimpleVector<T>::SimpleVector(values.size()) {
-    std::copy(std::begin(values), std::end(values), _data);
-}
-
-template <typename T>
 SimpleVector<T>::SimpleVector(const SimpleVector& other)
     : _data(new T[other.Capacity()]),
       _size(other.Size()),
       _capacity(other.Capacity()) {
-    std::copy(other.begin(), other.end(), begin());
-}
-
-template <typename T>
-SimpleVector<T>& SimpleVector<T>::operator=(const SimpleVector<T>& rhs) {
-    if (_data == rhs._data) {
-        return *this;
-    }
-
-    SimpleVector<T> tmp(rhs);  // идиома COPY-AND-SWAP: 1) создаём временный вектор с помощью конструктора копирования
-    Swap(tmp);                 //                       2) обмениваем поля своего объекта с полями временного объекта
-
-    // Применение идиомы COPY-AND-SWAP позволяет достичь следующих двух целей:
-    //  - избегаем дублирования кода в конструкторе копирования и операторе присваивания
-    //  - обеспечиваем согласованное поведение конструктора копирования и оператора присваивания
-
-    return *this;
+    std::move(other.begin(), other.end(), begin());
 }
 
 template <typename T>
@@ -85,6 +66,22 @@ SimpleVector<T>::SimpleVector(SimpleVector<T>&& other)
     other._data = nullptr;
     other._size = 0;
     other._capacity = 0;
+}
+
+template <typename T>
+SimpleVector<T>& SimpleVector<T>::operator=(const SimpleVector<T>& rhs) {
+    if (_data == rhs._data) {
+        return *this;
+    }
+
+    SimpleVector<T> tmp(std::move(rhs));  // идиома COPY-AND-SWAP: 1) создаём временный вектор с помощью конструктора копирования
+    Swap(tmp);                            //                       2) обмениваем поля своего объекта с полями временного объекта
+
+    // Применение идиомы COPY-AND-SWAP позволяет достичь следующих двух целей:
+    //  - избегаем дублирования кода в конструкторе копирования и операторе присваивания
+    //  - обеспечиваем согласованное поведение конструктора копирования и оператора присваивания
+
+    return *this;
 }
 
 template <typename T>
@@ -147,6 +144,20 @@ void SimpleVector<T>::PushBack(const T& value) {
     }
 
     _data[_size++] = value;
+}
+
+template <typename T>
+void SimpleVector<T>::PushBack(T&& value) {
+    if (_size >= _capacity) {
+        size_t new_capacity = (_capacity == 0) ? 1 : (2 * _capacity);
+        T* ptr_newly_allocated = new T[new_capacity];
+        std::move(begin(), end(), ptr_newly_allocated);
+        std::swap(_data, ptr_newly_allocated);
+        delete[] ptr_newly_allocated;
+        _capacity = new_capacity;
+    }
+
+    _data[_size++] = std::move(value);
 }
 
 template <typename T>

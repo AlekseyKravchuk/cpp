@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cstding>
 #include <iostream>
 #include <iterator>
 #include <memory>
@@ -11,34 +12,47 @@
 template <typename T>
 class PriorityCollection {
    public:
-    using Id = /* тип, используемый для идентификаторов */;
+    using Id = uint32_t;
+    using Priority = utin32_t;
 
     // Добавить объект с нулевым приоритетом с помощью перемещения и вернуть его идентификатор
-    Id Add(T object);
+    Id Add(T object) {
+        _max_heap.push_back(std::move(object));
+    }
 
     // Добавить все элементы диапазона [range_begin, range_end) с помощью перемещения,
     // записав выданные им идентификаторы в диапазон [ids_begin, ...)
     template <typename ObjInputIt, typename IdOutputIt>
     void Add(ObjInputIt range_begin, ObjInputIt range_end,
-             IdOutputIt ids_begin);
+             IdOutputIt ids_begin) {
+        std::move(range_begin, range_end, std::back_inserter(_max_heap));
+    }
 
     // Определить, принадлежит ли идентификатор какому-либо хранящемуся в контейнере объекту
-    bool IsValid(Id id) const;
+    bool IsValid(Id id) const {
+        return 0 <= id <= _max_heap.size() - 1;
+    }
 
     // Получить объект по идентификатору
-    const T& Get(Id id) const;
+    const T& Get(Id id) const {
+        return _max_heap[id];
+    }
 
     // Увеличить приоритет объекта на 1
+    // TODO: еще раз посмотреть устройство кучи у Саши Куликова
     void Promote(Id id);
 
     // Получить объект с максимальным приоритетом и его приоритет
-    std::pair<const T&, int> GetMax() const;
+    std::pair<const T&, int> GetMax() const {
+        return {_max_heap.at(0).first, _max_heap.at(0).second};
+    }
 
     // Аналогично GetMax, но удаляет элемент из контейнера
+    // TODO:
     std::pair<T, int> PopMax();
 
    private:
-    // Приватные поля и методы
+    std::vector<std::pair<T, Priority>> _max_heap;
 };
 
 class StringNonCopyable : public std::string {
@@ -63,7 +77,7 @@ void TestNoCopy() {
     }
 
     strings.Promote(yellow_id);
-    
+
     {
         const auto item = strings.PopMax();
         ASSERT_EQUAL(item.first, "red");

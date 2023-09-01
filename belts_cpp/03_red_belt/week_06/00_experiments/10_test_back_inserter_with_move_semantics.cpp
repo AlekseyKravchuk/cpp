@@ -67,8 +67,16 @@ int main() {
     assert(std::equal(target.begin(), target.end(),
                       expected_target.begin()));
 
-    // std::cout << "source after moving: " << source << std::endl;
-    // std::cout << "target after moving: " << target << std::endl;
+    // хотим ПЕРЕМЕСТИТЬ последний элемент вектора (вместо его копирования) в некоторую переменную
+    std::cout << "expected_target.size() before moving it's last element = " << expected_target.size() << std::endl;
+    NoncopyableInt x = std::move(expected_target.back());
+     std::cout << "expected_target.size() After moving it's last element = " << expected_target.size() << std::endl;
+    // // // пробуем просто скопировать
+    // // NoncopyableInt x = expected_target.back();  // ERROR, так и должно быть
+    std::cout << x.value << std::endl;
 
+    for (const auto& elm : expected_target) {
+        std::cout << elm.value << ' ';
+    }
     return 0;
 }

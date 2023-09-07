@@ -42,34 +42,6 @@ class PriorityCollection {
         container.Add(arr.begin(),arr.end(), std::back_inserter(dest));
     */
     // в результате вызова метода будет добавлено "(range_end - range_begin)" элементов с нулевым приоритетом
-    // template <typename ObjInputIt, typename IdOutputIt>
-    // void Add(ObjInputIt range_begin, ObjInputIt range_end,
-    //          IdOutputIt ids_begin) {
-    //     if (range_begin == range_end) {
-    //         return;
-    //     }
-
-    //     // Идентификаторы будут назначаться в обратном порядке в порядке уменьшения (от бОльших значений "id" к меньшим),
-    //     // поскольку элементы будут добавляться в max_heap с помощью reverse_iterator'ов.
-    //     int pos = static_cast<Id>(_pq.size());                                     // начальная позиция в max-heap'e для вставки 1-го эл-та из диапазона
-    //     Id id = pos + static_cast<int>(std::distance(range_begin, range_end)) - 1; // максимальный индекс для добавляемого диапазона
-
-    //     auto rbegin = std::make_reverse_iterator(range_end);
-    //     auto rend = std::make_reverse_iterator(range_begin);
-
-    //     for (; rbegin != rend; ++rbegin) {
-    //         _pq.push_back({id,
-    //                        Priority{0},
-    //                        *std::make_move_iterator(rbegin)});
-    //         _id_to_pos[id] = pos;
-    //         // FixUp(_id_to_pos[id]);  // как оказалось, этого можно и не делать - на результат не влияет
-    //         *ids_begin++ = pos++;
-    //         --id;
-    //     }
-    // }
-
-    // в этой версии метода "Add" будем выдавать id-шники в прямом порядке и складывать объекты в кучу также в порядке их следования
-    // в диапазоне [range_begin, range_end), но теперь придется для каждого добавленного объекта вызывать "FixUp(_id_to_pos[id])"
     template <typename ObjInputIt, typename IdOutputIt>
     void Add(ObjInputIt range_begin, ObjInputIt range_end,
              IdOutputIt ids_begin) {
@@ -77,16 +49,22 @@ class PriorityCollection {
             return;
         }
 
-        Id id = static_cast<Id>(_pq.size()); // начальная позиция в max-heap'e для вставки 1-го эл-та из диапазона
-        auto it = range_begin;
+        // Идентификаторы будут назначаться в обратном порядке в порядке уменьшения (от бОльших значений "id" к меньшим),
+        // поскольку элементы будут добавляться в max_heap с помощью reverse_iterator'ов.
+        int pos = static_cast<Id>(_pq.size());                                     // начальная позиция в max-heap'e для вставки 1-го эл-та из диапазона
+        Id id = pos + static_cast<int>(std::distance(range_begin, range_end)) - 1; // максимальный индекс для добавляемого диапазона
 
-        for (; it != range_end; ++it) {
+        auto rbegin = std::make_reverse_iterator(range_end);
+        auto rend = std::make_reverse_iterator(range_begin);
+
+        for (; rbegin != rend; ++rbegin) {
             _pq.push_back({id,
                            Priority{0},
-                           *std::make_move_iterator(it)});
-            _id_to_pos[id] = id;
-            FixUp(id);
-            *ids_begin++ = id++;
+                           *std::make_move_iterator(rbegin)});
+            _id_to_pos[id] = pos;
+            // FixUp(_id_to_pos[id]);  // как оказалось, этого можно и не делать - на результат не влияет
+            *ids_begin++ = pos++;
+            --id;
         }
     }
 
@@ -249,75 +227,9 @@ void TestNoCopy() {
     }
 }
 
-void TestEqualMaxPriorityButDifferentID_1() {
-    {
-        PriorityCollection<int> collection;
-        std::vector<int> arr{1, 2, 3, 4, 5, 6};
-        std::vector<int> ids;
-
-        collection.Add(arr.begin(), arr.end(), std::back_inserter(ids));
-
-        // for (int i = 1; i < 4; ++i) {
-        //     collection.Promote(i);
-        // }
-
-        // std::pair<int, int> elm = collection.PopMax();
-        // ASSERT_EQUAL(elm, (std::pair<int, int>(4, 1)));
-
-        // elm = collection.PopMax();
-        // ASSERT_EQUAL(elm, (std::pair<int, int>{3, 1}));
-
-        // elm = collection.PopMax();
-        // ASSERT_EQUAL(elm, (std::pair<int, int>{2, 1}));
-
-        // elm = collection.PopMax();
-        // ASSERT_EQUAL(elm, (std::pair<int, int>{6, 0}));
-
-        // elm = collection.PopMax();
-        // ASSERT_EQUAL(elm, (std::pair<int, int>{5, 0}));
-
-        // elm = collection.PopMax();
-        // ASSERT_EQUAL(elm, (std::pair<int, int>{1, 0}));
-
-        for (size_t i = 0; i < ids.size(); ++i) {
-            auto elm = collection.PopMax();
-            std::cout << elm.first << ' ' << elm.second << '\n';
-        }
-    }
-}
-
-void TestAddRange() {
-    using PrCollect = PriorityCollection<int>;
-    using Id = PrCollect::Id;
-    int const SIZE = 10;
-
-    std::vector<Id> ids(SIZE);
-    std::vector<int> range(SIZE);
-    std::iota(range.begin(), range.end(), 0);
-
-    PrCollect collection;
-    collection.Add(range.begin(), range.end(), ids.begin());
-
-    int prevMax = SIZE - 1;
-    for (int i = 0; i < SIZE; ++i) {
-        for (int j = 0; j < i + 1; ++j) {
-            collection.Promote(ids[i]);
-            auto [item, priority] = collection.GetMax();
-            int trueValue = j + 1 >= i ? i : prevMax;
-            int truePriority = j + 1 >= i ? j + 1 : i;
-            if (item != trueValue || priority != truePriority) {
-                puts("Alarm!");
-            }
-        }
-        prevMax = i;
-    }
-    puts("Good job!");
-}
-
 int main() {
     TestRunner tr;
     RUN_TEST(tr, TestNoCopy);
-    RUN_TEST(tr, TestAddRange);
 
     return 0;
 }

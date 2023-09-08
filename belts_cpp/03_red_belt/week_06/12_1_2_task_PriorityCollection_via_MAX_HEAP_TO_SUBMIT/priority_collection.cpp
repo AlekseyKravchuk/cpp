@@ -1,10 +1,10 @@
 #include <algorithm>
 #include <iostream>
 #include <iterator> // std::make_reverse_iterator
-#include <map>
-#include <numeric> // std::iota
+#include <numeric>  // std::iota
 #include <string>
 #include <tuple>
+#include <unordered_map>
 #include <utility> // std::move, std::exchange, std::pair
 #include <vector>
 
@@ -86,14 +86,12 @@ class PriorityCollection {
         FixUp(pos);
     }
 
-    // Получить объект с максимальным приоритетом и его приоритет
-    // !!! ПРЕДПОЛАГАЕТСЯ (по условию задачи), что метод "GetMax" вызывается только при наличии элементов в контейнере!!!
+    // Получить объект с максимальным приоритетом и его приоритет. "GetMax" вызывается только при наличии элементов в контейнере!!!
     std::pair<const T&, int> GetMax() const {
         return {_pq.at(0).obj, _pq.at(0).priority};
     }
 
-    // Аналогично GetMax, но удаляет элемент из контейнера
-    // !!! ПРЕДПОЛАГАЕТСЯ (по условию задачи), что метод "PopMax" вызывается только при наличии элементов в контейнере!!!
+    // Аналогично GetMax, но удаляет элемент из контейнера. "PopMax" вызывается только при наличии элементов в контейнере!!!
     std::pair<T, int> PopMax() {
         SwapTAux(_pq[0], _pq.back());     // меняем местами 0-ой (с max-приоритетом) и последний (возможно, с min-приоритетом) элементы в max-heap
         Id id_to_del = _pq.back().id;     // запоминаем "id", подлежащий удалению
@@ -126,8 +124,8 @@ class PriorityCollection {
         }
     };
 
-    std::vector<TAux> _pq;        // "priority queue" реализованная через "max-heap"
-    std::map<Id, int> _id_to_pos; // словарь, "id"==>"позиция_в_векторе_pq" + проверка наличия объекта с данным "id" в контейнере
+    std::vector<TAux> _pq;                  // "priority queue" реализованная через "max-heap"
+    std::unordered_map<Id, int> _id_to_pos; // словарь, "id"==>"позиция_в_куче" + проверка наличия объекта с данным "id" в контейнере
 
     // ====================================== private Methods ======================================
     void SwapTAux(TAux& lhs, TAux& rhs) {
@@ -181,7 +179,6 @@ class PriorityCollection {
             i = std::exchange(j, 2 * j + 1);
         }
     }
-
     // ================================ END of private Methods ================================
 };
 
@@ -215,9 +212,9 @@ void TestNoCopy() {
     }
 
     {
-        const auto item = strings.PopMax(); // <= некорректно работает PopMax
+        const auto item = strings.PopMax();
         ASSERT_EQUAL(item.first, "yellow");
-        ASSERT_EQUAL(item.second, 2); // <= падаем теперь здесь
+        ASSERT_EQUAL(item.second, 2);
     }
 
     {
@@ -227,9 +224,35 @@ void TestNoCopy() {
     }
 }
 
+void TestAddRange() {
+    using PrCollect = PriorityCollection<int>;
+    using Id = PrCollect::Id;
+    int const SIZE = 10;
+
+    std::vector<Id> ids(SIZE);
+    std::vector<int> range(SIZE);
+    std::iota(range.begin(), range.end(), 0);
+
+    PrCollect collection;
+    collection.Add(range.begin(), range.end(), ids.begin());
+
+    int prevMax = SIZE - 1;
+    for (int i = 0; i < SIZE; ++i) {
+        for (int j = 0; j < i + 1; ++j) {
+            collection.Promote(ids[i]);
+            auto [item, priority] = collection.GetMax();
+            int trueValue = j + 1 >= i ? i : prevMax;
+            int truePriority = j + 1 >= i ? j + 1 : i;
+            ASSERT(item == trueValue && priority == truePriority);
+        }
+        prevMax = i;
+    }
+}
+
 int main() {
     TestRunner tr;
     RUN_TEST(tr, TestNoCopy);
+    RUN_TEST(tr, TestAddRange);
 
     return 0;
 }

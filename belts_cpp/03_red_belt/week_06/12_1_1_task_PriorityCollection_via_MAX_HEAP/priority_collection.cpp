@@ -61,10 +61,8 @@ class PriorityCollection {
             _pq.push_back({id,
                            Priority{0},
                            *std::make_move_iterator(rbegin)});
-            _id_to_pos[id] = pos;
-            // FixUp(_id_to_pos[id]);  // как оказалось, этого можно и не делать - на результат не влияет
+            _id_to_pos[id--] = pos;  // изначально позиция объекта в куче соответствует его "id"
             *ids_begin++ = pos++;
-            --id;
         }
     }
 

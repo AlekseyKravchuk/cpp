@@ -3,17 +3,22 @@
 #include <vector>
 
 class Logger {
-   public:
+  public:
     Logger() {
         std::cout << "Default ctor\n";
     }
 
-    // // Для того, чтобы объекты класса нельзя было копировать, конструктор копирования у этого класса нужно удалить:
-    // Logger(const Logger& other) {
-    //     std::cout << "Copy ctor\n";
-    // }
+    Logger(const Logger&) {
+        std::cout << "Copy ctor\n";
+    }
 
-    Logger(const Logger&) = delete;
+    const Logger& operator=(const Logger& other) {
+        std::cout << "Copy ASSIGNMENT operator\n";
+        return other;
+    }
+
+    // // Для того, чтобы объекты класса нельзя было копировать, конструктор копирования у этого класса нужно удалить:
+    // Logger(const Logger&) = delete;
 
     Logger(Logger&&) {
         std::cout << "Move ctor\n";
@@ -23,9 +28,9 @@ class Logger {
 Logger MakeLogger() {
     // здесь происходит возвращение из функции временного объекта (copy elision)
     // т.е. если в return'e временный объект (пусть даже очень тяжелый), его можно без опаски возвращать из функции
-    
+
     // copy elision: возвращение из функции временного объекта
-    return Logger();  // temporary -> returned (temporary)
+    return Logger(); // temporary -> returned (temporary)
 }
 
 Logger MakeLogger_NRVO() {
@@ -41,6 +46,18 @@ Logger MakeLogger_NRVO() {
 }
 
 int main() {
+    Logger source;          // вызывается default-конструктор
+    Logger target = source; // вызывается COPY-конструктор (конструктор копирования)
+
+    std::cout << "-----------------------------------" << std::endl;
+
+    std::vector<Logger> loggers;
+    loggers.push_back(target); // при помещении переменной "target" внутрь вектора снова происходит вызов COPY Constructor
+
+    std::cout << "-----------------------------------" << std::endl;
+
+    source = target;
+
     /*
     // default constructor
     Logger other_logger;
@@ -51,10 +68,10 @@ int main() {
     Logger moved_logger = std::move(other_logger);  // move constructor
     */
 
-    // copy elision: инициализация переменной временным объектом (компилятор даже перемещать ничего не будет)
-    Logger logger = MakeLogger();
+    // // copy elision: инициализация переменной временным объектом (компилятор даже перемещать ничего не будет)
+    // Logger logger = MakeLogger();
 
-    // Logger logger = MakeLogger_NRVO(); 
+    // Logger logger = MakeLogger_NRVO();
 
     return 0;
 }

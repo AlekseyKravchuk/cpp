@@ -9,13 +9,12 @@ class SimpleVector {
    public:
     SimpleVector() = default;
     explicit SimpleVector(size_t size);
-
-    SimpleVector(const SimpleVector<T>&);
-
+    SimpleVector(const SimpleVector<T>& other);
     SimpleVector<T>& operator=(const SimpleVector<T>& other);
 
     SimpleVector(SimpleVector<T>&& other);
     SimpleVector<T>& operator=(SimpleVector<T>&& other);
+    
     ~SimpleVector();
 
     T& operator[](size_t index);

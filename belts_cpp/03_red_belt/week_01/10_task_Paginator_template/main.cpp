@@ -1,6 +1,6 @@
-#include <cmath>  // std::abs
+#include <cmath> // std::abs
 #include <iostream>
-#include <iterator>  // std::distance, std::next, std::advance
+#include <iterator> // std::distance, std::next, std::advance
 #include <numeric>
 #include <string>
 #include <vector>
@@ -11,7 +11,7 @@ using namespace std::literals;
 
 template <typename Iterator>
 class IteratorRange {
-   public:
+  public:
     IteratorRange(Iterator first, Iterator last)
         : _p(first, last) {}
 
@@ -27,13 +27,13 @@ class IteratorRange {
         return std::distance(_p.first, _p.second);
     }
 
-   private:
+  private:
     std::pair<Iterator, Iterator> _p;
 };
 
 template <typename Iterator>
 class Paginator {
-   public:
+  public:
     Paginator(Iterator it_container_begin, Iterator it_container_end, size_t page_size) {
         int len = std::distance(it_container_begin, it_container_end);
         int n_full_pages = len / static_cast<int>(page_size);
@@ -58,7 +58,7 @@ class Paginator {
         return _pages.size();
     }
 
-   private:
+  private:
     std::vector<IteratorRange<Iterator>> _pages{};
 };
 

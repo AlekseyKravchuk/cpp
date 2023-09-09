@@ -8,11 +8,11 @@
 
 std::vector<std::string> SplitIntoWords(const std::string& text) {
     std::vector<std::string> words;
-    std::string current_word;
+    std::string current_word;  // для поддержание текущего символа
 
     for (const char ch : text) {
         if (ch == ' ') {
-            // текущий символ является пробелом => сбрасываем всё, что накопили в "current_word" в наш вектор строк
+            // если текущий символ является пробелом => сбрасываем всё, что накопили в "current_word" в наш вектор строк
             words.push_back(current_word);
 
             // зануляем текущее слово, т.к. мы его уже сохранили в векторе
@@ -35,20 +35,20 @@ std::vector<std::string> SplitIntoWordsEnhanced(const std::string& text) {
     std::vector<std::string> words;
     std::string current_word;
 
-    for (const char ch : text) {
+    for (const char& ch : text) {
         if (ch == ' ') {
             // текущий символ является пробелом => сбрасываем всё, что накопили в "current_word" в наш вектор строк
-            words.push_back(std::move(current_word));
-            current_word.clear();
+            words.push_back(std::move(current_word));  // используем move-семантику
         } else {
             // символ не является пробелом => просто дописываем его к текущему слову с помощью метода std::string::push_back
             current_word.push_back(ch);
+            current_word.clear();
         }
     }
 
     // если последний символ в строке не является пробелом, то нам нужно как-то скинуть накопленное в "current_word" в вектор слов
     if (!current_word.empty()) {
-        words.push_back(current_word);
+        words.push_back(std::move(current_word));
     }
 
     return words;

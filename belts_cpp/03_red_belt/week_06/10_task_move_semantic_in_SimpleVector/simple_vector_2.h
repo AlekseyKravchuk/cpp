@@ -1,12 +1,12 @@
 #include <algorithm>
-#include <utility>  // std::move
+#include <utility> // std::move
 // #include <cstdint>
 
 // Реализуйте SimpleVector в этом файле и отправьте его на проверку
 
 template <typename T>
 class SimpleVector {
-   public:
+  public:
     SimpleVector() = default;
     explicit SimpleVector(size_t size);
     SimpleVector(const SimpleVector<T>& other);
@@ -14,7 +14,7 @@ class SimpleVector {
 
     SimpleVector(SimpleVector<T>&& other);
     SimpleVector<T>& operator=(SimpleVector<T>&& other);
-    
+
     ~SimpleVector();
 
     T& operator[](size_t index);
@@ -37,7 +37,7 @@ class SimpleVector {
 
     // При необходимости перегрузите существующие публичные методы
 
-   private:
+  private:
     T* _data{nullptr};
     size_t _size{};
     size_t _capacity{};
@@ -49,32 +49,25 @@ SimpleVector<T>::SimpleVector(size_t size)
       _size(size),
       _capacity(size) {}
 
+// копирующий конструктор, Copy Constructor
 template <typename T>
-SimpleVector<T>::SimpleVector(const SimpleVector& other)
+SimpleVector<T>::SimpleVector(const SimpleVector<T>& other)
     : _data(new T[other.Capacity()]),
       _size(other.Size()),
       _capacity(other.Capacity()) {
+
     std::move(other.begin(), other.end(), begin());
 }
 
-template <typename T>
-SimpleVector<T>::SimpleVector(SimpleVector<T>&& other)
-    : _data(other._data),
-      _size(other._size),
-      _capacity(other._capacity) {
-    other._data = nullptr;
-    other._size = 0;
-    other._capacity = 0;
-}
-
+// оператор копирующего присваивания, Copy Assignment Operator
 template <typename T>
 SimpleVector<T>& SimpleVector<T>::operator=(const SimpleVector<T>& rhs) {
     if (_data == rhs._data) {
         return *this;
     }
 
-    SimpleVector<T> tmp(std::move(rhs));  // идиома COPY-AND-SWAP: 1) создаём временный вектор с помощью конструктора копирования
-    Swap(tmp);                            //                       2) обмениваем поля своего объекта с полями временного объекта
+    SimpleVector<T> tmp(std::move(rhs)); // идиома COPY-AND-SWAP: 1) создаём временный вектор с помощью конструктора копирования
+    Swap(tmp);                           //                       2) обмениваем поля своего объекта с полями временного объекта
 
     // Применение идиомы COPY-AND-SWAP позволяет достичь следующих двух целей:
     //  - избегаем дублирования кода в конструкторе копирования и операторе присваивания
@@ -83,14 +76,31 @@ SimpleVector<T>& SimpleVector<T>::operator=(const SimpleVector<T>& rhs) {
     return *this;
 }
 
+// конструктор перемещения, Move Constructor
+template <typename T>
+SimpleVector<T>::SimpleVector(SimpleVector<T>&& other)
+    : _data(other._data),
+      _size(other._size),
+      _capacity(other._capacity) {
+
+    // забираем данные у объекта-источника
+    other._data = nullptr;
+    other._size = 0;
+    other._capacity = 0;
+}
+
+// оператор перемещающего присваивания, Move Assignment Operator
 template <typename T>
 SimpleVector<T>& SimpleVector<T>::operator=(SimpleVector<T>&& other) {
+    
+    // сперва освобождаем память, выделенную в heap'e под текущий объект
     delete[] _data;
 
     _data = other._data;
     _size = other._size;
     _capacity = other._capacity;
 
+    // забираем данные у объекта-источника
     other._data = nullptr;
     other._size = 0;
     other._capacity = 0;
@@ -106,7 +116,7 @@ SimpleVector<T>::~SimpleVector() {
 // оператор доступа к элементу вектора по индексу (оператор индексирования, subscript operator / array index operator)
 template <typename T>
 T& SimpleVector<T>::operator[](size_t index) {
-    return _data[index];  // эквивалентно "return *(_data + index);"
+    return _data[index]; // эквивалентно "return *(_data + index);"
 }
 
 // ======== Пара неконстантных методов "begin" и "end" ========
@@ -114,7 +124,7 @@ template <typename T>
 T* SimpleVector<T>::begin() { return _data; }
 
 template <typename T>
-T* SimpleVector<T>::end() { return _data + _size; }  // в качестве возвр. значения используем УКАЗАТЕЛЬ на one-past-the-end
+T* SimpleVector<T>::end() { return _data + _size; } // в качестве возвр. значения используем УКАЗАТЕЛЬ на one-past-the-end
 // ============================================================
 
 // ======== Пара КОНСТАНТНЫХ методов "begin" и "end" (возвращают указатель на КОНСТАНТНОЕ значение) ========

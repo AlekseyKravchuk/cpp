@@ -19,6 +19,9 @@ int main() {
 
         // и положим этот поток в вектор
         streams.push_back(std::move(stream));
+
+        // потоки ввода-вывода КОПИРОВАТЬ НЕЛЬЗЯ!!!
+        // streams.push_back(stream);  // error: use of deleted function ...
     }
 
     // попробуем что-то вывести в наши файлы

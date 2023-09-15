@@ -1,3 +1,4 @@
+#include <algorithm>  // std::max
 #include <future>
 #include <iterator>
 #include <numeric>  // std::accumulate
@@ -19,15 +20,15 @@ class IteratorRange {
         return _p.second;
     }
 
-    // ==================================
-    Iterator begin() {
-        return _p.first;
-    }
+    // // ==================================
+    // Iterator begin() {
+    //     return _p.first;
+    // }
 
-    Iterator end() {
-        return _p.second;
-    }
-    // ==================================
+    // Iterator end() {
+    //     return _p.second;
+    // }
+    // // ==================================
 
     size_t size() const {
         return std::distance(_p.first, _p.second);
@@ -76,17 +77,18 @@ auto Paginate(Container& c, size_t page_size) {
 int64_t CalculateMatrixSum(const std::vector<std::vector<int>>& matrix) {
     // хотим разбить вектор "matrix" на несколько страниц (частей)
     std::vector<std::future<int64_t>> futures;
-    size_t page_size = 1'000;
+    size_t threads_num = 4;
+    size_t page_size = std::max(matrix.size() / threads_num, (size_t)1);
 
     for (auto page : Paginate(matrix, page_size)) {
-        int64_t acc = 0;
+        futures.push_back(std::async([page]() {
+            int64_t partial_sum = 0;
 
-        // складываем в вектор "futures" результаты вызова async
-        futures.push_back(std::async([page, &acc]() {
             for (const auto& v : page) {
-                acc = std::accumulate(v.begin(), v.end(), acc);
+                partial_sum += std::accumulate(v.begin(), v.end(), 0ul);
             }
-            return acc;
+
+            return partial_sum;
         }));
     }
 
@@ -105,6 +107,9 @@ void TestCalculateMatrixSum() {
         {9, 10, 11, 12},
         {13, 14, 15, 16}};
 
+    ASSERT_EQUAL(CalculateMatrixSum(matrix), 136);
+    ASSERT_EQUAL(CalculateMatrixSum(matrix), 136);
+    ASSERT_EQUAL(CalculateMatrixSum(matrix), 136);
     ASSERT_EQUAL(CalculateMatrixSum(matrix), 136);
     ASSERT_EQUAL(CalculateMatrixSum(matrix), 136);
 }

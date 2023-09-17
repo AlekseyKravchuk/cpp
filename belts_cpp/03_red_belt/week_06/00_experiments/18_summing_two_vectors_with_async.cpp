@@ -15,7 +15,8 @@ uint64_t SumTwoVectorsSingleThread(const std::vector<uint64_t>& v1, const std::v
 // многопоточная версия
 uint64_t SumTwoVectorsMultiThread(const std::vector<uint64_t>& v1, const std::vector<uint64_t>& v2) {
     std::future<uint64_t> f = std::async([&v1]() {
-        return std::accumulate(v1.begin(), v1.end(), static_cast<uint64_t>(0));
+        // return std::accumulate(v1.begin(), v1.end(), static_cast<uint64_t>(0));
+        return std::accumulate(v1.begin(), v1.end(), 0ul);
     });
 
     uint64_t result = std::accumulate(v2.begin(), v2.end(), 0);

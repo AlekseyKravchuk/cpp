@@ -1,12 +1,11 @@
 #include <map>
-#include <sstream>  // std::stringstream
+#include <sstream> // std::stringstream
 #include <string>
 #include <string_view>
 #include <unordered_set>
 #include <vector>
 
-#include "log_duration.h"
-// #include "profile.h"  // uncomment to submit solution
+#include "profile.h" 
 #include "test_runner.h"
 
 std::vector<std::string_view> SplitIntoWords(std::string_view s_view) {
@@ -24,7 +23,7 @@ std::vector<std::string_view> SplitIntoWords(std::string_view s_view) {
             }
 
             // откусываем от "string_view" уже обработанный кусок: в качестве параметра указываем длину префикса, который нужно откусить
-            s_view.remove_prefix(space_pos);  
+            s_view.remove_prefix(space_pos);
         }
     }
 
@@ -62,7 +61,7 @@ Stats ExploreKeyWords(const std::set<std::string>& key_words, std::istream& inpu
 
     while (std::getline(input, line)) {
         for (auto s_view : SplitIntoWords(line)) {
-            if (checker.count(s_view)) {  // надеемся на то, что поиск текущего слова в checker'e займет O(1), а не O(n)
+            if (checker.count(s_view)) { // надеемся на то, что поиск текущего слова в checker'e займет O(1), а не O(n)
                 ++result.word_frequences[std::string(s_view)];
             }
         }

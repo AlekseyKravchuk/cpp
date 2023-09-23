@@ -6,7 +6,7 @@
 #include <iostream>
 #include <iterator>
 #include <mutex>
-#include <numeric>
+#include <numeric> // std::reduce
 #include <thread>
 #include <vector>
 
@@ -89,7 +89,7 @@ void GenerateMultiThread_ExecutionPolicy(ContainerOfVectors& result,
         std::execution::seq,
         std::begin(result),
         std::end(result),
-        [&first_row_id, N](std::vector<int>& row) {
+        [&first_row_id, N](auto& row) {
             row.reserve(N);
             for (size_t column = 0; column < N; ++column) {
                 row.push_back(first_row_id ^ column);
@@ -108,16 +108,26 @@ std::vector<std::vector<int>> GenerateMultiThread_ExecutionPolicy(size_t size) {
 
 template <typename ContainerOfVectors>
 uint64_t SumMultiThread_ExecutionPolicy(const ContainerOfVectors& matrix) {
-    uint64_t sum = 0;
+    // // std::execution - МЕРТВОРОЖДЕННОЕ ТВОРЕНИЕ, НЕ ИСПОЛЬЗОВАТЬ !!!
+    // int64_t sum = 0;
 
-    std::for_each(
-        std::execution::seq,
-        std::begin(matrix),
-        std::end(matrix),
-        [&sum](const std::vector<int>& row) {
-            sum += std::accumulate(row.begin(), row.end(), 0);
-        });
+    // std::for_each(
+    //     std::execution::par,
+    //     std::begin(matrix),
+    //     std::end(matrix),
+    //     [&](const std::vector<int>& row) {
+    //         sum += std::reduce(row.begin(), row.end());
+    //     });
 
+    // return sum;
+
+    // int64_t ans = 0;
+    // std::for_each(std::execution::par, matrix.begin(), matrix.end(),
+    //               [&](const auto& arr) { ans += std::reduce(std::execution::par, arr.begin(), arr.end()); });
+    uint64_t sum = 0ul;
+    for (const auto& row : matrix) {
+        sum += std::reduce(row.begin(), row.end());
+    }
     return sum;
 }
 
@@ -160,32 +170,32 @@ int main() {
         const size_t matrix_size = 7000;
         std::vector<std::vector<int>> matrix;
 
-        {
-            LOG_DURATION("Single thread generation");
-            matrix = GenerateSingleThread(matrix_size);
-        }
+        // {
+        //     LOG_DURATION("Single thread generation");
+        //     matrix = GenerateSingleThread(matrix_size);
+        // }
 
-        {
-            LOG_DURATION("MULTI thread generation");
-            size_t threads_num = 4;
-            size_t page_size = std::max(matrix.size() / threads_num, 1ul);
-            matrix = GenerateMultiThread(matrix_size, page_size);
-        }
+        // {
+        //     LOG_DURATION("MULTI thread generation");
+        //     size_t threads_num = 4;
+        //     size_t page_size = std::max(matrix.size() / threads_num, 1ul);
+        //     matrix = GenerateMultiThread(matrix_size, page_size);
+        // }
 
         {
             LOG_DURATION("ExecutionPolicy generation");
             matrix = GenerateMultiThread_ExecutionPolicy(matrix_size);
         }
 
-        {
-            LOG_DURATION("Single thread sum");
-            std::cout << "SumSingleThread(matrix) = " << SumSingleThread(matrix) << std::endl;
-        }
-
         // {
-        //     LOG_DURATION("Multi thread sum (Execution Policy)");
-        //     std::cout << "SumMultiThread_ExecutionPolicy(matrix) = " << SumMultiThread_ExecutionPolicy(matrix) << std::endl;
+        //     LOG_DURATION("Single thread sum");
+        //     std::cout << "SumSingleThread(matrix) = " << SumSingleThread(matrix) << std::endl;
         // }
+
+        {
+            LOG_DURATION("Multi thread sum (Execution Policy)");
+            std::cout << "SumMultiThread_ExecutionPolicy(matrix) = " << SumMultiThread_ExecutionPolicy(matrix) << std::endl;
+        }
     }
 
     return 0;

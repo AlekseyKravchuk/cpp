@@ -12,21 +12,28 @@
 template <typename T>
 class Synchronized {
   public:
+    // T initial = T() - не что иное как объявление параметра по умолчанию.
+    // T{} - значит что в случае вызова без параметров конструктора "Synchronaized" в качестве параметра принимается значение
+    // по умолчанию шаблонного типа. Если это "int" - то 0 если "std::string" - то пустая строка.
     explicit Synchronized(T initial = T{})
-        : _value(std::move(initial)) {};
+        : _value(std::move(initial)){};
 
+    // Структура "Acess" имеет ссылочное поле - мы обязаны инициализировать его при создании экземпляра структуры.
     struct Access {
-        T& ref_to_value;  // <= по сути это поле является разделяемыми данными
         std::lock_guard<std::mutex> guard;
+        T& ref_to_value; // <= разделяемые данные
     };
 
+    // метод возвращает структуру "Access", при этом:
+    //  - 1-ое поле структуры "Access" инициализируется ССЫЛКОЙ на разделяемые данные (_value, private-член шаблона "Synchronized");
+    //  - 2-ое поле структуры "Access" инициализируется 2-ым private-членом шаблона "Synchronized" - МЬЮТЕКСОМ "_mtx", обернутым в "lock_quard"
     Access GetAccess() {
-        return {_value, std::lock_guard(_mx)};
+        return {std::lock_guard(_mtx), _value};
     }
 
   private:
     T _value;
-    std::mutex _mx;
+    std::mutex _mtx;
 };
 
 void TestConcurrentUpdate() {
@@ -36,7 +43,8 @@ void TestConcurrentUpdate() {
 
     auto updater = [&common_string, add_count] {
         for (size_t i = 0; i < add_count; ++i) {
-            auto access = common_string.GetAccess();
+            // auto access = common_string.GetAccess();
+            Synchronized<std::string>::Access access = common_string.GetAccess();
             access.ref_to_value += 'a';
         }
     };
@@ -63,7 +71,9 @@ std::vector<int> Consume(Synchronized<std::deque<int>>& common_queue) {
             // помещать в очередь новые объекты.
             //
             // Размер критической секции существенно влияет на быстродействие многопоточных программ.
-            auto access = common_queue.GetAccess();
+
+            // auto access = common_queue.GetAccess();
+            Synchronized<std::deque<int>>::Access access = common_queue.GetAccess();
             q = std::move(access.ref_to_value);
         }
 

@@ -15,8 +15,8 @@ class ConcurrentMap {
   public:
     static_assert(std::is_integral_v<K>, "ConcurrentMap supports only integer keys");
 
-    // Структура Access, должна вести себя так же, как и в шаблоне Synchronized, — предоставлять ссылку на значение словаря
-    // и обеспечивать синхронизацию доступа к нему.
+    // Структура Access, должна вести себя так же, как и в шаблоне Synchronized,
+    // то есть предоставлять ссылку на ЗНАЧЕНИЕ словаря и обеспечивать синхронизацию доступа к нему.
     struct Access {
         std::lock_guard<std::mutex> guard;
         V& ref_to_value;

@@ -1,51 +1,113 @@
+#include <algorithm>  // std::shuffle, std::all_of
+#include <cmath>      // std::abs
+#include <future>
+#include <iterator>
+#include <mutex>
+#include <numeric>      // std::iota
+#include <random>       // std::default_random_engine
+#include <string>       // std::to_string
+#include <type_traits>  // std::is_integral_v
+#include <vector>
+
 #include "profile.h"
 #include "test_runner.h"
 
-#include <algorithm> // std::shuffle
-#include <iterator>
-#include <mutex>
-#include <numeric> // std::iota
-#include <random>  // std::default_random_engine
-#include <string>
-#include <type_traits> // std::is_integral_v
-#include <vector>
+template <typename T>
+inline int sgn(T val) {
+    return ((T{} < val) - (val < T{}));
+}
 
 template <typename K, typename V>
 class ConcurrentMap {
-  public:
+   public:
     static_assert(std::is_integral_v<K>, "ConcurrentMap supports only integer keys");
 
     // Структура Access, должна вести себя так же, как и в шаблоне Synchronized,
     // то есть предоставлять ссылку на ЗНАЧЕНИЕ словаря и обеспечивать синхронизацию доступа к нему.
+    // Когда мы инстанцируем структуру "Access", то срабатывает конструктор "std::lock_guard<std::mutex>",
+    // в котором происходит вызов "_buckets_store_guard[i].lock()" для "i-го" sub_dict'а
     struct Access {
         std::lock_guard<std::mutex> guard;
         V& ref_to_value;
     };
 
     // Конструктор класса ConcurrentMap<K, V> принимает количество подсловарей, на которые надо разбить всё пространство ключей.
-    explicit ConcurrentMap(size_t bucket_count)
-        : _bucket_count(bucket_count),
-          _buckets(bucket_count),
-          _buckets_guard(bucket_count) {}
+    explicit ConcurrentMap(size_t N)
+        : _range(Range<K>{}),
+          _num_of_buckets(N),
+          _buckets_store(N),
+          _buckets_store_guard(N),
+          _bucket_indexer(SetBucketIndexer()) {}
 
     // operator[] должен вести себя так же, как аналогичный оператор у map — если ключ key присутствует в словаре,
     // он должен возвращать объект класса Access, содержащий ссылку на соответствующее ему значение;
     // если же key отсутствует в словаре, в него надо добавить пару (key, V()) и вернуть объект класса Access,
     // содержащий ссылку на только что добавленное значение.
-    Access operator[](const K& key);
+    Access operator[](const K& key) {
+        // TODO: just stub to check if compiled
+        std::mutex mtx;
+        return {std::move(std::lock_guard<std::mutex>(mtx)), key};
+    }
 
     // Метод BuildOrdinaryMap должен сливать вместе части словаря и возвращать весь словарь целиком.
     // При этом он должен быть потокобезопасным, то есть корректно работать, когда другие потоки выполняют операции с ConcurrentMap.
-    std::map<K, V> BuildOrdinaryMap();
+    std::map<K, V> BuildOrdinaryMap() {
+        // TODO: just stub to check if compiled
+        return {};
+    }
 
-  private:
+   private:
     struct Bucket {
-        std::map<K, V> _dict;
+        std::map<K, V> _sub_dict;
     };
 
-    size_t _bucket_count;
-    std::vector<Bucket> _buckets;
-    std::vector<std::mutex> _buckets_guard;
+    template <typename T>
+    struct Range {
+        T min{};
+        T max{};
+        uint64_t size;
+
+        Range(T start_range = std::numeric_limits<T>::min(),
+              T end_range = std::numeric_limits<T>::max())
+            : min(start_range),
+              max(end_range) {
+            if (sgn(min) == -1) {
+                uint64_t digits = static_cast<uint64_t>(std::numeric_limits<T>::digits);
+                size = 2ul << digits;
+            } else if (sgn(min) == 0) {
+                size = static_cast<uint64_t>(max) + 1ul;
+            } else {
+                // for user-defined input range for resulting map
+                size = static_cast<uint64_t>(max) - static_cast<uint64_t>(min) + 1ul;
+            }
+        }
+    };  // end of Range struct ctor
+
+    const Range<K> _range;
+    size_t _num_of_buckets;
+    std::vector<Bucket> _buckets_store;
+    std::vector<std::mutex> _buckets_store_guard;
+    const std::map<int, int> _bucket_indexer;
+
+   private:  // ===================== Private Methods =====================
+    size_t GetNumElementsPerBucket() {
+        return (_range.size % _num_of_buckets == 0)
+                   ? _range.size / _num_of_buckets
+                   : _range.size / _num_of_buckets + 1;
+    }
+
+    std::map<int, int> SetBucketIndexer() {
+        std::map<int, int> bucket_indexer;
+        int border = _range.min;
+        int elements_per_bucket = GetNumElementsPerBucket();
+
+        for (size_t i = 0; i < _num_of_buckets; ++i) {
+            bucket_indexer[border] = i;
+            border += elements_per_bucket;
+        }
+
+        return bucket_indexer;
+    }
 };
 
 void RunConcurrentUpdates(
@@ -64,7 +126,7 @@ void RunConcurrentUpdates(
 
     std::vector<std::future<void>> futures;
     for (size_t i = 0; i < thread_count; ++i) {
-        futures.push_back(async(kernel, i));
+        futures.push_back(std::async(kernel, i));
     }
 }
 
@@ -78,7 +140,7 @@ void TestConcurrentUpdate() {
     const auto result = cm.BuildOrdinaryMap();
     ASSERT_EQUAL(result.size(), key_count);
     for (auto& [k, v] : result) {
-        AssertEqual(v, 6, "Key = " + to_string(k));
+        AssertEqual(v, 6, "Key = " + std::to_string(k));
     }
 }
 
@@ -109,7 +171,7 @@ void TestReadAndWrite() {
 
     for (auto f : {&r1, &r2}) {
         auto result = f->get();
-        ASSERT(all_of(result.begin(), result.end(), [](const std::string& s) {
+        ASSERT(std::all_of(result.begin(), result.end(), [](const std::string& s) {
             return s.empty() || s == "a" || s == "aa";
         }));
     }

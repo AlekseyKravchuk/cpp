@@ -28,7 +28,7 @@ class Synchronized {
     //  - 1-ое поле структуры "Access" инициализируется ССЫЛКОЙ на разделяемые данные (_value, private-член шаблона "Synchronized");
     //  - 2-ое поле структуры "Access" инициализируется 2-ым private-членом шаблона "Synchronized" - МЬЮТЕКСОМ "_mtx", обернутым в "lock_quard"
     Access GetAccess() {
-        return {std::lock_guard(_mtx), _value};
+        return Access{std::lock_guard(_mtx), _value};
     }
 
   private:

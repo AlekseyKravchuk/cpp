@@ -53,7 +53,7 @@ std::map<int, int> GetMapPagesIndexer(Range range, size_t num_of_buckets) {
 //     std::vector<std::map<int, int>> _subdict_store(_num_of_buckets);
 // };
 
-// returns index of dict within subdict_store of type "vector<map<int, int>>"
+// returns index of subdict within subdict_store ("vector<map<int, int>>")
 int GetSubDictStorageId(std::map<int, int> map_pg_indexer,
                         int key) {
     if (map_pg_indexer.count(key)) {

@@ -5,7 +5,7 @@
 #include <numeric>
 #include <random>
 #include <string>
-#include <utility>  // std::move
+#include <utility> // std::move
 #include <vector>
 
 #include "profile.h"
@@ -15,7 +15,7 @@ using namespace std::string_literals;
 
 template <typename Key, typename Value>
 class ConcurrentMap {
-   public:
+  public:
     static_assert(std::is_integral_v<Key>, "ConcurrentMap supports only integer keys");
 
     explicit ConcurrentMap(size_t bucket_count) : _buckets(bucket_count),
@@ -24,28 +24,18 @@ class ConcurrentMap {
     }
 
     struct Access {
-        // Access(std::lock_guard<std::mutex>& guard, Value& value) : _guard(guard), ref_to_value(value) {
-        // }
 
         std::lock_guard<std::mutex>& _guard;
         Value& ref_to_value;
     };
 
     Access operator[](const Key& key) {
-        std::lock_guard<std::mutex> guard(_guards[key % _buckets]);  // заблокировал доступ к корзине, в которой лежит нужный словарь
+        std::lock_guard<std::mutex> guard(_guards[key % _buckets]); // заблокировал доступ к корзине, в которой лежит нужный словарь
 
-        return {guard, _parts[key % _buckets][key]};  // взял из этого словаря значение, находясь под защитой guard
+        return {guard, _parts[key % _buckets][key]}; // взял из этого словаря значение, находясь под защитой guard
     }
 
     std::map<Key, Value> BuildOrdinaryMap() {
-        // std::map<Key, Value> result;
-        // for (size_t i = 0; i < _parts.size(); ++i) {
-        //     std::lock_guard<std::mutex> guard(_guards[i]);  // заблокировал корзину, в которой лежит мапа
-        //     for (auto& [k, v] : _parts[i]) {                // заюираю из корзины все, находясь под защитой guard
-        //         result[k] = v;
-        //     }
-        // }
-
         if (!_parts.size()) {
             return {};
         }
@@ -54,24 +44,30 @@ class ConcurrentMap {
             return _parts[0];
         }
 
-        std::mutex mtx;
-        std::map<Key, Value> merged_map;
-        {
-            std::lock_guard<std::mutex> guard(mtx);
-            size_t i = 0;
-            
-            for (auto subdict : _parts) {
-                std::lock_guard<std::mutex> guard(_guards[i++]);
-                merged_map.merge(subdict);
-            }
+        std::map<Key, Value> result_map;
+
+        for (size_t i = 0; i < _parts.size(); ++i) {
+            std::lock_guard<std::mutex> guard(_guards[i]);
+            result_map.merge(_parts[i]);
         }
+        return result_map;
 
-        return merged_map;
+        // std::mutex mtx;
+        // std::map<Key, Value> merged_map;
+        // {
+        //     std::lock_guard<std::mutex> guard(mtx);
+        //     size_t i = 0;
 
-        // return result;
+        //     for (auto subdict : _parts) {
+        //         std::lock_guard<std::mutex> guard(_guards[i++]);
+        //         merged_map.merge(subdict);
+        //     }
+        // }
+
+        // return merged_map;
     }
 
-   private:
+  private:
     size_t _buckets;
     std::vector<std::mutex> _guards;
     std::vector<std::map<Key, Value>> _parts;

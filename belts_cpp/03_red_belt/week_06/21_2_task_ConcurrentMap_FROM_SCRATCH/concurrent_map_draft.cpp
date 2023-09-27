@@ -24,7 +24,6 @@ class ConcurrentMap {
     }
 
     struct Access {
-
         std::lock_guard<std::mutex>& _guard;
         Value& ref_to_value;
     };

@@ -1,12 +1,12 @@
-#include <algorithm>  // std::shuffle, std::all_of
-#include <cmath>      // std::abs
+#include <algorithm> // std::shuffle, std::all_of
+#include <cmath>     // std::abs
 #include <future>
 #include <iterator>
 #include <mutex>
-#include <numeric>      // std::iota
-#include <random>       // std::default_random_engine
-#include <string>       // std::to_string
-#include <type_traits>  // std::is_integral_v
+#include <numeric>     // std::iota
+#include <random>      // std::default_random_engine
+#include <string>      // std::to_string
+#include <type_traits> // std::is_integral_v
 #include <vector>
 
 #include "profile.h"
@@ -14,7 +14,7 @@
 
 template <typename K, typename V>
 class ConcurrentMap {
-   public:
+  public:
     static_assert(std::is_integral_v<K>, "ConcurrentMap supports only integer keys");
 
     struct Access {
@@ -23,27 +23,25 @@ class ConcurrentMap {
     };
 
     struct Bucket {
-        V& Get(const K& key, std::mutex& m) {
-            std::lock_guard<std::mutex> g(m);
-            return bucket[key];
-        }
-
+        std::mutex mtx;
         std::map<K, V> bucket;
     };
 
-    explicit ConcurrentMap(size_t bucket_count) : bucket_count_(bucket_count) {}
+    explicit ConcurrentMap(size_t bucket_count)
+        : _bucket_count(bucket_count) {}
 
+    // TODO:
     Access operator[](const K& key) {
-        size_t bucket;
-        bucket = key % bucket_count_;
-        
-        return {data[bucket].Get(key, mutex_[bucket])};
+        size_t bucket_id = key % _bucket_count;
+        return {}
+
+        return {_bucket_store[bucket].Get(key, _mutexes[bucket])};
     }
 
     std::map<K, V> BuildOrdinaryMap() {
         std::map<K, V> result;
 
-        for (const auto& b : data) {
+        for (const auto& b : _bucket_store) {
             for (const auto& item : b.second.bucket) {
                 result[item.first] = operator[](item.first).ref_to_value;
             }
@@ -52,10 +50,11 @@ class ConcurrentMap {
         return result;
     }
 
-   private:
-    size_t bucket_count_;
-    std::map<size_t, Bucket> data;
-    std::map<size_t, std::mutex> mutex_;
+  private:
+    size_t _bucket_count;
+    std::map<size_t, Bucket> _bucket_store;
+    std::map<size_t, std::mutex> _mutexes;
+    // std::vector<std::mutex> _mutexes;
 };
 
 void RunConcurrentUpdates(

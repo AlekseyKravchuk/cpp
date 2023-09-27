@@ -12,11 +12,6 @@
 #include "profile.h"
 #include "test_runner.h"
 
-template <typename T>
-inline int sgn(T val) {
-    return ((T{} < val) - (val < T{}));
-}
-
 template <typename K, typename V>
 class ConcurrentMap {
    public:
@@ -24,24 +19,17 @@ class ConcurrentMap {
 
     // Структура Access, должна вести себя так же, как и в шаблоне Synchronized,
     // то есть предоставлять ссылку на ЗНАЧЕНИЕ словаря и обеспечивать синхронизацию доступа к нему.
-    // Когда мы инстанцируем структуру "Access", то срабатывает конструктор "std::lock_guard<std::mutex>",
-    // в котором происходит вызов "_mtxs_guard[i].lock()" для "i-го" sub_dict'а
     struct Access {
-        std::lock_guard<std::mutex> guard;  // этот "lock_guard" при инстанцировании "Access" д.б. проинициализирован МЬЮТЕКСОМ
-        V& ref_to_value;                    // здесь возвращается ссылка на весь подсловарь (subdict)
+        std::lock_guard<std::mutex> guard;
+        V& ref_to_value;
     };
-
-    // index "i" corresponds to index of subdict from "_buckets_store" and correspondig mutex from "_mtxs_guard"
-    Access GetSubdictAccess(size_t i) {
-        return Access{std::lock_guard(_mtxs_guard[i]), _buckets_store[i]};
-    }
 
     // Конструктор класса ConcurrentMap<K, V> принимает количество подсловарей, на которые надо разбить всё пространство ключей.
     explicit ConcurrentMap(size_t N)
         : _range(Range<K>{}),
-          _num_of_buckets(N),
-          _buckets_store(N),
-          _mtxs_guard(N),
+          _N_buckets(N),
+          _subdict_store(N),
+          _guards(N),
           _bucket_indexer(SetBucketIndexer()) {}
 
     // operator[] должен вести себя так же, как аналогичный оператор у map — если ключ key присутствует в словаре,
@@ -49,43 +37,48 @@ class ConcurrentMap {
     // если же key отсутствует в словаре, в него надо добавить пару (key, V()) и вернуть объект класса Access,
     // содержащий ссылку на только что добавленное значение.
     Access operator[](const K& key) {
-        // сначала находим "subdict", в котором теоретически может содержаться ключ "key"
-        size_t i = GetSubDictId(key);
+        size_t i = GetSubDictId(key);  // сначала находим "subdict", в котором теоретически может содержаться ключ "key"
+        std::lock_guard<std::mutex> guard(_guards[i]);
 
-        // блокируем доступ к "_buckets_store[i]"
-        Access access_subdict = GetSubdictAccess(i);  // в результате инстанцирования структуры "Access" вызывается конструктор "std::lock_guard"
-        auto subdict = access_subdict.ref_to_value();
+        // упрощаем логику возвращаемого значения для отладочных целей
+        return Access{guard, _subdict_store[i][key]};  // <= error: use of deleted function
+                                                       // ‘std::lock_guard<_Mutex>::lock_guard(const std::lock_guard<_Mutex>&) [with _Mutex = std::mutex]’
 
-        // если ключ "key" присутствует в подсловаре он должен возвращать объект класса Access,
-        // содержащий ссылку на соответствующее ему значение;
-        if (subdict.count(key)) {
-            return Access{std::lock_guard(_mtxs_guard[i]).subdict.ref_to_value[key]};
-            return Access{};
-        } else {
-            const auto [it_inserted_pair, _] = subdict.ref_to_value.insert({key, V()});
-            return Access{};
-            
-        }
-        
-
-        
-        // теперь нужно фактически удостовериться в наличии/отсутствии ключа в словаре "_buckets_store[i]"
-        // но прежде, чем лезть в этот словарь, нужно захватить соответствующий мьютекс, "_mtxs_guard[i]"
-    } // по закрывающей скобке доступ к subdict будет РАЗблокирован,
-      // но, поскольку мы отдаем ссылку на значение (для данного ключа), то эту ссылку тоже нужно защитить мьютексом
+        // if (_subdict_store[i].count(key)) {
+        //     return Access{guard, _subdict_store[i].at(key)};
+        // } else {
+        //     auto [it, success] = _subdict_store[i].insert({key, V()});
+        //     return {guard, *it};
+        // }
+    }
 
     // Метод BuildOrdinaryMap должен сливать вместе части словаря и возвращать весь словарь целиком.
     // При этом он должен быть потокобезопасным, то есть корректно работать, когда другие потоки выполняют операции с ConcurrentMap.
     std::map<K, V> BuildOrdinaryMap() {
-        // TODO: just stub to check if compiled
-        return {};
+        if (!_subdict_store.size()) {
+            return {};
+        }
+
+        if (_subdict_store.size() == 1ul) {
+            return _subdict_store[0];
+        }
+
+        std::mutex mtx;
+        std::map<K, V> merged_map;
+        {
+            std::lock_guard<std::mutex> guard(mtx);
+
+            size_t i = 0;
+            for (auto subdict : _subdict_store) {
+                std::lock_guard<std::mutex> guard(_guards[i++]);
+                merged_map.merge(subdict);
+            }
+        }
+
+        return merged_map;
     }
 
    private:
-    struct Bucket {
-        std::map<K, V> _sub_dict;
-    };
-
     template <typename T>
     struct Range {
         T min{};
@@ -96,6 +89,10 @@ class ConcurrentMap {
               T end_range = std::numeric_limits<T>::max())
             : min(start_range),
               max(end_range) {
+            auto sgn = [](T val) {
+                return ((T{} < val) - (val < T{}));
+            };
+
             if (sgn(min) == -1) {
                 uint64_t digits = static_cast<uint64_t>(std::numeric_limits<T>::digits);
                 size = 2ul << digits;
@@ -110,16 +107,16 @@ class ConcurrentMap {
 
    private:
     const Range<K> _range;
-    size_t _num_of_buckets;
-    std::vector<Bucket> _buckets_store;
-    std::vector<std::mutex> _mtxs_guard;
-    const std::map<int, int> _bucket_indexer;
+    size_t _N_buckets;
+    std::vector<std::map<K, V>> _subdict_store;
+    std::vector<std::mutex> _guards;
+    std::map<int, int> _bucket_indexer;
 
    private:  // ===================== Private Methods =====================
     size_t GetNumElementsPerBucket() {
-        return (_range.size % _num_of_buckets == 0)
-                   ? _range.size / _num_of_buckets
-                   : _range.size / _num_of_buckets + 1;
+        return (_range.size % _N_buckets == 0)
+                   ? _range.size / _N_buckets
+                   : _range.size / _N_buckets + 1;
     }
 
     std::map<int, int> SetBucketIndexer() {
@@ -127,7 +124,7 @@ class ConcurrentMap {
         int border = _range.min;
         int elements_per_bucket = GetNumElementsPerBucket();
 
-        for (size_t i = 0; i < _num_of_buckets; ++i) {
+        for (size_t i = 0; i < _N_buckets; ++i) {
             bucket_indexer[border] = i;
             border += elements_per_bucket;
         }
@@ -135,10 +132,10 @@ class ConcurrentMap {
         return bucket_indexer;
     }
 
-    // returns index of subdict within "_buckets_store" ("std::vector<Bucket>")
-    int GetSubDictId(int key) {
+    // returns index of subdict within "_subdict_store" ("std::vector<Bucket>")
+    int GetSubDictId(int key) const {
         return _bucket_indexer.count(key)
-                   ? _bucket_indexer[key]
+                   ? _bucket_indexer.at(key)
                    : std::prev(_bucket_indexer.upper_bound(key))->second;
     }
 };

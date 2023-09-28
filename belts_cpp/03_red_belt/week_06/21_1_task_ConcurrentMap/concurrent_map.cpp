@@ -27,7 +27,7 @@ class ConcurrentMap {
     // Конструктор класса ConcurrentMap<K, V> принимает количество подсловарей, на которые надо разбить всё пространство ключей.
     explicit ConcurrentMap(size_t N)
         : _range(Range<K>{}),
-          _N_buckets(N),
+          _num_buckets(N),
           _subdict_store(N),
           _guards(N),
           _bucket_indexer(SetBucketIndexer()) {}
@@ -107,16 +107,16 @@ class ConcurrentMap {
 
    private:
     const Range<K> _range;
-    size_t _N_buckets;
+    size_t _num_buckets;
     std::vector<std::map<K, V>> _subdict_store;
     std::vector<std::mutex> _guards;
     std::map<int, int> _bucket_indexer;
 
    private:  // ===================== Private Methods =====================
     size_t GetNumElementsPerBucket() {
-        return (_range.size % _N_buckets == 0)
-                   ? _range.size / _N_buckets
-                   : _range.size / _N_buckets + 1;
+        return (_range.size % _num_buckets == 0)
+                   ? _range.size / _num_buckets
+                   : _range.size / _num_buckets + 1;
     }
 
     std::map<int, int> SetBucketIndexer() {
@@ -124,7 +124,7 @@ class ConcurrentMap {
         int border = _range.min;
         int elements_per_bucket = GetNumElementsPerBucket();
 
-        for (size_t i = 0; i < _N_buckets; ++i) {
+        for (size_t i = 0; i < _num_buckets; ++i) {
             bucket_indexer[border] = i;
             border += elements_per_bucket;
         }

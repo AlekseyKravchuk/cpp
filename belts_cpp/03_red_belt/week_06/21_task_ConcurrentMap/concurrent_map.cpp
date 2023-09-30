@@ -27,18 +27,16 @@ class ConcurrentMap {
         std::lock_guard<std::mutex> guard;
         ValueType& ref_to_value;
 
-        Access(const KeyType& key, Bucket& bucket)
+        Access(Bucket& bucket, const KeyType& key)
             : guard(bucket.mutex),
               ref_to_value(bucket.dict[key]) {}
     };
 
-    explicit ConcurrentMap(size_t bucket_count)
-        : _buckets(bucket_count) {
-    }
+    explicit ConcurrentMap(size_t bucket_count) : _buckets(bucket_count) { }
 
     Access operator[](const KeyType& key) {
         auto& bucket = _buckets[static_cast<uint64_t>(key) % _buckets.size()];
-        return {key, bucket};
+        return Access{bucket, key};
     }
 
     std::map<KeyType, ValueType> BuildOrdinaryMap() {

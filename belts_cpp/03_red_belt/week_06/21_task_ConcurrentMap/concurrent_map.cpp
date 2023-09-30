@@ -12,51 +12,53 @@
 #include "profile.h"
 #include "test_runner.h"
 
-template <typename K, typename V>
+template <typename KeyType, typename ValueType>
 class ConcurrentMap {
+  private:
+    struct Bucket {
+        std::mutex mutex;
+        std::map<KeyType, ValueType> dict;
+    };
+
   public:
-    static_assert(std::is_integral_v<K>, "ConcurrentMap supports only integer keys");
+    static_assert(std::is_integral_v<KeyType>, "ConcurrentMap supports only integer keys");
 
     struct Access {
         std::lock_guard<std::mutex> guard;
-        V& ref_to_value;
-    };
+        ValueType& ref_to_value;
 
-    struct Bucket {
-        std::mutex mtx;
-        std::map<K, V> bucket;
+        Access(const KeyType& key, Bucket& bucket)
+            : guard(bucket.mutex),
+              ref_to_value(bucket.dict[key]) {}
     };
 
     explicit ConcurrentMap(size_t bucket_count)
-        : _bucket_count(bucket_count) {}
-
-    // TODO:
-    Access operator[](const K& key) {
-        size_t bucket_id = key % _bucket_count;
-        return {}
-
-        return {_bucket_store[bucket].Get(key, _mutexes[bucket])};
+        : _buckets(bucket_count) {
     }
 
-    std::map<K, V> BuildOrdinaryMap() {
-        std::map<K, V> result;
+    Access operator[](const KeyType& key) {
+        auto& bucket = _buckets[static_cast<uint64_t>(key) % _buckets.size()];
+        return {key, bucket};
+    }
 
-        for (const auto& b : _bucket_store) {
-            for (const auto& item : b.second.bucket) {
-                result[item.first] = operator[](item.first).ref_to_value;
-            }
+    std::map<KeyType, ValueType> BuildOrdinaryMap() {
+        std::map<KeyType, ValueType> result;
+
+        for (auto& [mutex, dict] : _buckets) {
+            std::lock_guard g(mutex);
+            result.insert(dict.begin(), dict.end());
         }
-
+        
         return result;
     }
 
   private:
-    size_t _bucket_count;
-    std::map<size_t, Bucket> _bucket_store;
-    std::map<size_t, std::mutex> _mutexes;
-    // std::vector<std::mutex> _mutexes;
+    std::vector<Bucket> _buckets;
 };
 
+// // ===========================================================================================
+// // ========================================== TESTS ==========================================
+// // ===========================================================================================
 void RunConcurrentUpdates(
     ConcurrentMap<int, int>& cm, size_t thread_count, int key_count) {
     auto kernel = [&cm, key_count](int seed) {
@@ -138,6 +140,7 @@ void TestSpeedup() {
         RunConcurrentUpdates(many_locks, 4, 50000);
     }
 }
+// // ===================================== END OF TESTS =====================================
 
 int main() {
     TestRunner tr;

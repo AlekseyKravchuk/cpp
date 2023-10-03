@@ -8,65 +8,21 @@
 
 #include "iterator_range.h"
 
-// std::vector<std::string> SplitIntoWords(const std::string& line) {
-//     std::istringstream words_input(line);
-
-//     return {std::istream_iterator<std::string>(words_input),
-//             std::istream_iterator<std::string>()};
-// }
-
-// remove leading and trailing whitespaces
-void trim(std::string_view& s) {
-    // remove leading whitespaces
-    size_t pos = s.find_first_not_of(" ");
-    if (pos != s.npos) {
-        s.remove_prefix(pos);
-    }
-
-    // remove trailing whitespaces
-    pos = s.find_last_not_of(" ");
-    if (pos != s.npos) {
-        s.remove_suffix(s.size() - (pos + 1));
-    } else {
-        s.remove_suffix(s.size());  // строка состоит только из пробельных символов
-    }
-}
-
-std::vector<std::string_view> SplitIntoWords(std::string_view s_view) {
-    trim(s_view);  // избавляемся от пробельных символов в начале и в конце строки
-    std::vector<std::string_view> result;
-
-    while (true) {
-        size_t space_pos = s_view.find(' ');            // ищем позицию первого пробела в ещё не обработанной части
-        result.push_back(s_view.substr(0, space_pos));  // помещаем подстроку-string_view в вектор
-
-        if (space_pos == s_view.npos) {
-            break;
-        } else {
-            while (s_view[space_pos] == ' ') {  // обрабатываем ВСЕ пробелы между словами
-                ++space_pos;
-            }
-
-            // откусываем от "string_view" уже обработанный кусок: в качестве параметра указываем длину префикса, который нужно откусить
-            s_view.remove_prefix(space_pos);
-        }
-    }
-
-    return result;
-}
+using SV_WordCounter = std::map<std::string_view, size_t>;
 
 SearchServer::SearchServer(std::istream& document_input) {
     UpdateDocumentBase(document_input);
 }
 
 void SearchServer::UpdateDocumentBase(std::istream& document_input) {
-    InvertedIndex new_inv_index;
 
+    size_t doc_id = 0;
     for (std::string current_document; std::getline(document_input, current_document);) {
-        new_inv_index.Add(std::move(current_document));
+        for (const auto& [word_sv, count] : GetWordsViewCounter(current_document)) {
+            _index[std::string(word_sv)].insert({doc_id, count});
+        }
+        ++doc_id;
     }
-
-    _inv_index_inst = std::move(new_inv_index);
 }
 
 void SearchServer::AddQueriesStream(

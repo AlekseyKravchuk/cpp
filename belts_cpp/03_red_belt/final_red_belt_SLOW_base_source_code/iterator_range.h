@@ -4,26 +4,26 @@
 
 template <typename It>
 class IteratorRange {
-public:
-  IteratorRange(It first, It last) : first(first), last(last) { }
+  public:
+    IteratorRange(It first, It last) : first(first), last(last) {}
 
-  It begin() const {
-    return first;
-  }
+    It begin() const {
+        return first;
+    }
 
-  It end() const {
-    return last;
-  }
+    It end() const {
+        return last;
+    }
 
-  size_t size() const {
-    return last - first;
-  }
+    size_t size() const {
+        return last - first;
+    }
 
-private:
-  It first, last;
+  private:
+    It first, last;
 };
 
 template <typename Container>
 auto Head(Container& c, int top) {
-  return IteratorRange(std::begin(c), std::begin(c) + std::min<size_t>(std::max(top, 0), c.size()));
+    return IteratorRange(std::begin(c), std::begin(c) + std::min<size_t>(std::max(top, 0), c.size()));
 }

@@ -15,11 +15,13 @@
 void TestFunctionality(const std::vector<std::string>& docs,
                        const std::vector<std::string>& queries,
                        const std::vector<std::string>& expected) {
+
     std::istringstream docs_input(Join('\n', docs));
     std::istringstream queries_input(Join('\n', queries));
 
     SearchServer srv;
     srv.UpdateDocumentBase(docs_input);
+
     std::ostringstream queries_output;
     srv.AddQueriesStream(queries_input, queries_output);
 
@@ -46,6 +48,28 @@ void TestSerpFormat() {
                       "the:",
                       "{docid: 0, hitcount: 1}",
                       "{docid: 1, hitcount: 1}"})};
+
+    TestFunctionality(docs, queries, expected);
+}
+
+void MyTestSerpFormat_1() {
+    const std::vector<std::string> docs = {
+        "london is the capital of great britain and london is my favourite city, so i think the UK is proud of it's capital",
+        "i am travelling down the river",
+        "i am dreaming of the london"};
+
+    const std::vector<std::string> queries = {"london", "the"};
+
+    const std::vector<std::string> expected = {
+        Join(' ', std::vector{
+                      "london:",
+                      "{docid: 0, hitcount: 2}",
+                      "{docid: 2, hitcount: 1}"}),
+        Join(' ', std::vector{
+                      "the:",
+                      "{docid: 0, hitcount: 2}",
+                      "{docid: 1, hitcount: 1}",
+                      "{docid: 2, hitcount: 1}"})};
 
     TestFunctionality(docs, queries, expected);
 }
@@ -197,6 +221,7 @@ void TestBasicSearch() {
 int main() {
     TestRunner tr;
     RUN_TEST(tr, TestSerpFormat);
+    RUN_TEST(tr, MyTestSerpFormat_1);
     RUN_TEST(tr, TestTop5);
     RUN_TEST(tr, TestHitcount);
     RUN_TEST(tr, TestRanking);

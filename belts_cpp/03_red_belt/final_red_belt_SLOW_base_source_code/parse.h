@@ -10,7 +10,7 @@ template <typename Container>
 std::string Join(char c, const Container& cont) {
     std::ostringstream os;
 
-    for (const auto& item : Head(cont, cont.size() - 1)) {
+    for (const auto& item : Head(cont, static_cast<int>(cont.size()) - 1)) {
         os << item << c;
     }
 

@@ -1,5 +1,75 @@
 #include "parse.h"
 
+// remove leading and trailing whitespaces
+void trim(std::string_view& s_view) {
+    // remove leading whitespaces
+    size_t pos = s_view.find_first_not_of(" ");
+    if (pos != s_view.npos) {
+        s_view.remove_prefix(pos);
+    }
+
+    // remove trailing whitespaces
+    pos = s_view.find_last_not_of(" ");
+    if (pos != s_view.npos) {
+        s_view.remove_suffix(s_view.size() - (pos + 1));
+    } else {
+        s_view.remove_suffix(s_view.size());  // строка состоит только из пробельных символов
+    }
+}
+
+// std::vector<std::string_view> SplitIntoWords(std::string_view s_view) {
+//     trim(s_view);  // избавляемся от пробельных символов в начале и в конце строки
+//     std::vector<std::string_view> result;
+
+//     while (true) {
+//         size_t space_pos = s_view.find(' ');            // ищем позицию первого пробела в ещё не обработанной части
+//         result.push_back(s_view.substr(0, space_pos));  // помещаем подстроку-string_view в вектор
+
+//         if (space_pos == s_view.npos) {
+//             break;
+//         } else {
+//             while (s_view[space_pos] == ' ') {  // обрабатываем ВСЕ пробелы между словами
+//                 ++space_pos;
+//             }
+
+//             // откусываем от "string_view" уже обработанный кусок: в качестве параметра указываем длину префикса, который нужно откусить
+//             s_view.remove_prefix(space_pos);
+//         }
+//     }
+
+//     return result;
+// }
+
+std::map<std::string_view, size_t> GetWordsViewCounter(std::string_view s_view) {
+    trim(s_view);  // избавляемся от пробельных символов в начале и в конце string_view
+    std::map<std::string_view, size_t> result;
+
+    while (true) {
+        size_t space_pos = s_view.find(' ');            // ищем позицию первого пробела в ещё не обработанной части
+        ++result[s_view.substr(0, space_pos)];
+
+        if (space_pos == s_view.npos) {
+            break;
+        } else {
+            while (s_view[space_pos] == ' ') {  // обрабатываем ВСЕ пробелы между словами
+                ++space_pos;
+            }
+
+            // откусываем от "string_view" уже обработанный кусок: в качестве параметра указываем длину префикса, который нужно откусить
+            s_view.remove_prefix(space_pos);
+        }
+    }
+
+    return result;
+}
+
+// std::vector<std::string> SplitIntoWords(const std::string& line) {
+//     std::istringstream words_input(line);
+
+//     return {std::istream_iterator<std::string>(words_input),
+//             std::istream_iterator<std::string>()};
+// }
+
 std::string_view Strip(std::string_view s) {
     while (!s.empty() && isspace(s.front())) {
         s.remove_prefix(1);

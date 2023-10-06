@@ -9,7 +9,6 @@
 #include <vector>
 
 #include "parse.h"
-#include "profile.h"
 #include "search_server.h"
 #include "test_runner.h"
 
@@ -21,15 +20,9 @@ void TestSpeed(const std::vector<std::string>& docs,
 
     SearchServer srv;
 
-    LOG_DURATION("TestFunctionality : UpdateDocumentBase") {
-        srv.UpdateDocumentBase(docs_input);
-    }
-    // srv.UpdateDocumentBase(docs_input);
+    srv.UpdateDocumentBase(docs_input);
     std::ostringstream queries_output;
-
-    LOG_DURATION("TestFunctionality : AddQueriesStream") {
-        srv.AddQueriesStream(queries_input, queries_output);
-    }
+    srv.AddQueriesStream(queries_input, queries_output);
 }
 
 void Test_Duration() {
@@ -90,7 +83,6 @@ void Test_Duration() {
 void TestFunctionality(const std::vector<std::string>& docs,
                        const std::vector<std::string>& queries,
                        const std::vector<std::string>& expected) {
-
     std::istringstream docs_input(Join('\n', docs));
     std::istringstream queries_input(Join('\n', queries));
 

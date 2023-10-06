@@ -9,6 +9,7 @@
 #include "iterator_range.h"
 #include "parse.h"
 #include "search_server.h"
+#include "profile.h"
 
 SearchServer::SearchServer(std::istream& document_input) {
     UpdateDocumentBase(document_input);
@@ -16,7 +17,6 @@ SearchServer::SearchServer(std::istream& document_input) {
 
 void SearchServer::UpdateDocumentBase(std::istream& document_input) {
     size_t doc_id = 0;
-
     for (std::string current_document; std::getline(document_input, current_document);) {
         for (auto [word_view, count] : GetWordsCounterView(current_document)) {
             _index[std::string(word_view)].insert({doc_id, count});

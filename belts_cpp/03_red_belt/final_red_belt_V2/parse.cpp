@@ -1,4 +1,5 @@
 #include "parse.h"
+#include "profile.h"
 
 // remove leading and trailing whitespaces
 void trim(std::string_view& s_view) {

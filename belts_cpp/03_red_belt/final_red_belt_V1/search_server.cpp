@@ -1,55 +1,70 @@
-#include "search_server.h"
-
-#include <algorithm>
+#include <algorithm> // std::min
 #include <iostream>
 #include <iterator>
+#include <queue> // std::priority_queue
 #include <sstream>
-#include <string_view>
+#include <utility> // std::move, std::pair
+#include <vector>
 
 #include "iterator_range.h"
-
-using SV_WordCounter = std::map<std::string_view, size_t>;
+#include "parse.h"
+#include "search_server.h"
 
 SearchServer::SearchServer(std::istream& document_input) {
     UpdateDocumentBase(document_input);
 }
 
 void SearchServer::UpdateDocumentBase(std::istream& document_input) {
-
     size_t doc_id = 0;
+
     for (std::string current_document; std::getline(document_input, current_document);) {
-        for (const auto& [word_sv, count] : GetWordsViewCounter(current_document)) {
-            _index[std::string(word_sv)].insert({doc_id, count});
+        for (auto [word_view, count] : GetWordsCounterView(current_document)) {
+            const std::string word{word_view};
+            auto it = _unique_words.insert(word).first;
+            _index[std::move(*it)].insert({doc_id, count});
         }
         ++doc_id;
     }
 }
 
-void SearchServer::AddQueriesStream(
-    std::istream& query_input, std::ostream& search_results_output) {
-    for (std::string current_query; std::getline(query_input, current_query);) {
-        const auto words = SplitIntoWords(current_query);
+void SearchServer::AddQueriesStream(std::istream& query_input,
+                                    std::ostream& search_results_output) {
+    size_t max_num_of_relevant_docs = 5;
 
-        std::map<size_t, size_t> docid_count;
-        for (const auto& word : words) {
-            for (const size_t docid : _inv_index_inst.Lookup(word)) {
-                docid_count[docid]++;
+    for (std::string current_query; std::getline(query_input, current_query);) {
+        std::unordered_map<size_t, size_t> docid_count;
+
+        for (const std::string_view word : SplitIntoWordsView(current_query)) {
+            for (auto [docid, count] : _index[word]) {
+                docid_count[docid] += count;
             }
         }
 
-        std::vector<std::pair<size_t, size_t>> search_results(docid_count.begin(), docid_count.end());
+        struct Compare {
+            bool operator()(std::pair<size_t, size_t>& lhs, std::pair<size_t, size_t>& rhs) {
+                return (lhs.second != rhs.second)
+                           ? lhs.second < rhs.second
+                           : lhs.first > rhs.first;
+            }
+        };
 
-        std::sort(
-            std::begin(search_results),
-            std::end(search_results),
-            [](std::pair<size_t, size_t> lhs, std::pair<size_t, size_t> rhs) {
-                int64_t lhs_docid = lhs.first;
-                auto lhs_hit_count = lhs.second;
-                int64_t rhs_docid = rhs.first;
-                auto rhs_hit_count = rhs.second;
+        std::priority_queue<std::pair<size_t, size_t>,
+                            std::vector<std::pair<size_t, size_t>>,
+                            Compare>
+            max_heap;
 
-                return std::make_pair(lhs_hit_count, -lhs_docid) > std::make_pair(rhs_hit_count, -rhs_docid);
-            });
+        for (const auto& p : docid_count) {
+            max_heap.push(p);
+        }
+
+        std::vector<std::pair<size_t, size_t>> search_results;
+        size_t N = std::min(max_num_of_relevant_docs, max_heap.size());
+        search_results.reserve(N);
+
+        for (size_t i = 0; i < N; ++i) {
+            search_results.push_back(max_heap.top());
+            max_heap.pop();
+        }
 
         search_results_output << current_query << ':';
 
@@ -60,22 +75,5 @@ void SearchServer::AddQueriesStream(
         }
 
         search_results_output << std::endl;
-    }
-}
-
-void InvertedIndex::Add(const std::string& document) {
-    _docs.push_back(document);
-
-    const size_t docid = _docs.size() - 1;
-    for (const std::string_view word_sv : SplitIntoWords(document)) {
-        _index[word_sv].push_back(docid);
-    }
-}
-
-std::list<size_t> InvertedIndex::Lookup(const std::string& word) const {
-    if (auto it = _index.find(word); it != _index.end()) {
-        return it->second;
-    } else {
-        return {};
     }
 }

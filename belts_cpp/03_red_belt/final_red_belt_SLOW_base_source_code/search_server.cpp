@@ -28,8 +28,8 @@ void SearchServer::UpdateDocumentBase(std::istream& document_input) {
     _inv_index_inst = std::move(new_inv_index);
 }
 
-void SearchServer::AddQueriesStream(
-    std::istream& query_input, std::ostream& search_results_output) {
+void SearchServer::AddQueriesStream(std::istream& query_input,
+                                    std::ostream& search_results_output) {
 
     for (std::string current_query; std::getline(query_input, current_query);) {
         const auto words = SplitIntoWords(current_query);
@@ -62,7 +62,7 @@ void SearchServer::AddQueriesStream(
                                   << "docid: " << docid << ", "
                                   << "hitcount: " << hitcount << '}';
         }
-        
+
         search_results_output << std::endl;
     }
 }

@@ -1,7 +1,9 @@
 #pragma once
 
+#include <map>
 #include <sstream>
 #include <string_view>
+#include <unordered_map>
 #include <vector>
 
 #include "iterator_range.h"
@@ -19,9 +21,8 @@ std::string Join(char c, const Container& cont) {
 }
 
 void trim(std::string_view& s_view);
-std::map<std::string_view, size_t> GetWordsViewCounter(std::string_view s_view);
-// std::vector<std::string_view> SplitIntoWords(std::string_view s_view);
-// std::vector<std::string> SplitIntoWords(const std::string& line);
+std::unordered_map<std::string_view, size_t> GetWordsCounterView(std::string_view s_view);
+std::vector<std::string_view> SplitIntoWordsView(std::string_view s_view);
 
 std::string_view Strip(std::string_view s);
 std::vector<std::string_view> SplitBy(std::string_view s, char sep);

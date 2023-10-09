@@ -32,4 +32,4 @@ class AddDuration {
 #define UNIQ_ID CAT(id_, __LINE__)
 
 #define ADD_DURATION(value) \
-    AddDuration UNIQ_ID { value }
+    AddDuration UNIQ_ID{value}

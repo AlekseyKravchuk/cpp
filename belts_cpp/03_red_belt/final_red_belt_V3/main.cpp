@@ -8,10 +8,10 @@
 #include <thread>
 #include <vector>
 
-#include "duration.h"
 #include "parse.h"
 #include "search_server.h"
 #include "test_runner.h"
+#include "duration.h"
 
 void TestSpeed(const std::vector<std::string>& docs,
                const std::vector<std::string>& queries,
@@ -20,14 +20,25 @@ void TestSpeed(const std::vector<std::string>& docs,
     std::istringstream queries_input(Join('\n', queries));
 
     SearchServer srv;
-    TotalDuration update_document_base("Total UpdateDocumentBase");
+
+    // srv.UpdateDocumentBase(docs_input);
+    // std::ostringstream queries_output;
+    // srv.AddQueriesStream(queries_input, queries_output);
+
+    TotalDuration update_document_base("UpdateDocumentBase");
     {
         ADD_DURATION(update_document_base);
         srv.UpdateDocumentBase(docs_input);
     }
-    // srv.UpdateDocumentBase(docs_input);
+
     std::ostringstream queries_output;
-    srv.AddQueriesStream(queries_input, queries_output);
+
+    TotalDuration add_queries_output("AddQueriesStream");
+    {
+        ADD_DURATION(add_queries_output);
+        srv.AddQueriesStream(queries_input, queries_output);
+    }
+
 }
 
 void Test_Duration() {
@@ -60,8 +71,7 @@ void Test_Duration() {
         "the larger a program the greater the chances are you could run into name collisions with file locals when your program is linked functions or variables that are declared in a source file and are supposed to be local to the translation unit may collide with other similar functions or variables declared in another translation unit that is because all symbols that are not declared static have external linkage and their names must be unique throughout the program the typical c solution for this problem is to declare those symbols static changing their linkage from external to internal and therefore making them local to a translation unit in this recipe we will look at the c++ solution for this problem",
         "first of all it declares a namespace with a unique name (what the name is and how it generates that name is a compiler implementation detail and should not be a concern) at this point the namespace is empty and the purpose of this line is to basically establish the namespace second a using directive brings everything from the _unique_name_namespace into the current namespace third the namespace with the compiler-generated name is defined as it was in the original source code (when it had no name) by defining the translation unit local print() functions in an unnamed namespace they have local visibility only yet their external linkage no longer produces linkage errors since they now have external unique names unnamed namespaces are also working in a perhaps more obscure situation involving templates template arguments cannot be names with internal linkage so using static variables is not possible on the other hand symbols in an unnamed namespace have external linkage and can be used as template arguments this problem is shown in the following example where declaring t1 produces a compiler error because the non-type argument expression has internal linkage however t2 is correct because size2 has external linkage",
         "all these engines and engine adaptors are producing pseudo-random numbers the library however provides another engine called random_device that is supposed to produce non-deterministic numbers but this is not an actual constraint as physical sources of random entropy might not be available therefore implementations of random_device could actually be based on a pseudo-random engine the random_device class cannot be seeded like the other engines and has an additional method called entropy() that returns the random device entropy which is 0 for a deterministic generator and nonzero for a non-deterministic generator however this is not a reliable method for determining whether the device is actually deterministic or non-deterministic for instance both gnu libstdc++ and llvm libc++ implement a non-deterministic device but return 0 for entropy on the other hand vc++ and boostrandom return 32 and 10 respectively for entropy",
-        "each of the engines provided by the library has advantages and disadvantages the linear congruential engine has a small internal state but it is not very fast on the other hand the subtract with carry engine is very fast but requires more memory for its internal state the mersenne twister is the slowest of them and the one that has the largest internal state but when initialized appropriately can produce the longest non-repeating sequence of numbers in the following examples we will use std::mt19937 a 32-bit mersenne twister with 19937 bits of internal state"
-        };
+        "each of the engines provided by the library has advantages and disadvantages the linear congruential engine has a small internal state but it is not very fast on the other hand the subtract with carry engine is very fast but requires more memory for its internal state the mersenne twister is the slowest of them and the one that has the largest internal state but when initialized appropriately can produce the longest non-repeating sequence of numbers in the following examples we will use std::mt19937 a 32-bit mersenne twister with 19937 bits of internal state"};
 
     const std::vector<std::string> queries = {
         "c++ c++11 c++17",

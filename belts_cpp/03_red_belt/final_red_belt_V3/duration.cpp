@@ -15,8 +15,10 @@ TotalDuration::TotalDuration(const string& msg)
 TotalDuration::~TotalDuration() {
     ostringstream os;
     os << message
-       << duration_cast<milliseconds>(value).count()
-       << " ms" << endl;
+    //    << duration_cast<milliseconds>(value).count()
+    << duration_cast<microseconds>(value).count()
+    //    << " ms" << endl;
+    << " microseconds" << endl;
     cerr << os.str();
 }
 

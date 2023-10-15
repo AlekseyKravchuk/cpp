@@ -22,6 +22,9 @@ SearchServer::SearchServer(std::istream& document_input) {
 void SearchServer::UpdateDocumentBase(std::istream& document_input) {
     InvertedIndex new_inv_index;
 
+    TotalDuration update_doc_base("Total UpdateDocumentBase");
+    ADD_DURATION(update_doc_base);
+
     for (std::string current_document; std::getline(document_input, current_document);) {
         new_inv_index.Add(std::move(current_document));
     }
@@ -31,6 +34,9 @@ void SearchServer::UpdateDocumentBase(std::istream& document_input) {
 
 void SearchServer::AddQueriesStream(std::istream& query_input,
                                     std::ostream& search_results_output) {
+
+    TotalDuration add_queries_stream("Total AddQueriesStream");
+    ADD_DURATION(add_queries_stream);
 
     for (std::string current_query; std::getline(query_input, current_query);) {
         const auto words = SplitIntoWords(current_query);

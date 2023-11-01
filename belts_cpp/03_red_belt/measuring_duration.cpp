@@ -34,7 +34,8 @@ class IteratorRange {
 
 template <typename Container>
 auto Head(Container& c, int top) {
-    return IteratorRange(std::begin(c), std::begin(c) + std::min<size_t>(std::max(top, 0), c.size()));
+    return IteratorRange(std::begin(c),
+                         std::begin(c) + std::min<size_t>(std::max(top, 0), c.size()));
 }
 
 template <typename Container>

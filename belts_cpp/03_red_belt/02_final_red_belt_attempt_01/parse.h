@@ -14,6 +14,7 @@ std::string Join(char c, const Container& cont) {
     os << item << c;
   }
   os << *rbegin(cont);
+  
   return os.str();
 }
 

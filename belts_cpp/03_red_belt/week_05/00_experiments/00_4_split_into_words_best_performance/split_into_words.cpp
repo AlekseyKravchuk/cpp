@@ -27,6 +27,28 @@ std::vector<std::string> SplitIntoWords(const std::string& str) {
     return result;
 }
 
+std::vector<std::string> SplitIntoWords_v2(const std::string& str) {
+    std::vector<std::string> result;
+    size_t nonspace_pos{0}, pos{0};
+
+    while (true) {
+        nonspace_pos = str.find_first_not_of(' ', pos);
+        if (nonspace_pos == std::string::npos) {
+            break;
+        }
+
+        pos = str.find_first_of(' ', nonspace_pos);
+        result.push_back(
+            pos == std::string::npos
+                ? str.substr(nonspace_pos)
+                : str.substr(nonspace_pos, pos - nonspace_pos));
+
+        nonspace_pos = pos;
+    }
+
+    return result;
+}
+
 std::vector<std::string> SplitIntoWords_via_istream_iterator(const std::string& str) {
     std::istringstream iss(str);
     std::vector<std::string> results(std::istream_iterator<std::string>{iss},

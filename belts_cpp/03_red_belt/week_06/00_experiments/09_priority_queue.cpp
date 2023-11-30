@@ -28,7 +28,7 @@ int main() {
         std::cout << pq.top() << ' ';
         pq.pop();
     }
-    pq.
+    std::cout << std::endl;
 
     return 0;
 }

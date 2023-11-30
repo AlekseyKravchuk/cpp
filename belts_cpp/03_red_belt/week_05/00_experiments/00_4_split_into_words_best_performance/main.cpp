@@ -4,7 +4,7 @@
 #include "print.h"
 #include "split_into_words.h"
 
-// #define _GLIBCXX_DEBUG 1  // включить режим отладки
+// #define _GLIBCXX_DEBUG 1 // включить режим отладки
 
 std::string GenerateText() {
     const int SIZE = 1'000'000'000;
@@ -22,20 +22,22 @@ int main() {
     // std::string text = "                               ";
     // std::string text = "       word                    ";
     // std::string text = "       word1          word2                  ";
-    std::string text = "       the c++ language      has gone through a major    transformation in    the past decade                    ";
+    std::string text = "       the        c++   language      has  gone    through a major    transformation in    the     past decade                        ";
 
     std::vector<std::string> expected = {"the", "c++", "language", "has", "gone", "through",
                                          "a", "major", "transformation", "in", "the", "past", "decade"};
 
     std::vector<std::string> words = SplitIntoWords(text);
+    std::vector<std::string> words_v2 = SplitIntoWords_v2(text);
     std::vector<std::string> words_via_iterator = SplitIntoWords_via_istream_iterator(text);
-    
+
     std::vector<std::string_view> word_views_1 = SplitIntoWordsView_v1(text);
     std::vector<std::string_view> word_views_2 = SplitIntoWordsView_v2(text);
     std::vector<std::string_view> word_views_3 = SplitIntoWordsView_v3(text);
 
     std::cout << "words = " << words << std::endl;
     assert(words == expected);
+    assert(words_v2 == expected);
     assert(words_via_iterator == expected);
     assert(words == std::vector<std::string>(word_views_1.begin(), word_views_1.end()));
     assert(words == std::vector<std::string>(word_views_2.begin(), word_views_2.end()));
@@ -46,6 +48,11 @@ int main() {
     {
         LOG_DURATION("SplitIntoWords");
         const auto words = SplitIntoWords(text);
+    }
+
+    {
+        LOG_DURATION("SplitIntoWords_v2");
+        const auto words = SplitIntoWords_v2(text);
     }
 
     {
@@ -77,7 +84,7 @@ int main() {
             SplitIntoWordsView_v3:                  1306 milliseconds
     */
 
-#endif  //_GLIBCXX_DEBUG
+#endif //_GLIBCXX_DEBUG
 
     return 0;
 }

@@ -42,7 +42,7 @@ class LogDurationCallback : public LogDuration {
         : LogDuration("", true), callback_time(callable) {}
 
     ~LogDurationCallback() {
-        callback_time = GetCurrentTime();
+        callback_time = static_cast<double>(GetCurrentTime());
     }
 };
 

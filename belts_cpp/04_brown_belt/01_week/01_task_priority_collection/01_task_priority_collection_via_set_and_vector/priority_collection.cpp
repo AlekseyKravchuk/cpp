@@ -1,9 +1,11 @@
-#include <iterator> // std::prev
-#include <numeric>  // std::iota
+#include <algorithm>
+#include <iostream>
+#include <iterator>
+#include <numeric> // std::iota
 #include <set>
 #include <string>
-#include <unordered_map>
-#include <utility> // std::pair, std::move
+#include <utility>
+#include <vector>
 
 #include "test_runner.h"
 
@@ -11,14 +13,19 @@ template <typename T>
 class PriorityCollection {
   public:
     using Id = int;
+    using Priority = int;
 
-    Id Add(T object) {
-        const Id new_id = _objects.size();
-        _objects.push_back({std::move(object)});
-        _sorted_objects.insert({0, new_id});
-        return new_id;
+    // Добавить объект с нулевым приоритетом с помощью перемещения и вернуть его идентификатор
+    Id Add(T data) {
+        const Id id = static_cast<Id>(_objects.size());
+        _objects.push_back({std::move(data), Priority{}});
+        _sorted_objects.insert(std::pair<Priority, Id>{0, id});
+
+        return id;
     }
 
+    // Добавить все элементы диапазона [range_begin, range_end) с помощью перемещения,
+    // записав выданные им идентификаторы в диапазон [ids_begin, ...)
     template <typename ObjInputIt, typename IdOutputIt>
     void Add(ObjInputIt range_begin, ObjInputIt range_end,
              IdOutputIt ids_begin) {
@@ -27,47 +34,54 @@ class PriorityCollection {
         }
     }
 
+    // Определить, принадлежит ли идентификатор какому-либо хранящемуся в контейнере объекту
     bool IsValid(Id id) const {
-        return id >= 0 && id < _objects.size() &&
-               _objects[id].priority != NONE_PRIORITY;
+        return id >= 0 && id < static_cast<Id>(_objects.size()) && _objects[id].priority != NONE_PRIORITY;
     }
 
+    // Получить объект по идентификатору
     const T& Get(Id id) const {
         return _objects[id].data;
     }
 
+    // Увеличить приоритет объекта на 1
     void Promote(Id id) {
-        auto& item = _objects[id];
-        const int old_priority = item.priority;
-        const int new_priority = ++item.priority;
-        _sorted_objects.erase({old_priority, id});
-        _sorted_objects.insert({new_priority, id});
+        Object& obj = _objects[id];
+        if (auto nh = _sorted_objects.extract({obj.priority, id}); !nh.empty()) {
+            nh.value() = std::pair{++obj.priority, id};
+            _sorted_objects.insert(std::move(nh));
+        }
     }
 
+    // Получить объект с максимальным приоритетом и его приоритет
     std::pair<const T&, int> GetMax() const {
-        const auto& item = _objects[std::prev(_sorted_objects.end())->second];
-        return {item.data, item.priority};
+        Id id = std::prev(_sorted_objects.end())->second;
+        const Object& obj = _objects[id];
+        return {obj.data, obj.priority};
     }
 
+    // Аналогично GetMax, но удаляет элемент из контейнера
     std::pair<T, int> PopMax() {
-        const auto sorted_objects_it = std::prev(_sorted_objects.end());
-        auto& item = _objects[sorted_objects_it->second];
-        _sorted_objects.erase(sorted_objects_it);
-        const int priority = item.priority;
-        item.priority = NONE_PRIORITY;
-        return {std::move(item.data), priority};
+        const auto it_sorted_objects = std::prev(_sorted_objects.end());
+        Id id = it_sorted_objects->second;
+        _sorted_objects.erase(it_sorted_objects);
+
+        Object& obj = _objects[id];
+        const int priority = obj.priority;
+        obj.priority = NONE_PRIORITY;
+
+        return {std::move(obj.data), priority};
     }
 
   private:
-    struct ObjectItem {
+    struct Object {
         T data;
-        int priority = 0;
+        Priority priority{0};
     };
 
     static const int NONE_PRIORITY = -1;
-
-    std::vector<ObjectItem> _objects;
-    std::set<std::pair<int, Id>> _sorted_objects;
+    std::vector<Object> _objects;
+    std::set<std::pair<Priority, Id>> _sorted_objects;
 };
 
 class StringNonCopyable : public std::string {
@@ -86,25 +100,20 @@ void TestNoCopy() {
     const auto red_id = strings.Add("red");
 
     strings.Promote(yellow_id);
-
     for (int i = 0; i < 2; ++i) {
         strings.Promote(red_id);
     }
-
     strings.Promote(yellow_id);
-
     {
         const auto item = strings.PopMax();
         ASSERT_EQUAL(item.first, "red");
         ASSERT_EQUAL(item.second, 2);
     }
-
     {
         const auto item = strings.PopMax();
         ASSERT_EQUAL(item.first, "yellow");
         ASSERT_EQUAL(item.second, 2);
     }
-
     {
         const auto item = strings.PopMax();
         ASSERT_EQUAL(item.first, "white");
@@ -141,6 +150,5 @@ int main() {
     TestRunner tr;
     RUN_TEST(tr, TestNoCopy);
     RUN_TEST(tr, TestAddRange);
-
     return 0;
 }

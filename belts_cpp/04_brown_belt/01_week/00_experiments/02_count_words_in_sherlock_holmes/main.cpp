@@ -33,17 +33,25 @@ std::vector<std::string> SplitIntoWords(const std::string& str) {
 }
 
 int main() {
-    std::map<std::string, size_t /* , std::greater<std::string> */> freqs;
-    std::fstream fs("adventures_of_sherlock_holmes.txt");
+    // std::map<std::string, size_t /* , std::greater<std::string> */> freqs;
+    std::unordered_map<std::string, size_t /* , std::greater<std::string> */> freqs;
 
-    for (std::string line; std::getline(fs, line);) {
-        for (const auto& word : SplitIntoWords(line)) {
-            ++freqs[word];
+    {
+        // Этап #1 - заполнение контейнера словами из файла
+        LOG_DURATION("Fill");
+        std::fstream fs("adventures_of_sherlock_holmes.txt");
+
+        for (std::string line; std::getline(fs, line);) {
+            for (const auto& word : SplitIntoWords(line)) {
+                ++freqs[word];
+            }
         }
     }
 
-    std::vector<std::pair<std::string, size_t>> words(freqs.begin(), freqs.end());
+    // Этап #2 - заполнение вектора копиями из словаря (std::map) и сортировка этого вектора
+    LOG_DURATION("Copy into vector and sorting");
 
+    std::vector<std::pair<std::string, size_t>> words(freqs.begin(), freqs.end());
     std::sort(words.begin(),
               words.end(),
               [](const auto& lhs, const auto& rhs) {

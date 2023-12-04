@@ -7,26 +7,26 @@
 #include <utility>
 
 class LogDuration {
-    std::chrono::steady_clock::time_point start;
+    std::chrono::steady_clock::time_point _start;
     std::string _message;
     bool is_blocked_output = false;
 
   public:
     LogDuration(const std::string& message = "",
-                bool is_blocked = false) : start(std::chrono::steady_clock::now()), _message(message + ": "), is_blocked_output(is_blocked) {}
+                bool is_blocked = false) : _start(std::chrono::steady_clock::now()), _message(message + ": "), is_blocked_output(is_blocked) {}
 
     auto GetCurrentTime() const {
         namespace chr = std::chrono;
         auto end = chr::steady_clock::now();
-        auto duration = end - start;
+        auto duration = end - _start;
         // return chr::duration_cast<chr::milliseconds>(duration).count();
         return chr::duration_cast<chr::microseconds>(duration).count();
     }
 
     ~LogDuration() {
         if (!is_blocked_output) {
-            std::cerr << std::right << std::setfill(' ') << std::setw(33)
-                    //   << _message
+            std::cerr << std::left << std::setfill(' ') << std::setw(20)
+                      << _message
                     //   << GetCurrentTime() << " ms" << std::endl;
                     // << GetCurrentTime() << " microseconds" << std::endl;
                     << GetCurrentTime() << " μs" << std::endl;
@@ -65,17 +65,17 @@ class TotalDuration {
 
 class AddDuration {
     std::chrono::steady_clock::duration& add_to;
-    std::chrono::steady_clock::time_point start;
+    std::chrono::steady_clock::time_point _start;
 
   public:
     AddDuration(std::chrono::steady_clock::duration& dest)
-        : add_to(dest), start(std::chrono::steady_clock::now()) {}
+        : add_to(dest), _start(std::chrono::steady_clock::now()) {}
 
     AddDuration(TotalDuration& dest)
         : AddDuration(dest.value) {}
 
     ~AddDuration() {
-        add_to += std::chrono::steady_clock::now() - start;
+        add_to += std::chrono::steady_clock::now() - _start;
     }
 };
 

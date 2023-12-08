@@ -1,3 +1,4 @@
+#include <functional> // std::hash
 #include <set>
 #include <unordered_set>
 
@@ -13,7 +14,6 @@
 //         return p.Number;
 //     }
 // };
-
 
 // // set: 358 milliseconds
 // // unordered_set: 54 milliseconds
@@ -40,43 +40,36 @@ struct PlateHasher {
     }
 };
 
+struct MyType {
+    double d;
+    std::string str;
+    Plate plate;
+};
+
+struct MyHasher {
+    size_t operator()(const MyType& obj) const {
+        size_t h1 = double_hasher(obj.d);
+        size_t h2 = str_hasher(obj.str);
+        size_t h3 = plate_hasher(obj.plate);
+
+        // Ax^2 + Bx + C
+        // В литературе принято брать в качестве значения 'x' какое-нибудь простое число
+        size_t x = 37;
+
+        return (h1 * x * x + h2 * x + h3);
+    }
+
+    std::hash<double> double_hasher;
+    std::hash<std::string> str_hasher;
+    PlateHasher plate_hasher;
+};
+
 int main() {
-    PlateGenerator pg;
-    std::set<Plate> s_plates;
     std::unordered_set<Plate, PlateHasher> h_plates;
-    const int N = 5'000'000;
-
-    // Plate p = {'M', 463, 'C', 'A', 24};
-    // h_plates.insert(p);
-
-    {
-        LOG_DURATION("set");
-        for (int i = 0; i < N; ++i) {
-            s_plates.insert(pg.GetRandomPlate());
-        }
-
-        for (int i = 0; i < N; ++i) {
-            s_plates.find(pg.GetRandomPlate());
-        }
-    }
-
-    {
-        LOG_DURATION("unordered_set");
-        for (int i = 0; i < N; ++i) {
-            h_plates.insert(pg.GetRandomPlate());
-        }
-
-        for (int i = 0; i < N; ++i) {
-            h_plates.find(pg.GetRandomPlate());
-        }
-    }
-
-    // std::cout << std::left << std::setw(18) << "set: " << s_plates << std::endl;
-
-    // for (int i = 0; i < N; ++i) {
-    //     h_plates.insert(pg.GetRandomPlate());
-    // }
-    // std::cout << std::left << std::setw(18) << "unordered_set: " << h_plates << std::endl;
+    std::unordered_set<MyType, MyHasher> h_my_types;
+    // PlateGenerator pg;
+    // std::set<Plate> s_plates;
+    // std::unordered_set<Plate, PlateHasher> h_plates;
 
     return 0;
 }

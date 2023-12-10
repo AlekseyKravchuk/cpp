@@ -13,9 +13,7 @@ class LogDuration {
 
   public:
     LogDuration(const std::string& message = "",
-                bool is_blocked = false) : _start(std::chrono::steady_clock::now()),
-                                           _message(message + ": "),
-                                           is_blocked_output(is_blocked) {}
+                bool is_blocked = false) : _start(std::chrono::steady_clock::now()), _message(message + ": "), is_blocked_output(is_blocked) {}
 
     auto GetCurrentTime() const {
         namespace chr = std::chrono;
@@ -27,11 +25,11 @@ class LogDuration {
 
     ~LogDuration() {
         if (!is_blocked_output) {
-            std::cerr << std::left << std::setfill(' ') << std::setw(23)
+            std::cerr << std::left << std::setfill(' ') << std::setw(33)
                       << _message
-                        // << GetCurrentTime() << " ms" << std::endl;
-                    //   << GetCurrentTime() << " microseconds" << std::endl;
-                      << GetCurrentTime() << " μs" << std::endl;
+                    //   << GetCurrentTime() << " ms" << std::endl;
+                    // << GetCurrentTime() << " microseconds" << std::endl;
+                    << GetCurrentTime() << " μs" << std::endl;
         }
     }
 };

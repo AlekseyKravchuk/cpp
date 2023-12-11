@@ -7,7 +7,7 @@
 #include <tuple>
 #include <unordered_map>
 
-struct Record;  // forward declaration
+struct Record; // forward declaration
 
 struct DBIterators {
     std::multimap<int, Record*>::iterator it_by_timestamp;
@@ -22,14 +22,7 @@ struct Record {
     int timestamp;
     int karma;
     DBIterators db_iterators{};
-
-    bool operator==(const Record& other) const;
 };
-
-bool Record::operator==(const Record& other) const {
-    return std::tuple(id, title, timestamp, karma) ==
-           std::tuple(other.id, other.title, other.timestamp, other.karma);
-}
 
 class Database {
   public:
@@ -101,8 +94,8 @@ void Database::RangeBy(const std::multimap<Key, Record*>& ranged_by_key,
 
     auto lb = ranged_by_key.lower_bound(low);
     auto ub = ranged_by_key.upper_bound(high);
-    for (auto it = lb; it != ub && callback(*it->second); ++it)
-        ;
+    for (auto it = lb; it != ub && callback(*it->second); ++it) {
+    };
 }
 
 template <typename Callback>

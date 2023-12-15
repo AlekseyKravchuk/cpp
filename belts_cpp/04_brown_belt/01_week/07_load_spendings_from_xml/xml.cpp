@@ -71,10 +71,10 @@ const vector<Node>& Node::Children() const {
     return _children;
 }
 
-Document::Document(Node root) : _root(move(root)) {}
+Document::Document(Node root) : _doc_root(move(root)) {}
 
 const Node& Document::GetRoot() const {
-    return _root;
+    return _doc_root;
 }
 
 void Node::AddChild(Node node) { _children.push_back(move(node)); }

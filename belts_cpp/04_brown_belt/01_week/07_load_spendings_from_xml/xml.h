@@ -33,7 +33,7 @@ class Document {
     const Node& GetRoot() const;
 
   private:
-    Node _root;
+    Node _doc_root;
 };
 
 Document Load(istream& input);

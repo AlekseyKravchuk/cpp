@@ -22,8 +22,7 @@ ostream& operator<<(ostream& os, const Spending& s) {
     return os << '(' << s.category << ": " << s.amount << ')';
 }
 
-int CalculateTotalSpendings(
-    const vector<Spending>& spendings) {
+int CalculateTotalSpendings(const vector<Spending>& spendings) {
     int result = 0;
     for (const Spending& s : spendings) {
         result += s.amount;
@@ -31,32 +30,27 @@ int CalculateTotalSpendings(
     return result;
 }
 
-string MostExpensiveCategory(
-    const vector<Spending>& spendings) {
-    auto compare_by_amount =
-        [](const Spending& lhs, const Spending& rhs) {
-            return lhs.amount < rhs.amount;
-        };
-    return max_element(begin(spendings), end(spendings),
+string MostExpensiveCategory(const vector<Spending>& spendings) {
+    auto compare_by_amount = [](const Spending& lhs, const Spending& rhs) {
+        return lhs.amount < rhs.amount;
+    };
+
+    return max_element(begin(spendings),
+                       end(spendings),
                        compare_by_amount)
         ->category;
 }
 
 vector<Spending> LoadFromXml(istream& input) {
-    // Реализуйте эту функцию с помощью библиотеки xml.h
-    if (!input) {
-        return vector<Spending>{};
-    }
-
     Document doc = Load(input);
-    const Node& root = doc.GetRoot();
-    for (const auto& node : root.Children()) {
-        std::cout << "In LoadFromXml function" << std::endl;
+    vector<Spending> spendings{};
+
+    for (const Node& node : doc.GetRoot().Children()) {
+        spendings.push_back({node.AttributeValue<string>("category"),
+                             node.AttributeValue<int>("amount")});
     }
 
-    std::cout << "In LoadFromXml function" << std::endl;
-
-    return vector<Spending>{};
+    return spendings;
 }
 
 void TestLoadFromXml() {
@@ -72,12 +66,7 @@ void TestLoadFromXml() {
     const vector<Spending> spendings = LoadFromXml(xml_input);
 
     const vector<Spending> expected = {
-        {"food", 2500},
-        {"transport", 1150},
-        {"restaurants", 5780},
-        {"clothes", 7500},
-        {"travel", 23740},
-        {"sport", 12000}};
+        {"food", 2500}, {"transport", 1150}, {"restaurants", 5780}, {"clothes", 7500}, {"travel", 23740}, {"sport", 12000}};
     ASSERT_EQUAL(spendings, expected);
 }
 
@@ -110,18 +99,18 @@ void TestXmlLibrary() {
 }
 
 int main() {
-    std::string file_name = "input.txt";
-    std::ifstream xml_input(file_name);
-    vector<Spending> spendings = LoadFromXml(xml_input);
+    // std::string file_name = "input.txt";
+    // std::ifstream xml_input(file_name);
+    // vector<Spending> spendings = LoadFromXml(xml_input);
 
-    std::cout << "Finished" << std::endl;
+    // std::cout << "Finished" << std::endl;
 
     // std::string file_name = "input.txt";
     // std::string file_name = "input_extended.txt";
     // std::ifstream xml_input(file_name);
     // if (!xml_input) {
-    //     std::cerr << "file \"" << file_name << "\" is not opened" << std::endl;
-    //     return -1;
+    //     std::cerr << "file \"" << file_name << "\" is not opened" <<
+    //     std::endl; return -1;
     // }
 
     // Document doc = Load(xml_input);
@@ -135,7 +124,7 @@ int main() {
 
     // std::cout << "Finished" << std::endl;
 
-    // TestRunner tr;
-    // RUN_TEST(tr, TestXmlLibrary);
-    // RUN_TEST(tr, TestLoadFromXml);
+    TestRunner tr;
+    RUN_TEST(tr, TestXmlLibrary);
+    RUN_TEST(tr, TestLoadFromXml);
 }

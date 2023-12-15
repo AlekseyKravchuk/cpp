@@ -21,9 +21,9 @@ class Node {
     T AttributeValue(const string& name) const;
 
   private:
-    string name;
-    vector<Node> children;
-    unordered_map<string, string> attrs;
+    string _name;
+    vector<Node> _children;
+    unordered_map<string, string> _attrs;
 };
 
 class Document {
@@ -33,14 +33,14 @@ class Document {
     const Node& GetRoot() const;
 
   private:
-    Node root;
+    Node _root;
 };
 
 Document Load(istream& input);
 
 template <typename T>
 inline T Node::AttributeValue(const string& name) const {
-    istringstream attr_input(attrs.at(name));
+    istringstream attr_input(_attrs.at(name));
     T result;
     attr_input >> result;
     return result;

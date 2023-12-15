@@ -1,10 +1,11 @@
-#include "test_runner.h"
-#include "xml.h"
-
 #include <algorithm>
+#include <fstream>
 #include <iostream>
 #include <sstream>
 #include <vector>
+
+#include "test_runner.h"
+#include "xml.h"
 
 using namespace std;
 
@@ -43,9 +44,19 @@ string MostExpensiveCategory(
 
 vector<Spending> LoadFromXml(istream& input) {
     // Реализуйте эту функцию с помощью библиотеки xml.h
-    const vector<Spending> spendings = LoadFromXml(input);
-    
-    return spendings;
+    if (!input) {
+        return vector<Spending>{};
+    }
+
+    Document doc = Load(input);
+    const Node& root = doc.GetRoot();
+    for (const auto& node : root.Children()) {
+        std::cout << "In LoadFromXml function" << std::endl;
+    }
+
+    std::cout << "In LoadFromXml function" << std::endl;
+
+    return vector<Spending>{};
 }
 
 void TestLoadFromXml() {
@@ -77,7 +88,7 @@ void TestXmlLibrary() {
     <spend amount="2500" category="food"></spend>
     <spend amount="23740" category="travel"></spend>
     <spend amount="12000" category="sport"></spend>
-  </july>)");
+    </july>)");
 
     Document doc = Load(xml_input);
     const Node& root = doc.GetRoot();
@@ -99,7 +110,32 @@ void TestXmlLibrary() {
 }
 
 int main() {
-    TestRunner tr;
-    RUN_TEST(tr, TestXmlLibrary);
-    RUN_TEST(tr, TestLoadFromXml);
+    std::string file_name = "input.txt";
+    std::ifstream xml_input(file_name);
+    vector<Spending> spendings = LoadFromXml(xml_input);
+
+    std::cout << "Finished" << std::endl;
+
+    // std::string file_name = "input.txt";
+    // std::string file_name = "input_extended.txt";
+    // std::ifstream xml_input(file_name);
+    // if (!xml_input) {
+    //     std::cerr << "file \"" << file_name << "\" is not opened" << std::endl;
+    //     return -1;
+    // }
+
+    // Document doc = Load(xml_input);
+    // const Node& root = doc.GetRoot();
+    // std::cout << "Finished" << std::endl;
+
+    // std::vector<Node> nodes;
+    // while (xml_input.peek() != '\n' && xml_input.peek() != EOF) {
+    //     nodes.push_back(Load(xml_input).GetRoot());
+    // }
+
+    // std::cout << "Finished" << std::endl;
+
+    // TestRunner tr;
+    // RUN_TEST(tr, TestXmlLibrary);
+    // RUN_TEST(tr, TestLoadFromXml);
 }

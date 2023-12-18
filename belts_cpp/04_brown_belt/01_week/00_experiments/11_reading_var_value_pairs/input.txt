@@ -1,0 +1,4 @@
+food=2500
+sport=12000
+travel=23400
+clothes=5200

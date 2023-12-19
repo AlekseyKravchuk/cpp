@@ -21,18 +21,37 @@ clothes=8300
 jewelery=25000
 )");
 
-    const Ini::Document doc = Ini::Load(input);
+    // using Ini::Document;
+    // using Ini::Load;
+    // using Ini::Section;
+    using namespace Ini;  // действует только в том блока кода, в котором объявлена
+
+    // const Ini::Document doc = Ini::Load(input);
+    const Document doc = Load(input);
 
     ASSERT_EQUAL(doc.SectionCount(), 2u);
 
-    const Ini::Section expected_july = {
+    // const Ini::Section expected_july = {
+    //     {"food", "2500"},
+    //     {"sport", "12000"},
+    //     {"travel", "23400"},
+    //     {"clothes", "5200"},
+    // };
+    const Section expected_july = {
         {"food", "2500"},
         {"sport", "12000"},
         {"travel", "23400"},
         {"clothes", "5200"},
     };
 
-    const Ini::Section expected_august = {
+    // const Ini::Section expected_august = {
+    //     {"food", "3250"},
+    //     {"sport", "10000"},
+    //     {"travel", "0"},
+    //     {"clothes", "8300"},
+    //     {"jewelery", "25000"},
+    // };
+    const Section expected_august = {
         {"food", "3250"},
         {"sport", "10000"},
         {"travel", "0"},
@@ -44,13 +63,44 @@ jewelery=25000
     ASSERT_EQUAL(doc.GetSection("august"), expected_august);
 }
 
+void TestLoadIniExtended() {
+    istringstream input(
+        R"([july]
+food=2500
+
+sport=12000
+
+[august]
+
+
+[september]
+
+)");
+
+    const Ini::Document doc = Ini::Load(input);
+
+    ASSERT_EQUAL(doc.SectionCount(), 3u);
+
+    const Ini::Section expected_july = {{"food", "2500"},
+                                        {"sport", "12000"}};
+    const Ini::Section expected_august = {};
+    const Ini::Section expected_september = {};
+
+    ASSERT_EQUAL(doc.GetSection("july"), expected_july);
+    ASSERT_EQUAL(doc.GetSection("august"), expected_august);
+    ASSERT_EQUAL(doc.GetSection("september"), expected_september);
+}
+
 void TestDocument() {
     Ini::Document doc;
     ASSERT_EQUAL(doc.SectionCount(), 0u);
 
+    using Ini::Section;
+
     // Обратите внимание, как мы используем указатель для работы с последней добавленной секцией.
     // Эта техника может вам пригодиться для реализации функции Load
-    Ini::Section* section = &doc.AddSection("one");
+    // Ini::Section* section = &doc.AddSection("one");
+    Section* section = &doc.AddSection("one"); // благодаря директиве "using" можем не использовать префикс "Ini::"
     ASSERT_EQUAL(doc.SectionCount(), 1u);
 
     section->insert({"name_1", "value_1"});
@@ -65,9 +115,12 @@ void TestDocument() {
     section->insert({"name_1", "value_1"});
 
     ASSERT_EQUAL(doc.SectionCount(), 3u);
-    const Ini::Section expected_one = {{"name_1", "value_1"}, {"name_2", "value_2"}};
-    const Ini::Section expected_two = {{"name_1", "value_1"}, {"name_2", "value_2"}, {"name_3", "value_3"}};
-    const Ini::Section expected_three = {{"name_1", "value_1"}};
+    // const Ini::Section expected_one = {{"name_1", "value_1"}, {"name_2", "value_2"}};
+    const Section expected_one = {{"name_1", "value_1"}, {"name_2", "value_2"}};
+    // const Ini::Section expected_two = {{"name_1", "value_1"}, {"name_2", "value_2"}, {"name_3", "value_3"}};
+    const Section expected_two = {{"name_1", "value_1"}, {"name_2", "value_2"}, {"name_3", "value_3"}};
+    // const Ini::Section expected_three = {{"name_1", "value_1"}};
+    const Section expected_three = {{"name_1", "value_1"}};
 
     ASSERT_EQUAL(doc.GetSection("one"), expected_one);
     ASSERT_EQUAL(doc.GetSection("two"), expected_two);
@@ -102,12 +155,12 @@ void TestDuplicateSections() {
 
 int main() {
     TestRunner tr;
-    // RUN_TEST(tr, TestLoadIni);
-    // RUN_TEST(tr, TestDocument);
-    // RUN_TEST(tr, TestUnknownSection);
+    RUN_TEST(tr, TestLoadIni);
+    RUN_TEST(tr, TestLoadIniExtended);
 
-    // TODO:
+    RUN_TEST(tr, TestDocument);
+    RUN_TEST(tr, TestUnknownSection);
     RUN_TEST(tr, TestDuplicateSections);
-    
+
     return 0;
 }

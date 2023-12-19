@@ -8,8 +8,7 @@ std::pair<std::string_view, std::string_view> Split(std::string_view sview, char
 }
 
 Section& Document::AddSection(std::string name) {
-   _sections[name] = Section{};
-   return _sections[name];
+    return _sections[name];
 }
 
 const Section& Document::GetSection(const std::string& name) const {
@@ -20,29 +19,47 @@ size_t Document::SectionCount() const {
     return _sections.size();
 }
 
+// void FillSection(std::istream& input, Ini::Section* section_ptr) {
+//     std::string line;
+
+//     while (input && input.peek() != '[') {
+//         if (std::getline(input, line) && !line.empty()) {
+//             auto [var, value] = Split(line, '=');
+//             section_ptr->insert({std::string(var), std::string(value)});
+//         }
+//     }
+// }
+
+// Document Load(std::istream& input) {
+//     Document doc;
+
+//     for (std::string line; std::getline(input, line);) {
+//         if (!line.empty()) {
+//             if (line[0] == '[') { // start of new section has been identified
+//                 Ini::Section* section = &doc.AddSection(std::move(line.substr(1, line.size() - 2)));
+//                 FillSection(input, section);
+//             }
+//         }
+//     }
+
+//     return doc; // return local var => NRVO (Named Return Value Optimization) should work
+// }
+
 Document Load(std::istream& input) {
     Document doc;
+    Ini::Section* section = nullptr;
 
     for (std::string line; std::getline(input, line);) {
-        if (line == "\n") {
-            continue;
-        }
-
-        if (line[0] == '[') {
-            Ini::Section* section = &doc.AddSection(std::move(line.substr(1, line.size() - 2)));
-
-            for (std::string str; std::getline(input, str); ) {
-                if (str == "") {
-                    break;
-                }
-
-                auto [var, value] = Split(str, '=');
-                section->insert({std::string(var), std::string(value)});
+        if (!line.empty()) {
+            if (line[0] == '[') { // start of new section has been identified
+                section = &doc.AddSection(std::move(line.substr(1, line.size() - 2)));
+            } else {
+                size_t pos = line.find('=');
+                section->insert({line.substr(0, pos), line.substr(pos + 1)});
             }
         }
     }
 
-    return doc;  // return local var => NRVO (Named Return Value Optimization) should work
-
+    return doc; // return local var => NRVO (Named Return Value Optimization) should work
 }
 } // namespace Ini

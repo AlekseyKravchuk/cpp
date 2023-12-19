@@ -23,4 +23,4 @@ class Document {
 };
 
 Document Load(std::istream& input);
-} // end namespace Ini
+} // end of namespace "Ini"

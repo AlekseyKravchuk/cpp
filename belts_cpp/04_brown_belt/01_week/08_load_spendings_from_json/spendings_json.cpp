@@ -44,6 +44,7 @@ string MostExpensiveCategory(
 }
 
 vector<Spending> LoadFromJson(istream& input) {
+    using namespace Json;
     Document doc = Load(input);
 
     vector<Spending> spendings;
@@ -78,6 +79,8 @@ void TestLoadFromJson() {
 }
 
 void TestJsonLibrary() {
+    using namespace Json;
+    
     istringstream json_input(R"([
     {"amount": 2500, "category": "food"},
     {"amount": 1150, "category": "transport"},

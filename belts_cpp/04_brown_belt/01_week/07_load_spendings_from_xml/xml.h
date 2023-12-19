@@ -7,7 +7,14 @@
 #include <unordered_map>
 #include <vector>
 
-using namespace std;
+// using namespace std;
+
+using std::vector;
+using std::string_view;
+using std::unordered_map;
+using std::string;
+using std::istream;
+using std::istringstream;
 
 class Node {
   public:

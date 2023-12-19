@@ -1,16 +1,15 @@
 #include "json.h"
 
-Node::Node(vector<Node> array) : as_array(move(array)) {
-}
+using namespace std;
 
-Node::Node(map<string, Node> map) : as_map(move(map)){
-}
+namespace Json {
+Node::Node(vector<Node> array) : as_array(move(array)) {}
 
-Node::Node(int value) : as_int(value) {
-}
+Node::Node(map<string, Node> map) : as_map(move(map)){ }
 
-Node::Node(string value) : as_string(move(value)) {
-}
+Node::Node(int value) : as_int(value) { }
+
+Node::Node(string value) : as_string(move(value)) { }
 
 const vector<Node>& Node::AsArray() const {
   return as_array;
@@ -96,7 +95,8 @@ Node LoadNode(istream& input) {
     return LoadInt(input);
   }
 }
+} // end namespace Json
 
-Document Load(istream& input) {
-  return Document{LoadNode(input)};
+Json::Document Load(istream& input) {
+  return Json::Document{Json::LoadNode(input)};
 }

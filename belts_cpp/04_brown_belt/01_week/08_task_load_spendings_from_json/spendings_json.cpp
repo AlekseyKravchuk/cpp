@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <fstream>
 #include <iostream>
 #include <sstream>
 #include <vector>
@@ -80,7 +81,7 @@ void TestLoadFromJson() {
 
 void TestJsonLibrary() {
     using namespace Json;
-    
+
     istringstream json_input(R"([
     {"amount": 2500, "category": "food"},
     {"amount": 1150, "category": "transport"},

@@ -1,19 +1,15 @@
 #include "json.h"
+
 using namespace std;
 
 namespace Json {
+Node::Node(vector<Node> array) : _as_array(move(array)) {}
 
-Node::Node(vector<Node> array) : _as_array(move(array)) {
-}
+Node::Node(map<string, Node> map) : _as_map(move(map)) {}
 
-Node::Node(map<string, Node> map) : _as_map(move(map)) {
-}
+Node::Node(int value) : _as_int(value) {}
 
-Node::Node(int value) : _as_int(value) {
-}
-
-Node::Node(string value) : _as_string(move(value)) {
-}
+Node::Node(string value) : _as_string(move(value)) {}
 
 const vector<Node>& Node::AsArray() const {
     return _as_array;
@@ -31,11 +27,10 @@ const string& Node::AsString() const {
     return _as_string;
 }
 
-Document::Document(Node root) : root(move(root)) {
-}
+Document::Document(Node root) : _root(move(root)) {}
 
 const Node& Document::GetRoot() const {
-    return root;
+    return _root;
 }
 
 Node LoadNode(istream& input);
@@ -47,6 +42,7 @@ Node LoadArray(istream& input) {
         if (c != ',') {
             input.putback(c);
         }
+
         result.push_back(LoadNode(input));
     }
 
@@ -55,16 +51,19 @@ Node LoadArray(istream& input) {
 
 Node LoadInt(istream& input) {
     int result = 0;
+
     while (isdigit(input.peek())) {
         result *= 10;
         result += input.get() - '0';
     }
+
     return Node(result);
 }
 
 Node LoadString(istream& input) {
     string line;
     getline(input, line, '"');
+
     return Node(move(line));
 }
 
@@ -101,7 +100,8 @@ Node LoadNode(istream& input) {
 }
 
 Document Load(istream& input) {
-    return Document{LoadNode(input)};
+    return Document{Json::LoadNode(input)};
 }
 
-} // namespace Json
+} // end namespace Json
+

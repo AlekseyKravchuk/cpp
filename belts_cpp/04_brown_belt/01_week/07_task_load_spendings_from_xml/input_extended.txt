@@ -1,3 +1,5 @@
+
+
 <june>
   <spend amount="1000" category="food"></spend>
   <spend amount="2000" category="transport"></spend>
@@ -6,6 +8,7 @@
   <spend amount="0" category="travel"></spend>
   <spend amount="7000" category="sport"></spend>
 </june>
+
 <july>
   <spend amount="2500" category="food"></spend>
   <spend amount="1150" category="transport"></spend>
@@ -14,6 +17,7 @@
   <spend amount="23740" category="travel"></spend>
   <spend amount="12000" category="sport"></spend>
 </july>
+
 <august>
   <spend amount="4000" category="food"></spend>
   <spend amount="1000" category="transport"></spend>
@@ -22,6 +26,7 @@
   <spend amount="1000" category="travel"></spend>
   <spend amount="2000" category="sport"></spend>
 </august>
+
 
 
 

@@ -7,7 +7,6 @@
 #include <vector>
 
 namespace Json {
-
 class Node {
   public:
     explicit Node(std::vector<Node> array);
@@ -34,9 +33,9 @@ class Document {
     const Node& GetRoot() const;
 
   private:
-    Node root;
+    Node _root;
 };
 
 Document Load(std::istream& input);
 
-} // namespace Json
+} // end namespace Json

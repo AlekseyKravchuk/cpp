@@ -99,31 +99,6 @@ void TestXmlLibrary() {
 }
 
 int main() {
-    // std::string file_name = "input.txt";
-    // std::ifstream xml_input(file_name);
-    // vector<Spending> spendings = LoadFromXml(xml_input);
-
-    // std::cout << "Finished" << std::endl;
-
-    // std::string file_name = "input.txt";
-    // std::string file_name = "input_extended.txt";
-    // std::ifstream xml_input(file_name);
-    // if (!xml_input) {
-    //     std::cerr << "file \"" << file_name << "\" is not opened" <<
-    //     std::endl; return -1;
-    // }
-
-    // Document doc = Load(xml_input);
-    // const Node& root = doc.GetRoot();
-    // std::cout << "Finished" << std::endl;
-
-    // std::vector<Node> nodes;
-    // while (xml_input.peek() != '\n' && xml_input.peek() != EOF) {
-    //     nodes.push_back(Load(xml_input).GetRoot());
-    // }
-
-    // std::cout << "Finished" << std::endl;
-
     TestRunner tr;
     RUN_TEST(tr, TestXmlLibrary);
     RUN_TEST(tr, TestLoadFromXml);

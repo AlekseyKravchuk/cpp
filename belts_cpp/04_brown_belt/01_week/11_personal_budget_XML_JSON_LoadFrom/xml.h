@@ -37,15 +37,16 @@ class Document {
    private:
     Node _root;
 };
-}  // namespace Xml
 
-Xml::Document Load(std::istream& input);
+Document Load(std::istream& input);
 
 template <typename T>
-inline T Xml::Node::AttributeValue(const std::string& name) const {
-    std::istringstream attr_input(attrs.at(name));
+inline T Node::AttributeValue(const std::string& name) const {
+    std::istringstream attr_input(_attrs.at(name));
     T result;
     attr_input >> result;
 
     return result;
 }
+
+}  // namespace Xml

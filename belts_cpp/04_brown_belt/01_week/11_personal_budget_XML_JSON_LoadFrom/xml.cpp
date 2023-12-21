@@ -38,7 +38,7 @@ string_view Unquote(string_view value) {
 namespace Xml {
 Node LoadNode(istream& input) {
     string root_name;
-    getline(input, root_name);
+    while (getline(input, root_name) && Lstrip(root_name).empty()) { }
 
     Node root(root_name.substr(1, root_name.size() - 2), {});
 
@@ -50,6 +50,7 @@ Node LoadNode(istream& input) {
         while (!attrs.empty()) {
             auto [head, tail] = Split(attrs, ' ');
             auto [name, value] = Split(head, '=');
+            
             if (!name.empty() && !value.empty()) {
                 node_attrs[string(Unquote(name))] = string(Unquote(value));
             }
@@ -58,6 +59,7 @@ Node LoadNode(istream& input) {
 
         root.AddChild(Node(string(node_name.substr(1)), move(node_attrs)));
     }
+    
     return root;
 }
 

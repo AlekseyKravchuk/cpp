@@ -7,7 +7,6 @@
 #include <vector>
 
 namespace Json {
-
 class Node {
   public:
     explicit Node(std::vector<Node> array);
@@ -21,10 +20,10 @@ class Node {
     const std::string& AsString() const;
 
   private:
-    std::vector<Node> as_array;
-    std::map<std::string, Node> as_map;
-    int as_int;
-    std::string as_string;
+    std::vector<Node> _as_array;
+    std::map<std::string, Node> _as_map;
+    int _as_int;
+    std::string _as_string;
 };
 
 class Document {
@@ -34,9 +33,9 @@ class Document {
     const Node& GetRoot() const;
 
   private:
-    Node root;
+    Node _root;
 };
 
 Document Load(std::istream& input);
 
-} // namespace Json
+} // end namespace Json

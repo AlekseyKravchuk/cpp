@@ -27,9 +27,9 @@ class LogDuration {
         if (!is_blocked_output) {
             std::cerr << std::left << std::setfill(' ') << std::setw(33)
                       << _message
-                      //   << GetCurrentTime() << " ms" << std::endl;
-                      // << GetCurrentTime() << " microseconds" << std::endl;
-                      << GetCurrentTime() << " μs" << std::endl;
+                    //   << GetCurrentTime() << " ms" << std::endl;
+                    // << GetCurrentTime() << " microseconds" << std::endl;
+                    << GetCurrentTime() << " μs" << std::endl;
         }
     }
 };

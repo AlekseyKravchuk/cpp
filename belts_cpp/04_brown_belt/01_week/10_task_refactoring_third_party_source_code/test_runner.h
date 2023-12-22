@@ -167,6 +167,6 @@ class TestRunner {
     }
 
 // tr - object of class TestRunner
-// # - change name of variable into string
+// # - change _name of variable into string
 #define RUN_TEST(tr, func) \
     tr.RunTest(func, #func)

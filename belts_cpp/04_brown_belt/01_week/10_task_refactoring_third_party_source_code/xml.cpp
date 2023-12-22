@@ -62,26 +62,26 @@ Document Load(istream& input) {
 }
 
 Node::Node(
-    string name, unordered_map<string, string> attrs) : name(move(name)), attrs(move(attrs)) {
+    string name, unordered_map<string, string> attrs) : _name(move(name)), _attrs(move(attrs)) {
 }
 
 const vector<Node>& Node::Children() const {
-    return children;
+    return _children;
 }
 
-Document::Document(Node root) : root(move(root)) {
+Document::Document(Node root) : _root(move(root)) {
 }
 
 const Node& Document::GetRoot() const {
-    return root;
+    return _root;
 }
 
 void Node::AddChild(Node node) {
-    children.push_back(move(node));
+    _children.push_back(move(node));
 }
 
 string_view Node::Name() const {
-    return name;
+    return _name;
 }
 
 } // namespace Xml

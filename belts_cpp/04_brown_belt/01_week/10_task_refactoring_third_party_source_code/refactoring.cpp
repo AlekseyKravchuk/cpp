@@ -29,8 +29,8 @@ Xml::Document JsonToXml(const Json::Document& doc, string root_name) {
     for (const auto& n : doc.GetRoot().AsArray()) {
         root.AddChild(Xml::Node("spend", {
                                              {"category", n.AsMap().at("category").AsString()},
-                                             {"amount", n.AsMap().at("amount").AsString()},
-                                         }));
+                                             {"amount", n.AsMap().at("amount").AsInt()}
+                                         });
     }
     return Xml::Document{root};
 }

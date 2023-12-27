@@ -39,7 +39,7 @@ void TestPushBack() {
 }
 
 class StringNonCopyable : public std::string {
-   public:
+  public:
     using std::string::string;
     StringNonCopyable(std::string&& other) : std::string(std::move(other)) {}
     StringNonCopyable(const StringNonCopyable&) = delete;
@@ -61,11 +61,66 @@ void TestNoCopy() {
     }
 }
 
+void TestAssignmentToItself() {
+    SimpleVector<std::string> strings;
+    static const int SIZE = 10;
+
+    for (int i = 0; i < SIZE; ++i) {
+        strings.PushBack(std::to_string(i));
+    }
+
+    SimpleVector<std::string> deep_copy = strings;
+
+    // self assignment
+    strings = strings;
+
+    ASSERT_EQUAL(strings, deep_copy);
+}
+
+void TestMovingAssignmentToItself() {
+    SimpleVector<std::string> strings;
+    static const int SIZE = 10;
+
+    for (int i = 0; i < SIZE; ++i) {
+        strings.PushBack(std::to_string(i));
+    }
+
+    SimpleVector<std::string> deep_copy = strings;
+
+    // self assignment
+    strings = std::move(strings);
+
+    ASSERT_EQUAL(strings, deep_copy);
+}
+
+void TestChainedAssignment() {
+    SimpleVector<std::string> strings;
+    static const int SIZE = 10;
+
+    for (int i = 0; i < SIZE; ++i) {
+        strings.PushBack(std::to_string(i));
+    }
+
+    SimpleVector<std::string> deep_copy = strings;
+
+    SimpleVector<std::string> a, b, c, d, e;
+    a = b = c = d = e = strings;
+
+    ASSERT_EQUAL(deep_copy, a);
+    ASSERT_EQUAL(deep_copy, b);
+    ASSERT_EQUAL(deep_copy, c);
+    ASSERT_EQUAL(deep_copy, d);
+    ASSERT_EQUAL(deep_copy, e);
+}
+
 int main() {
     TestRunner tr;
     RUN_TEST(tr, TestConstruction);
     RUN_TEST(tr, TestPushBack);
     RUN_TEST(tr, TestNoCopy);
-    
+    RUN_TEST(tr, TestAssignmentToItself);
+    RUN_TEST(tr, TestMovingAssignmentToItself);
+    RUN_TEST(tr, TestChainedAssignment);
+
     return 0;
 }

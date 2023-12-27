@@ -1,6 +1,6 @@
-#include <algorithm>
+#include <algorithm> // std::equal
+#include <sstream>
 #include <utility> // std::move
-// #include <cstdint>
 
 // Реализуйте SimpleVector в этом файле и отправьте его на проверку
 
@@ -29,13 +29,13 @@ class SimpleVector {
     const T* end() const;
     // =========================================================================================================
 
+    bool operator==(const SimpleVector<T>& rhs) const;
+
     size_t Size() const;
     size_t Capacity() const;
     void PushBack(const T& value);
     void PushBack(T&& value);
     void Swap(SimpleVector<T>& rhs);
-
-    // При необходимости перегрузите существующие публичные методы
 
   private:
     T* _data{nullptr};
@@ -62,16 +62,14 @@ SimpleVector<T>::SimpleVector(const SimpleVector<T>& other)
 // оператор копирующего присваивания, Copy Assignment Operator
 template <typename T>
 SimpleVector<T>& SimpleVector<T>::operator=(const SimpleVector<T>& rhs) {
-    if (_data == rhs._data) {
-        return *this;
+    if (this != &rhs) {
+        SimpleVector<T> tmp(std::move(rhs)); // идиома COPY-AND-SWAP: 1) создаём временный вектор с помощью конструктора копирования
+        Swap(tmp);                           //                       2) обмениваем поля своего объекта с полями временного объекта
+
+        // Применение идиомы COPY-AND-SWAP позволяет достичь следующих двух целей:
+        //  - избегаем дублирования кода в конструкторе копирования и операторе присваивания
+        //  - обеспечиваем согласованное поведение конструктора копирования и оператора присваивания
     }
-
-    SimpleVector<T> tmp(std::move(rhs)); // идиома COPY-AND-SWAP: 1) создаём временный вектор с помощью конструктора копирования
-    Swap(tmp);                           //                       2) обмениваем поля своего объекта с полями временного объекта
-
-    // Применение идиомы COPY-AND-SWAP позволяет достичь следующих двух целей:
-    //  - избегаем дублирования кода в конструкторе копирования и операторе присваивания
-    //  - обеспечиваем согласованное поведение конструктора копирования и оператора присваивания
 
     return *this;
 }
@@ -83,27 +81,30 @@ SimpleVector<T>::SimpleVector(SimpleVector<T>&& other)
       _size(other._size),
       _capacity(other._capacity) {
 
-    // забираем данные у объекта-источника
-    other._data = nullptr;
-    other._size = 0;
-    other._capacity = 0;
+    if (this != &other) {
+        // забираем данные у объекта-источника
+        other._data = nullptr;
+        other._size = 0;
+        other._capacity = 0;
+    }
 }
 
 // оператор перемещающего присваивания, Move Assignment Operator
 template <typename T>
 SimpleVector<T>& SimpleVector<T>::operator=(SimpleVector<T>&& other) {
-    
-    // сперва освобождаем память, выделенную в heap'e под текущий объект
-    delete[] _data;
+    if (this != &other) {
+        // сперва освобождаем память, выделенную в heap'e под текущий объект
+        delete[] _data;
 
-    _data = other._data;
-    _size = other._size;
-    _capacity = other._capacity;
+        _data = other._data;
+        _size = other._size;
+        _capacity = other._capacity;
 
-    // забираем данные у объекта-источника
-    other._data = nullptr;
-    other._size = 0;
-    other._capacity = 0;
+        // забираем данные у объекта-источника
+        other._data = nullptr;
+        other._size = 0;
+        other._capacity = 0;
+    }
 
     return *this;
 }
@@ -174,4 +175,19 @@ void SimpleVector<T>::Swap(SimpleVector<T>& rhs) {
     std::swap(_data, rhs._data);
     std::swap(_size, rhs._size);
     std::swap(_capacity, rhs._capacity);
+}
+
+template <typename T>
+bool SimpleVector<T>::operator==(const SimpleVector<T>& rhs) const {
+    return (this->Size() == rhs.Size()) &&
+           (std::equal(begin(), end(), rhs.begin()));
+}
+
+// ======================== other usefull functions ========================
+
+template <typename T>
+std::ostream& operator<<(std::ostream& os,
+                         const SimpleVector<T> simple_vector) {
+    os << "[" << Join(simple_vector, ", ") << "]";
+    return os;
 }

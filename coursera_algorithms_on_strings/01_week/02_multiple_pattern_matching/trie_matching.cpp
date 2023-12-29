@@ -28,41 +28,38 @@ struct Node {
 
 int letterToIndex(char letter) {
     switch (letter) {
-    case 'A':
-        return 0;
-        break;
-    case 'C':
-        return 1;
-        break;
-    case 'G':
-        return 2;
-        break;
-    case 'T':
-        return 3;
-        break;
-    default:
-        assert(false);
-        return -1;
+        case 'A':
+            return 0;
+            break;
+        case 'C':
+            return 1;
+            break;
+        case 'G':
+            return 2;
+            break;
+        case 'T':
+            return 3;
+            break;
+        default:
+            assert(false);
+            return -1;
     }
 }
 
 vector<Node> build_trie(const vector<string>& patterns) {
     vector<Node> trie(1);
-    for (const auto& pattern : patterns) {
-        size_t src = 0;  // index of source vertex
 
-        for (auto ch : pattern) {
-            size_t i = letterToIndex(ch);
-            size_t dst = trie[src].next[i];  // index of destination vertex
+    for (const string& pattern : patterns) {
+        size_t src = 0;
 
-            if (dst == NA) {
-                dst = trie.size();
-                trie.push_back(Node());
-                trie[src].next[i] = dst;
-                src = dst;
+        for (char ch : pattern) {
+            int i = letterToIndex(ch);
+
+            if (trie[src].next[i] == NA) {
+                trie[src].next[i] = static_cast<int>(trie.size());
+                trie.push_back(Node{});
             }
-            
-            src = dst;
+            src = trie[src].next[i];
         }
     }
 
@@ -70,9 +67,30 @@ vector<Node> build_trie(const vector<string>& patterns) {
 }
 
 vector<int> solve(const string& text, int n, const vector<string>& patterns) {
+    assert(n == static_cast<int>(patterns.size()));
     vector<int> result;
+    vector<Node> trie = build_trie(patterns);
 
-    // write your code here
+    for (size_t start = 0; start < text.size(); ++start) {
+        size_t src = 0;  // всегда начинаем проходить префиксное дерево шаблонов от корня; "src" - индекс в векторе "trie"
+        size_t i = 0;    // индекс в массиве "next" структуры "Node"
+
+        // "приложить" к тексту с позиции "pos" префиксное дерево из шаблонов поиска ("trie")
+        size_t pos = start;
+        while (pos < text.size()) {
+            i = letterToIndex(text[pos]);
+            if (trie[src].next[i] == NA) {
+                break;
+            }
+
+            src = trie[src].next[i];
+            ++pos;
+        }
+
+        if (trie[src].isLeaf()) {
+            result.push_back(static_cast<int>(start));
+        }
+    }
 
     return result;
 }

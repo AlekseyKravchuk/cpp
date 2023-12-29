@@ -13,11 +13,11 @@ uint64_t DistanceSquared(Point p1, Point p2);
 struct Vector {
     int x, y;
 
-    Vector(int xx, int yy) : x(xx), y(yy) {
-    }
+    Vector(int xx, int yy)
+        : x(xx), y(yy) {}
 
-    Vector(Point from, Point to) : x(to.x - from.x), y(to.y - from.y) {
-    }
+    Vector(Point from, Point to)
+        : x(to.x - from.x), y(to.y - from.y) { }
 };
 
 int64_t operator*(Vector lhs, Vector rhs);

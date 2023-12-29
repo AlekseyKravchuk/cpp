@@ -17,13 +17,6 @@ struct Node {
         std::fill(next, next + Letters, NA);
     }
 
-    // bool isLeaf() const {
-    //     return (next[0] == NA &&
-    //             next[1] == NA &&
-    //             next[2] == NA &&
-    //             next[3] == NA);
-    // }
-
     bool isLeaf() const {
         return std::all_of(next,
                            next + Letters,
@@ -51,6 +44,29 @@ int letterToIndex(char letter) {
         assert(false);
         return -1;
     }
+}
+
+vector<Node> build_trie(const vector<string>& patterns) {
+    vector<Node> trie(1);
+    for (const auto& pattern : patterns) {
+        size_t src = 0;  // index of source vertex
+
+        for (auto ch : pattern) {
+            size_t i = letterToIndex(ch);
+            size_t dst = trie[src].next[i];  // index of destination vertex
+
+            if (dst == NA) {
+                dst = trie.size();
+                trie.push_back(Node());
+                trie[src].next[i] = dst;
+                src = dst;
+            }
+            
+            src = dst;
+        }
+    }
+
+    return trie;
 }
 
 vector<int> solve(const string& text, int n, const vector<string>& patterns) {

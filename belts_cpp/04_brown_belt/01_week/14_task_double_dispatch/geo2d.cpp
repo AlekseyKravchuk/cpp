@@ -15,7 +15,11 @@ template <typename T>
 T Sqr(T x) { return x * x; }
 
 template <typename T>
-T Sign(T x) {  return x != 0 ? x / abs(x) : 0; }
+T Sign(T x) {
+    return x != 0
+               ? x / abs(x)
+               : 0;
+}
 
 uint64_t DistanceSquared(Point p1, Point p2) {
     int64_t diff_x = p1.x - p2.x;

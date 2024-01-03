@@ -14,10 +14,12 @@ struct Vector {
     int x, y;
 
     Vector(int xx, int yy)
-        : x(xx), y(yy) {}
+        : x(xx),
+          y(yy) {}
 
     Vector(Point from, Point to)
-        : x(to.x - from.x), y(to.y - from.y) { }
+        : x(to.x - from.x),
+          y(to.y - from.y) { }
 };
 
 int64_t operator*(Vector lhs, Vector rhs);
@@ -28,11 +30,11 @@ struct Segment {
 };
 
 class Rectangle {
-  private:
+   private:
     int x_left, x_right;
     int y_bottom, y_top;
 
-  public:
+   public:
     Rectangle(Point p1, Point p2);
 
     int Left() const { return x_left; }
@@ -51,7 +53,7 @@ struct Circle {
     uint32_t radius;
 };
 
-bool Collide(Point p, Point q);
+bool Collide(Point p1, Point p2);
 bool Collide(Point p, Segment s);
 bool Collide(Point p, Rectangle r);
 bool Collide(Point p, Circle c);
@@ -68,4 +70,4 @@ bool Collide(Circle c, Rectangle r);
 bool Collide(Circle c, Segment s);
 bool Collide(Circle c1, Circle c2);
 
-} // namespace geo2d
+}  // namespace geo2d

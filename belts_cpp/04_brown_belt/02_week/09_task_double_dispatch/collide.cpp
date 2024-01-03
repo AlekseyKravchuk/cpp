@@ -3,7 +3,6 @@
 
 #include "game_object.h"
 #include "geo2d.h"
-
 #include "test_runner.h"
 
 using namespace std;
@@ -12,26 +11,37 @@ using namespace std;
 // GameObject и реализовывали его интерфейс.
 
 class Unit : public GameObject {
-  public:
-    explicit Unit(geo2d::Point position);
+   public:
+    explicit Unit(geo2d::Point position)
+        : _position(position) {}
+
+    geo2d::Point GetPosition() const { return _position; }
+
+    bool Collide(const GameObject& other) const override {
+      
+    }
+
+   private:
+    geo2d::Point _position;
 };
 
-class Building : public GameObject {
-  public:
+class Building {
+   public:
     explicit Building(geo2d::Rectangle geometry);
 };
 
-class Tower : public GameObject {
-  public:
+class Tower {
+   public:
     explicit Tower(geo2d::Circle geometry);
 };
 
-class Fence : public GameObject {
-  public:
+class Fence {
+   public:
     explicit Fence(geo2d::Segment geometry);
 };
 
 // Реализуйте функцию Collide из файла GameObject.h
+
 bool Collide(const GameObject& first, const GameObject& second) {
 }
 

@@ -50,7 +50,5 @@ int main() {
     CallFunction(d_2);
     CallFunction(d_3);
 
-
-
     return 0;
 }

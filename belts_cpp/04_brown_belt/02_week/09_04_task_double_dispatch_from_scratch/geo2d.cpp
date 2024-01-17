@@ -9,7 +9,7 @@ Rectangle::Rectangle(Point p1, Point p2)
     : x_left(std::min(p1.x, p2.x)),
       x_right(std::max(p1.x, p2.x)),
       y_bottom(std::min(p1.y, p2.y)),
-      y_top(std::max(p1.y, p2.y)) { }
+      y_top(std::max(p1.y, p2.y)) {}
 
 template <typename T>
 T Sqr(T x) { return x * x; }
@@ -63,7 +63,6 @@ bool Collide(Segment s1, Segment s2);
 bool Collide(Circle c, Segment s);
 
 bool Collide(Rectangle r, Point p) { return Collide(p, r); }
-
 bool Collide(Rectangle r, Segment s) {
     return Collide(s.p1, r) ||
            Collide(s.p2, r) ||
@@ -133,4 +132,4 @@ bool Collide(Circle c1, Circle c2) {
     return DistanceSquared(c1.center, c2.center) <= Sqr<uint64_t>(c1.radius + c2.radius);
 }
 
-}  // namespace geo2d
+} // namespace geo2d

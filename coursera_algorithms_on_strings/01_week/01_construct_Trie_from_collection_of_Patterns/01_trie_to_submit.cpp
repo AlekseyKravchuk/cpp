@@ -12,7 +12,7 @@ using trie = vector<edges>;
 
 trie build_trie(vector<string>& patterns) {
     uint MAX_EDGES = 10'001;
-    trie pref_tree(MAX_EDGES);
+    trie pref_tree(MAX_EDGES);  // vector<map<char, int>>
     uint node_cntr = 0;
 
     for (const auto& pattern : patterns) {

@@ -1,10 +1,13 @@
 #pragma once
 
+// файл "game_object.h" содержит интерфейс GameObject и объявление функции Collide
+
 class Unit;
 class Building;
 class Tower;
 class Fence;
 
+// абстрактный базовый (родительский) класс для классов-потомков Unit, Building, Tower и Fence
 struct GameObject {
   virtual ~GameObject() = default;
 

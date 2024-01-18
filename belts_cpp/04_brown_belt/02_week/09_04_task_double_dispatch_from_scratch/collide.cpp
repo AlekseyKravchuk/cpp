@@ -8,8 +8,7 @@
 
 using namespace std;
 
-// Определите классы Unit, Building, Tower и Fence так, чтобы они наследовались от
-// GameObject и реализовывали его интерфейс.
+// Определите классы Unit, Building, Tower и Fence так, чтобы они наследовались от GameObject и реализовывали его интерфейс.
 
 class Unit {
   public:

@@ -156,9 +156,9 @@ class CommentServer {
     }
 
   private:
-    vector<vector<string>> comments_;
+    vector<vector<string>> _comments;
     std::optional<LastCommentInfo> last_comment;
-    unordered_set<size_t> banned_users;
+    unordered_set<size_t> _banned_users;
 
     using Handler = function<HttpResponse(CommentServer&, const HttpRequest&)>;
 
@@ -182,8 +182,8 @@ class CommentServer {
 };
 
 HttpResponse CommentServer::PostAddUser(CommentServer& server, const HttpRequest& req) {
-    server.comments_.emplace_back();
-    auto content = to_string(server.comments_.size() - 1);
+    server._comments.emplace_back();
+    auto content = to_string(server._comments.size() - 1);
 
     return HttpResponse(HttpCode::Ok)
         .SetContent(content);
@@ -195,11 +195,11 @@ HttpResponse CommentServer::PostAddComment(CommentServer& server, const HttpRequ
     if (!server.last_comment || server.last_comment->user_id != user_id) {
         server.last_comment = LastCommentInfo{user_id, 1};
     } else if (++server.last_comment->consecutive_count > 3) {
-        server.banned_users.insert(user_id);
+        server._banned_users.insert(user_id);
     }
 
-    if (server.banned_users.count(user_id) == 0) {
-        server.comments_[user_id].push_back(string(comment));
+    if (server._banned_users.count(user_id) == 0) {
+        server._comments[user_id].push_back(string(comment));
         return HttpResponse(HttpCode::Ok);
     } else {
         return HttpResponse(HttpCode::Found)
@@ -209,7 +209,7 @@ HttpResponse CommentServer::PostAddComment(CommentServer& server, const HttpRequ
 
 HttpResponse CommentServer::PostCheckCaptcha(CommentServer& server, const HttpRequest& req) {
     if (auto [id, response] = ParseIdAndContent(req.body); response == "42") {
-        server.banned_users.erase(id);
+        server._banned_users.erase(id);
         if (server.last_comment && server.last_comment->user_id == id) {
             server.last_comment.reset();
         }
@@ -223,7 +223,7 @@ HttpResponse CommentServer::PostCheckCaptcha(CommentServer& server, const HttpRe
 HttpResponse CommentServer::GetUserComments(CommentServer& server, const HttpRequest& req) {
     auto user_id = FromString<size_t>(req.get_params.at("user_id"));
     string response;
-    for (const string& c : server.comments_[user_id]) {
+    for (const string& c : server._comments[user_id]) {
         response += c + '\n';
     }
 

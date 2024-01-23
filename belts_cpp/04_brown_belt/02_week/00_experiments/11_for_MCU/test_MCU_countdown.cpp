@@ -1,37 +1,126 @@
-#include <iostream>
 #include <cassert>
+#include <iostream>
+
+#include "test_runner.h"
 
 using namespace std;
-
 
 int digits[4] = {0, 0, 0, 0};
 int start = 0;
 
+void ResetDigits(int* digits);
+
 void GetDigitsFromNumber(int number, int* digits, const int digits_len) {
-	assert(digits_len == 4);
-	int i = 3;
-	while (number) {
-		digits[i--] = number % 10;
-		number /= 10;
+    assert(digits_len == 4);
+	
+	if (!number) {
+		return;
 	}
+
+    int i = 3;
+    while (number) {
+        digits[i--] = number % 10;
+        number /= 10;
+    }
 }
 
 int GetIndexOfFirstNonZeroDigit(int* digits) {
-    int i = 1;
-	if(digits[0] == 0) {
-		while(!digits[i] && i != 3) {
+	int i = 0;
+    if (digits[i] == 0) {
+        ++i;
+        while (!digits[i] && i != 3) {
             ++i;
         }
+    }
+
+    return i;
+}
+
+void ResetDigits(int* digits) {
+	for (int i = 0; i < 4; ++i) {
+		digits[i] = 0;
 	}
-	
-	return i;
+}
+
+void Test_GetIndexOfFirstNonZeroDigit_4digits() {
+    {
+		ResetDigits(digits);
+        int number = 7965;
+        int start_index_expected = 0;
+        int first_digit_expected = 7;
+
+        GetDigitsFromNumber(number, digits, 4);
+        int start_index = GetIndexOfFirstNonZeroDigit(digits);
+
+        ASSERT_EQUAL(start_index_expected, start_index);
+        ASSERT_EQUAL(first_digit_expected, digits[start_index]);
+    }
+}
+
+void Test_GetIndexOfFirstNonZeroDigit_3digits() {
+	ResetDigits(digits);
+    int number = 965;
+    int start_index_expected = 1;
+    int first_digit_expected = 9;
+
+    GetDigitsFromNumber(number, digits, 4);
+    int start_index = GetIndexOfFirstNonZeroDigit(digits);
+
+    ASSERT_EQUAL(start_index_expected, start_index);
+    ASSERT_EQUAL(first_digit_expected, digits[start_index]);
+}
+
+void Test_GetIndexOfFirstNonZeroDigit_2digits() {
+	ResetDigits(digits);
+    int number = 65;
+    int start_index_expected = 2;
+    int first_digit_expected = 6;
+
+    GetDigitsFromNumber(number, digits, 4);
+    int start_index = GetIndexOfFirstNonZeroDigit(digits);
+
+    ASSERT_EQUAL(start_index_expected, start_index);
+    ASSERT_EQUAL(first_digit_expected, digits[start_index]);
+}
+
+void Test_GetIndexOfFirstNonZeroDigit_1digit() {
+	ResetDigits(digits);
+    int number = 5;
+    int start_index_expected = 3;
+    int first_digit_expected = 5;
+
+    GetDigitsFromNumber(number, digits, 4);
+    int start_index = GetIndexOfFirstNonZeroDigit(digits);
+
+    ASSERT_EQUAL(start_index_expected, start_index);
+    ASSERT_EQUAL(first_digit_expected, digits[start_index]);
+}
+
+void Test_GetIndexOfFirstNonZeroDigit_All_Zeros() {
+	ResetDigits(digits);
+    int number = 0;
+    int start_index_expected = 3;
+    int first_digit_expected = 0;
+
+    GetDigitsFromNumber(number, digits, 4);
+    int start_index = GetIndexOfFirstNonZeroDigit(digits);
+
+    ASSERT_EQUAL(start_index_expected, start_index);
+    ASSERT_EQUAL(first_digit_expected, digits[start_index]);
 }
 
 int main() {
-    int number = 290;
-    GetDigitsFromNumber(number, digits, 4);
-    start = GetIndexOfFirstNonZeroDigit(digits);
-    std::cout << "start_index = " << start << std::endl;
-    std::cout << "digits[start] = " << digits[start] << std::endl;
+    TestRunner tr;
+    RUN_TEST(tr, Test_GetIndexOfFirstNonZeroDigit_4digits);
+    RUN_TEST(tr, Test_GetIndexOfFirstNonZeroDigit_3digits);
+	RUN_TEST(tr, Test_GetIndexOfFirstNonZeroDigit_2digits);
+	RUN_TEST(tr, Test_GetIndexOfFirstNonZeroDigit_1digit);
+	RUN_TEST(tr, Test_GetIndexOfFirstNonZeroDigit_All_Zeros);
+	
+    // int number = 7965;
+    // GetDigitsFromNumber(number, digits, 4);
+    // start = GetIndexOfFirstNonZeroDigit(digits);
+    // std::cout << "start_index = " << start << std::endl;
+    // std::cout << "digits[start] = " << digits[start] << std::endl;
     return 0;
 }

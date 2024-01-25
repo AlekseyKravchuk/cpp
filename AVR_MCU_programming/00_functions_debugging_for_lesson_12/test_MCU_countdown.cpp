@@ -12,10 +12,10 @@ void ResetDigits(int* digits);
 
 void GetDigitsFromNumber(int number, int* digits, const int digits_len) {
     assert(digits_len == 4);
-	
-	if (!number) {
-		return;
-	}
+
+    if (!number) {
+        return;
+    }
 
     int i = 3;
     while (number) {
@@ -25,7 +25,7 @@ void GetDigitsFromNumber(int number, int* digits, const int digits_len) {
 }
 
 int GetIndexOfFirstNonZeroDigit(int* digits) {
-	int i = 0;
+    int i = 0;
     if (digits[i] == 0) {
         ++i;
         while (!digits[i] && i != 3) {
@@ -37,14 +37,14 @@ int GetIndexOfFirstNonZeroDigit(int* digits) {
 }
 
 void ResetDigits(int* digits) {
-	for (int i = 0; i < 4; ++i) {
-		digits[i] = 0;
-	}
+    for (int i = 0; i < 4; ++i) {
+        digits[i] = 0;
+    }
 }
 
 void Test_GetIndexOfFirstNonZeroDigit_4digits() {
     {
-		ResetDigits(digits);
+        ResetDigits(digits);
         int number = 7965;
         int start_index_expected = 0;
         int first_digit_expected = 7;
@@ -58,7 +58,7 @@ void Test_GetIndexOfFirstNonZeroDigit_4digits() {
 }
 
 void Test_GetIndexOfFirstNonZeroDigit_3digits() {
-	ResetDigits(digits);
+    ResetDigits(digits);
     int number = 965;
     int start_index_expected = 1;
     int first_digit_expected = 9;
@@ -71,7 +71,7 @@ void Test_GetIndexOfFirstNonZeroDigit_3digits() {
 }
 
 void Test_GetIndexOfFirstNonZeroDigit_2digits() {
-	ResetDigits(digits);
+    ResetDigits(digits);
     int number = 65;
     int start_index_expected = 2;
     int first_digit_expected = 6;
@@ -84,7 +84,7 @@ void Test_GetIndexOfFirstNonZeroDigit_2digits() {
 }
 
 void Test_GetIndexOfFirstNonZeroDigit_1digit() {
-	ResetDigits(digits);
+    ResetDigits(digits);
     int number = 5;
     int start_index_expected = 3;
     int first_digit_expected = 5;
@@ -97,7 +97,7 @@ void Test_GetIndexOfFirstNonZeroDigit_1digit() {
 }
 
 void Test_GetIndexOfFirstNonZeroDigit_All_Zeros() {
-	ResetDigits(digits);
+    ResetDigits(digits);
     int number = 0;
     int start_index_expected = 3;
     int first_digit_expected = 0;
@@ -146,14 +146,28 @@ void Test_DigitsFromNumber_2digits() {
 }
 
 void Test_DigitsFromNumber_1digits() {
-    ResetDigits(digits);
+    {
+        ResetDigits(digits);
 
-    int number = 9;
-    GetDigitsFromNumber(number, digits, 4);
+        int number = 9;
+        GetDigitsFromNumber(number, digits, 4);
 
-    int digits_expected[4] = {0, 0, 0, 9};
-    for (size_t i = 0; i < 4; ++i) {
-        ASSERT_EQUAL(digits[i], digits_expected[i]);
+        int digits_expected[4] = {0, 0, 0, 9};
+        for (size_t i = 0; i < 4; ++i) {
+            ASSERT_EQUAL(digits[i], digits_expected[i]);
+        }
+    }
+
+    {
+        ResetDigits(digits);
+
+        int number = 1;
+        GetDigitsFromNumber(number, digits, 4);
+
+        int digits_expected[4] = {0, 0, 0, 1};
+        for (size_t i = 0; i < 4; ++i) {
+            ASSERT_EQUAL(digits[i], digits_expected[i]);
+        }
     }
 }
 
@@ -169,15 +183,13 @@ void Test_DigitsFromNumber_all_zeros() {
     }
 }
 
-
-
 int main() {
     TestRunner tr;
     RUN_TEST(tr, Test_GetIndexOfFirstNonZeroDigit_4digits);
     RUN_TEST(tr, Test_GetIndexOfFirstNonZeroDigit_3digits);
-	RUN_TEST(tr, Test_GetIndexOfFirstNonZeroDigit_2digits);
-	RUN_TEST(tr, Test_GetIndexOfFirstNonZeroDigit_1digit);
-	RUN_TEST(tr, Test_GetIndexOfFirstNonZeroDigit_All_Zeros);
+    RUN_TEST(tr, Test_GetIndexOfFirstNonZeroDigit_2digits);
+    RUN_TEST(tr, Test_GetIndexOfFirstNonZeroDigit_1digit);
+    RUN_TEST(tr, Test_GetIndexOfFirstNonZeroDigit_All_Zeros);
 
     // =====================================================
     RUN_TEST(tr, Test_DigitsFromNumber_4digits);
@@ -186,7 +198,7 @@ int main() {
     RUN_TEST(tr, Test_DigitsFromNumber_1digits);
     RUN_TEST(tr, Test_DigitsFromNumber_all_zeros);
     // =====================================================
-	
+
     // int number = 7965;
     // GetDigitsFromNumber(number, digits, 4);
     // start = GetIndexOfFirstNonZeroDigit(digits);

@@ -1,5 +1,3 @@
-#include "test_runner.h"
-
 #include <iostream>
 #include <map>
 #include <optional>
@@ -8,6 +6,8 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
+
+#include "test_runner.h"
 
 using namespace std;
 
@@ -46,25 +46,26 @@ struct LastCommentInfo {
 };
 
 class CommentServer {
-  private:
+   private:
     vector<vector<string>> _comments;
     std::optional<LastCommentInfo> _last_comment;
     unordered_set<size_t> _banned_users;
 
-  public:
+   public:
+   // метод ServeRequest принимает HTTP-запрос, обрабатывает его и записывает HTTP-ответ в выходной поток
     void ServeRequest(const HttpRequest& req, ostream& os) {
         if (req.method == "POST") {
             if (req.path == "/add_user") {
                 _comments.emplace_back();
-                string uid_as_str = to_string(_comments.size() - 1);
+                string response = to_string(_comments.size() - 1);
                 os << "HTTP/1.1 200 OK\n"
-                   << "Content-Length: " << uid_as_str.size() << "\n"
+                   << "Content-Length: " << response.size() << "\n"
                    << "\n"
-                   << uid_as_str;
+                   << response;  // тело ответа
             } else if (req.path == "/add_comment") {
                 auto [user_id, comment] = ParseIdAndContent(req.body);
 
-                if (!_last_comment || _last_comment->user_id != user_id) {
+                if (!_last_comment.has_value() || _last_comment->user_id != user_id) {
                     _last_comment = LastCommentInfo{user_id, 1};
                 } else if (++_last_comment->consecutive_count > 3) {
                     _banned_users.insert(user_id);
@@ -74,9 +75,9 @@ class CommentServer {
                     _comments[user_id].push_back(string(comment));
                     os << "HTTP/1.1 200 OK\n\n";
                 } else {
-                    os << "HTTP/1.1 302 Found\n"
-                       <<  "Location: /captcha\n"
-                       << "\n";
+                    os << "HTTP/1.1 302 Found\n\n"
+                          "Location: /captcha\n"
+                          "\n";
                 }
             } else if (req.path == "/checkcaptcha") {
                 if (auto [id, response] = ParseIdAndContent(req.body); response == "42") {
@@ -112,7 +113,8 @@ class CommentServer {
 };
 
 struct HttpHeader {
-    string name, value;
+    string name;
+    string value;
 };
 
 ostream& operator<<(ostream& output, const HttpHeader& h) {
@@ -135,13 +137,13 @@ istream& operator>>(istream& input, ParsedResponse& r) {
 
     {
         istringstream code_input(line);
-        string dummy;  // фиктивная переменная
+        string dummy;
         code_input >> dummy >> r.code;
     }
 
     size_t content_length = 0;
 
-    r.headers.clear();
+    r.headers.clear();  // ??? непонятно, зачем здесь очищать заголовки
     while (getline(input, line) && !line.empty()) {
         if (auto [name, value] = SplitBy(line, ": "); name == "Content-Length") {
             istringstream length_input(value);
@@ -152,6 +154,8 @@ istream& operator>>(istream& input, ParsedResponse& r) {
     }
 
     r.content.resize(content_length);
+
+    // извлечь из потока input "r.content.size()" символов и сохранить их в массиве, на который указывает ptr "r.content.data()"
     input.read(r.content.data(), r.content.size());
     return input;
 }
@@ -172,46 +176,41 @@ template <typename CommentServer>
 void TestServer() {
     CommentServer cs;
 
-    const ParsedResponse ok{200};
+    const ParsedResponse ok{200, {}, {}};
     const ParsedResponse redirect_to_captcha{302, {{"Location", "/captcha"}}, {}};
-    const ParsedResponse not_found{404};
+    const ParsedResponse not_found{404, {}, {}};
 
-    Test(cs, {"POST", "/add_user"}, {200, {}, "0"});
-    Test(cs, {"POST", "/add_user"}, {200, {}, "1"});
-    Test(cs, {"POST", "/add_comment", "0 Hello"}, ok);
-    Test(cs, {"POST", "/add_comment", "1 Hi"}, ok);
-    Test(cs, {"POST", "/add_comment", "1 Buy my goods"}, ok);
-    Test(cs, {"POST", "/add_comment", "1 Enlarge"}, ok);
-    Test(cs, {"POST", "/add_comment", "1 Buy my goods"}, redirect_to_captcha);  
-    Test(cs, {"POST", "/add_comment", "0 What are you selling?"}, ok);
-    Test(cs, {"POST", "/add_comment", "1 Buy my goods"}, redirect_to_captcha);
-
-    Test( // <== FAILS here
+    Test(cs, {"POST", "/add_user", {}, {}}, {200, {}, "0"});       // OK
+    Test(cs, {"POST", "/add_user", {}, {}}, {200, {}, "1"});       // OK
+    Test(cs, {"POST", "/add_comment", "0 Hello", {}}, ok);         // OK
+    Test(cs, {"POST", "/add_comment", "1 Hi", {}}, ok);            // OK
+    Test(cs, {"POST", "/add_comment", "1 Buy my goods", {}}, ok);  // OK
+    Test(cs, {"POST", "/add_comment", "1 Enlarge", {}}, ok);       // OK
+    Test(cs, {"POST", "/add_comment", "1 Buy my goods", {}}, redirect_to_captcha);
+    Test(cs, {"POST", "/add_comment", "0 What are you selling?", {}}, ok);
+    Test(cs, {"POST", "/add_comment", "1 Buy my goods", {}}, redirect_to_captcha);
+    Test(
         cs,
         {"GET", "/user_comments", "", {{"user_id", "0"}}},
         {200, {}, "Hello\nWhat are you selling?\n"});
+    Test(
+        cs,
+        {"GET", "/user_comments", "", {{"user_id", "1"}}},
+        {200, {}, "Hi\nBuy my goods\nEnlarge\n"});
+    Test(
+        cs,
+        {"GET", "/captcha", {}, {}},
+        {200, {}, {"What's the answer for The Ultimate Question of Life, the Universe, and Everything?"}});
+    Test(cs, {"POST", "/checkcaptcha", "1 24", {}}, redirect_to_captcha);
+    Test(cs, {"POST", "/checkcaptcha", "1 42", {}}, ok);
+    Test(cs, {"POST", "/add_comment", "1 Sorry! No spam any more", {}}, ok);
+    Test(
+        cs,
+        {"GET", "/user_comments", "", {{"user_id", "1"}}},
+        {200, {}, "Hi\nBuy my goods\nEnlarge\nSorry! No spam any more\n"});
 
-    // Test(
-    //     cs,
-    //     {"GET", "/user_comments", "", {{"user_id", "1"}}},
-    //     {200, {}, "Hi\nBuy my goods\nEnlarge\n"});
-    // Test(
-    //     cs,
-    //     {"GET", "/captcha"},
-    //     {200, {}, {"What's the answer for The Ultimate Question of Life, the Universe, and Everything?"}});
-    // Test(cs, {"POST", "/checkcaptcha", "1 24"}, redirect_to_captcha);
-    // Test(cs, {"POST", "/checkcaptcha", "1 42"}, ok);
-    // Test(cs, {"POST", "/add_comment", "1 Sorry! No spam any more"}, ok);
-    // Test(
-    //     cs,
-    //     {"GET", "/user_comments", "", {{"user_id", "1"}}},
-    //     {200, {}, "Hi\nBuy my goods\nEnlarge\nSorry! No spam any more\n"});
-
-    // Test(cs, {"GET", "/user_commntes"}, not_found);
-    // Test(cs, {"POST", "/add_uesr"}, not_found);
-
-    // ============ FOR DEBUGGING ============
-    // std::cout << "Before return from TestServer<CommentServer>" << std::endl;
+    Test(cs, {"GET", "/user_commntes", {}, {}}, not_found);
+    Test(cs, {"POST", "/add_uesr", {}, {}}, not_found);
 }
 
 int main() {

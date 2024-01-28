@@ -80,6 +80,7 @@ ostream& operator<<(ostream& output, const HttpCode& code) {
     default:
         output.setstate(ios_base::failbit);
     }
+
     return output;
 }
 
@@ -109,8 +110,7 @@ class HttpResponse {
         static const string version = "HTTP/1.1";
         static const string content_length_header = "Content-Length";
 
-        output
-            << version << ' ' << static_cast<size_t>(resp.code) << ' ' << resp.code << '\n';
+        output << version << ' ' << static_cast<size_t>(resp.code) << ' ' << resp.code << '\n';
 
         for (const auto& header : resp.headers) {
             if (header.name != content_length_header) {
@@ -157,7 +157,7 @@ class CommentServer {
 
   private:
     vector<vector<string>> _comments;
-    std::optional<LastCommentInfo> last_comment;
+    std::optional<LastCommentInfo> _last_comment;
     unordered_set<size_t> _banned_users;
 
     using Handler = function<HttpResponse(CommentServer&, const HttpRequest&)>;
@@ -192,9 +192,9 @@ HttpResponse CommentServer::PostAddUser(CommentServer& server, const HttpRequest
 HttpResponse CommentServer::PostAddComment(CommentServer& server, const HttpRequest& req) {
     auto [user_id, comment] = ParseIdAndContent(req.body);
 
-    if (!server.last_comment || server.last_comment->user_id != user_id) {
-        server.last_comment = LastCommentInfo{user_id, 1};
-    } else if (++server.last_comment->consecutive_count > 3) {
+    if (!server._last_comment || server._last_comment->user_id != user_id) {
+        server._last_comment = LastCommentInfo{user_id, 1};
+    } else if (++server._last_comment->consecutive_count > 3) {
         server._banned_users.insert(user_id);
     }
 
@@ -210,8 +210,8 @@ HttpResponse CommentServer::PostAddComment(CommentServer& server, const HttpRequ
 HttpResponse CommentServer::PostCheckCaptcha(CommentServer& server, const HttpRequest& req) {
     if (auto [id, response] = ParseIdAndContent(req.body); response == "42") {
         server._banned_users.erase(id);
-        if (server.last_comment && server.last_comment->user_id == id) {
-            server.last_comment.reset();
+        if (server._last_comment && server._last_comment->user_id == id) {
+            server._last_comment.reset();
         }
         return HttpResponse(HttpCode::Ok);
     }

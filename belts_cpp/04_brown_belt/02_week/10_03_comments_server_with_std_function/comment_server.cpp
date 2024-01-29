@@ -20,6 +20,22 @@ struct HttpRequest {
     map<string, string> get_params;
 };
 
+struct LastCommentInfo {
+    size_t user_id;
+    size_t consecutive_count;
+};
+
+struct HttpHeader {
+    string name;
+    string value;
+};
+
+enum class HttpCode {
+    Ok = 200,
+    NotFound = 404,
+    Found = 302
+};
+
 pair<string, string> SplitBy(const string& what, const string& by) {
     size_t pos = what.find(by);
     if (by.size() < what.size() && pos < what.size() - by.size()) {
@@ -42,16 +58,6 @@ pair<size_t, string> ParseIdAndContent(const string& body) {
     return {FromString<size_t>(id_string), content};
 }
 
-struct LastCommentInfo {
-    size_t user_id;
-    size_t consecutive_count;
-};
-
-struct HttpHeader {
-    string name;
-    string value;
-};
-
 ostream& operator<<(ostream& output, const HttpHeader& h) {
     return output << h.name << ": " << h.value;
 }
@@ -59,12 +65,6 @@ ostream& operator<<(ostream& output, const HttpHeader& h) {
 bool operator==(const HttpHeader& lhs, const HttpHeader& rhs) {
     return lhs.name == rhs.name && lhs.value == rhs.value;
 }
-
-enum class HttpCode {
-    Ok = 200,
-    NotFound = 404,
-    Found = 302
-};
 
 ostream& operator<<(ostream& output, const HttpCode& code) {
     switch (code) {
@@ -149,6 +149,9 @@ class HttpResponse {
 
 class CommentServer {
   public:
+    inline static const string GET_CAPTCHA_BODY =
+        "What's the answer for The Ultimate Question of Life, the Universe, and Everything?";
+
     HttpResponse ServeRequest(const HttpRequest& req) {
         const auto it = handlers.find({req.method, req.path});
         const auto& handler = it == end(handlers) ? NotFound : it->second;
@@ -185,8 +188,7 @@ HttpResponse CommentServer::PostAddUser(CommentServer& server, const HttpRequest
     server._comments.emplace_back();
     auto content = to_string(server._comments.size() - 1);
 
-    return HttpResponse(HttpCode::Ok)
-        .SetContent(content);
+    return HttpResponse(HttpCode::Ok).SetContent(content);
 }
 
 HttpResponse CommentServer::PostAddComment(CommentServer& server, const HttpRequest& req) {
@@ -202,8 +204,7 @@ HttpResponse CommentServer::PostAddComment(CommentServer& server, const HttpRequ
         server._comments[user_id].push_back(string(comment));
         return HttpResponse(HttpCode::Ok);
     } else {
-        return HttpResponse(HttpCode::Found)
-            .AddHeader("Location", "/captcha");
+        return HttpResponse(HttpCode::Found).AddHeader("Location", "/captcha");
     }
 }
 
@@ -216,8 +217,7 @@ HttpResponse CommentServer::PostCheckCaptcha(CommentServer& server, const HttpRe
         return HttpResponse(HttpCode::Ok);
     }
 
-    return HttpResponse(HttpCode::Found)
-        .AddHeader("Location", "/captcha");
+    return HttpResponse(HttpCode::Found).AddHeader("Location", "/captcha");
 }
 
 HttpResponse CommentServer::GetUserComments(CommentServer& server, const HttpRequest& req) {
@@ -232,8 +232,7 @@ HttpResponse CommentServer::GetUserComments(CommentServer& server, const HttpReq
 }
 
 HttpResponse CommentServer::GetCaptcha(CommentServer& server, const HttpRequest& req) {
-    return HttpResponse(HttpCode::Ok)
-        .SetContent("What's the answer for The Ultimate Question of Life, the Universe, and Everything?");
+    return HttpResponse(HttpCode::Ok).SetContent(GET_CAPTCHA_BODY);
 }
 
 HttpResponse CommentServer::NotFound(CommentServer& server, const HttpRequest& req) {

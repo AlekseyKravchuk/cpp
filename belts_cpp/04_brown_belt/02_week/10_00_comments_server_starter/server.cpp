@@ -178,7 +178,6 @@ void Test(CommentServer& srv,
 
     // ====== Debugging ======
     // As std::stringstream does not provide a copy constructor, we have to build it from the std::string ss outputs.
-    //
     stringstream ss_copy(ss.str());
 
     string debug_line;

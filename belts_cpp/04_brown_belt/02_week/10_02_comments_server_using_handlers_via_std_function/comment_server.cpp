@@ -13,6 +13,7 @@
 
 using namespace std;
 
+// ======================= Used Structures =======================
 struct HttpRequest {
     string method;
     string path;
@@ -35,6 +36,13 @@ enum class HttpCode {
     NotFound = 404,
     Found = 302
 };
+
+struct ParsedResponse {
+    int code;
+    vector<HttpHeader> headers;
+    string content;
+};
+// ================================================================
 
 pair<string, string> SplitBy(const string& what, const string& by) {
     size_t pos = what.find(by);
@@ -86,65 +94,22 @@ ostream& operator<<(ostream& output, const HttpCode& code) {
 
 class HttpResponse {
   public:
-    explicit HttpResponse(HttpCode code) {
-        SetCode(code);
-    }
+    explicit HttpResponse(HttpCode code);
 
-    HttpResponse& AddHeader(string name, string value) {
-        headers.push_back({name, value});
-        return *this;
-    }
+    HttpResponse& AddHeader(string name, string value);
+    HttpResponse& SetContent(string content);
+    HttpResponse& SetCode(HttpCode a_code);
+    HttpCode GetCode() const;
+    const vector<HttpHeader>& GetHeaders() const;
+    const string& GetContent() const;
 
-    HttpResponse& SetContent(string a_content) {
-        content_length = a_content.size();
-        content = move(a_content);
-        return *this;
-    }
-
-    HttpResponse& SetCode(HttpCode a_code) {
-        code = a_code;
-        return *this;
-    }
-
-    friend ostream& operator<<(ostream& output, const HttpResponse& resp) {
-        static const string version = "HTTP/1.1";
-        static const string content_length_header = "Content-Length";
-
-        output << version << ' ' << static_cast<size_t>(resp.code) << ' ' << resp.code << '\n';
-
-        for (const auto& header : resp.headers) {
-            if (header.name != content_length_header) {
-                output << header.name << ": " << header.value << '\n';
-            }
-        }
-
-        if (resp.GetContent().size() > 0) {
-            output << content_length_header << ": " << resp.content_length << '\n';
-        }
-
-        output << '\n';
-        output << resp.content;
-
-        return output;
-    }
-
-    HttpCode GetCode() const {
-        return code;
-    }
-
-    const vector<HttpHeader>& GetHeaders() const {
-        return headers;
-    }
-
-    const string& GetContent() const {
-        return content;
-    }
+    friend ostream& operator<<(ostream& output, const HttpResponse& resp);
 
   private:
-    HttpCode code;
-    vector<HttpHeader> headers;
-    size_t content_length;
-    string content;
+    HttpCode _code;
+    vector<HttpHeader> _headers;
+    size_t _content_length;
+    string _content;
 };
 
 class CommentServer {
@@ -152,11 +117,7 @@ class CommentServer {
     inline static const string GET_CAPTCHA_BODY =
         "What's the answer for The Ultimate Question of Life, the Universe, and Everything?";
 
-    HttpResponse ServeRequest(const HttpRequest& req) {
-        const auto it = handlers.find({req.method, req.path});
-        const auto& handler = it == end(handlers) ? NotFound : it->second;
-        return handler(*this, req);
-    }
+    HttpResponse ServeRequest(const HttpRequest& req);
 
   private:
     vector<vector<string>> _comments;
@@ -168,27 +129,90 @@ class CommentServer {
     static HttpResponse PostAddUser(CommentServer& server, const HttpRequest& req);
     static HttpResponse PostAddComment(CommentServer& server, const HttpRequest& req);
     static HttpResponse PostCheckCaptcha(CommentServer& server, const HttpRequest& req);
-
     static HttpResponse GetUserComments(CommentServer& server, const HttpRequest& req);
     static HttpResponse GetCaptcha(CommentServer& server, const HttpRequest& req);
-
     static HttpResponse NotFound(CommentServer& server, const HttpRequest& req);
 
     const map<pair<string, string>, Handler> handlers = {
         {{"POST", "/add_user"}, CommentServer::PostAddUser},
         {{"POST", "/add_comment"}, CommentServer::PostAddComment},
         {{"POST", "/checkcaptcha"}, CommentServer::PostCheckCaptcha},
-
         {{"GET", "/user_comments"}, CommentServer::GetUserComments},
         {{"GET", "/captcha"}, CommentServer::GetCaptcha},
     };
 };
 
+// // ================================ HttpResponse implementation ================================
+HttpResponse::HttpResponse(HttpCode code) {
+    SetCode(code);
+}
+
+HttpResponse& HttpResponse::AddHeader(string name, string value) {
+    _headers.push_back({name, value});
+    return *this;
+}
+
+HttpResponse& HttpResponse::SetContent(string content) {
+    _content_length = content.size();
+    _content = move(content);
+    return *this;
+}
+
+HttpResponse& HttpResponse::SetCode(HttpCode a_code) {
+    _code = a_code;
+    return *this;
+}
+
+ostream& operator<<(ostream& os, const HttpResponse& resp) {
+    static const string version = "HTTP/1.1";
+    static const string content_length_header = "Content-Length";
+
+    os << version << ' ' << static_cast<size_t>(resp._code) << ' ' << resp._code << '\n';
+
+    for (const auto& header : resp._headers) {
+        if (header.name != content_length_header) {
+            os << header.name << ": " << header.value << '\n';
+        }
+    }
+
+    if (resp.GetContent().size() > 0) {
+        os << content_length_header << ": " << resp._content_length << '\n';
+    }
+
+    os << '\n';  // empty line
+    os << resp._content;
+
+    return os;
+}
+
+HttpCode HttpResponse::GetCode() const {
+    return _code;
+}
+
+const vector<HttpHeader>& HttpResponse::GetHeaders() const {
+    return _headers;
+}
+
+const string& HttpResponse::GetContent() const {
+    return _content;
+}
+// // =============================================================================================
+
+// // =============================== CommentServer implementation ================================
+
+HttpResponse CommentServer::ServeRequest(const HttpRequest& req) {
+    const auto it = handlers.find({req.method, req.path});
+    const auto& handler = it == end(handlers) ? NotFound : it->second;
+    return handler(*this, req);
+}
+
+// // =============================== CommentServer => Handlers ===================================
 HttpResponse CommentServer::PostAddUser(CommentServer& server, const HttpRequest& req) {
     server._comments.emplace_back();
-    auto content = to_string(server._comments.size() - 1);
 
-    return HttpResponse(HttpCode::Ok).SetContent(content);
+    auto tmp = HttpResponse(HttpCode::Ok).SetContent(to_string(server._comments.size() - 1));
+
+    return tmp;
 }
 
 HttpResponse CommentServer::PostAddComment(CommentServer& server, const HttpRequest& req) {
@@ -238,12 +262,7 @@ HttpResponse CommentServer::GetCaptcha(CommentServer& server, const HttpRequest&
 HttpResponse CommentServer::NotFound(CommentServer& server, const HttpRequest& req) {
     return HttpResponse(HttpCode::NotFound);
 }
-
-struct ParsedResponse {
-    int code;
-    vector<HttpHeader> headers;
-    string content;
-};
+// // ============================= END of CommentServer Handlers =================================
 
 istream& operator>>(istream& input, ParsedResponse& r) {
     string line;
@@ -272,8 +291,9 @@ istream& operator>>(istream& input, ParsedResponse& r) {
     return input;
 }
 
-void Test(CommentServer& srv, const HttpRequest& request, const ParsedResponse& expected) {
-    stringstream ss;
+void Test(CommentServer& srv,
+          const HttpRequest& request,
+          const ParsedResponse& expected) {
     HttpResponse resp = srv.ServeRequest(request);
 
     ASSERT_EQUAL(static_cast<int>(resp.GetCode()), expected.code);
@@ -285,19 +305,19 @@ template <typename CommentServer>
 void TestServer() {
     CommentServer cs;
 
-    const ParsedResponse ok{200};
+    const ParsedResponse ok{200, {}, {}};
     const ParsedResponse redirect_to_captcha{302, {{"Location", "/captcha"}}, {}};
-    const ParsedResponse not_found{404};
+    const ParsedResponse not_found{404, {}, {}};
 
-    Test(cs, {"POST", "/add_user"}, {200, {}, "0"});
-    Test(cs, {"POST", "/add_user"}, {200, {}, "1"});
-    Test(cs, {"POST", "/add_comment", "0 Hello"}, ok);
-    Test(cs, {"POST", "/add_comment", "1 Hi"}, ok);
-    Test(cs, {"POST", "/add_comment", "1 Buy my goods"}, ok);
-    Test(cs, {"POST", "/add_comment", "1 Enlarge"}, ok);
-    Test(cs, {"POST", "/add_comment", "1 Buy my goods"}, redirect_to_captcha);
-    Test(cs, {"POST", "/add_comment", "0 What are you selling?"}, ok);
-    Test(cs, {"POST", "/add_comment", "1 Buy my goods"}, redirect_to_captcha);
+    Test(cs, {"POST", "/add_user", {}, {}}, {200, {}, "0"});
+    Test(cs, {"POST", "/add_user", {}, {}}, {200, {}, "1"});
+    Test(cs, {"POST", "/add_comment", "0 Hello", {}}, ok);
+    Test(cs, {"POST", "/add_comment", "1 Hi", {}}, ok);
+    Test(cs, {"POST", "/add_comment", "1 Buy my goods", {}}, ok);
+    Test(cs, {"POST", "/add_comment", "1 Enlarge", {}}, ok);
+    Test(cs, {"POST", "/add_comment", "1 Buy my goods", {}}, redirect_to_captcha);
+    Test(cs, {"POST", "/add_comment", "0 What are you selling?", {}}, ok);
+    Test(cs, {"POST", "/add_comment", "1 Buy my goods", {}}, redirect_to_captcha);
     Test(
         cs,
         {"GET", "/user_comments", "", {{"user_id", "0"}}},
@@ -308,18 +328,18 @@ void TestServer() {
         {200, {}, "Hi\nBuy my goods\nEnlarge\n"});
     Test(
         cs,
-        {"GET", "/captcha"},
+        {"GET", "/captcha", {}, {}},
         {200, {}, {"What's the answer for The Ultimate Question of Life, the Universe, and Everything?"}});
-    Test(cs, {"POST", "/checkcaptcha", "1 24"}, redirect_to_captcha);
-    Test(cs, {"POST", "/checkcaptcha", "1 42"}, ok);
-    Test(cs, {"POST", "/add_comment", "1 Sorry! No spam any more"}, ok);
+    Test(cs, {"POST", "/checkcaptcha", "1 24", {}}, redirect_to_captcha); // <== fails here
+    Test(cs, {"POST", "/checkcaptcha", "1 42", {}}, ok);
+    Test(cs, {"POST", "/add_comment", "1 Sorry! No spam any more", {}}, ok);
     Test(
         cs,
         {"GET", "/user_comments", "", {{"user_id", "1"}}},
         {200, {}, "Hi\nBuy my goods\nEnlarge\nSorry! No spam any more\n"});
 
-    Test(cs, {"GET", "/user_commntes"}, not_found);
-    Test(cs, {"POST", "/add_uesr"}, not_found);
+    Test(cs, {"GET", "/user_commntes", {}, {}}, not_found);
+    Test(cs, {"POST", "/add_uesr", {}, {}}, not_found);
 }
 
 int main() {

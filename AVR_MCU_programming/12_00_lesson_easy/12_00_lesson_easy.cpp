@@ -28,15 +28,18 @@ int digits_7seg_CC[] = {  // PORTX values to highlight digits in 7-segment indic
 	0b00000111,  // highlight "7"  Common Cathode (CC)
 	0b01111111,  // highlight "8"  Common Cathode (CC)
 	0b01101111,  // highlight "9"  Common Cathode (CC)
-	0b10000000   // highlight "dp/colon" Common Cathode (CC)
+	0b10000000,  // highlight "dp/colon" Common Cathode (CC)
 };
 
 // ================== Global variables ==================
-int cc[4] = {0, 1, 2, 3};  // set common cathodes pins for selected port (PB0, PB1, PB2, PB3)
-const size_t digits_len = 4;
-int digits[] = {0, 0, 0, 0};  //size_t digits_len = sizeof(digits) / sizeof(int);
-int seconds_cntr = 0;
+int cc_pins[4] = {0, 1, 2, 3};  // set common cathodes pins for selected port (PB0, PB1, PB2, PB3)
 int cc_idx = 0;  // index of currently active common cathode (GROUND will be applied to that pin): [0,1,2,3]
+
+int digits_of_number[] = {0, 0, 0, 0};
+const size_t d_length = sizeof(digits_of_number) / sizeof(int); // len == 4
+	
+int seconds_cntr = 0;
+
 // =======================================================
 
 //Interrupt Service Routine will be called each 2 milliseconds for each digit, so period T = 2ms*4digits = 8ms
@@ -61,22 +64,25 @@ ISR(TIMER1_COMPA_vect) {
 void GetDigitsFromNumber(int number) {
 	//if (!number) { return; }
 
-	int i = digits_len - 1;  // initial value of i == 3
+	int i = d_length - 1;  // initial value of i == 3
 	while (number) {
-		digits[i--] = number % 10;
+		digits_of_number[i--] = number % 10;
 		number /= 10;
 	}
 }
 
-void TurnOnDigit(int i) {
+void TurnOnDigit(int cc_pin_index) {  // cc_pos: [0, 1, 2, 3]
+	// Say our number is 1579, so digits_of_number = [1, 5, 7, 9]
+	// At a given time we need to TURN ON 
 	// we need to ensure that all common cathodes are DISABLED (i.e. supplied with HIGH potential)
-	CC_PORTx |= (1 << cc[0]) | (1 << cc[1])   | (1 << cc[2])  | (1 << cc[3]);
+	CC_PORTx |= (1 << cc_pins[0]) | (1 << cc_pins[1])   | (1 << cc_pins[2])  | (1 << cc_pins[3]);
 	
-	// select digit which should be turned ON (configure needed segments)
-	SEG7_PORTx = digits_7seg_CC[digits[i]];
+	// select  which should be turned ON (configure needed segments)
+	int digit = digits_of_number[cc_pin_index];
+	SEG7_PORTx = digits_7seg_CC[digit];
 	
 	// apply GROUND to desired common cathode pin (set '0' in corresponding bit in PORTx)
-	CC_PORTx &= ~(1<<cc[i]);
+	CC_PORTx &= ~(1<<cc_pins[cc_pin_index]);
 }
 
 void ConfigureSegmentsPins() {
@@ -86,14 +92,16 @@ void ConfigureSegmentsPins() {
 
 void ConfigureCommonCathodesPins() {
 	// configure all 4 pins corresponding to common cathodes (arr_cc[i]) as OUTPUT
-	//	CC_DDRX  |= (1<<0) | (1<<1) | (1<<2) | (1<<3);
-	CC_DDRx |= (1 << cc[0]) | (1 << cc[1])   | (1 << cc[2])  | (1 << cc[3]);
+	CC_DDRx |= (1 << cc_pins[0]) | (1 << cc_pins[1])   | (1 << cc_pins[2])  | (1 << cc_pins[3]);
 
-	// configure all 4 pins corresponding to common cathodes (cc[i]) as HIGH potential
-	// as we have common cathode (CC) we need to configure pins with HIGH potential for digits to be turned OFF by default
+	// configure all 4 common cathodes pins(cc[i]) as HIGH potential ==> so digits will be turned OFF by default
 	// i.e. to turn ON desired digit we should apply GROUND ("-") to corresponding common cathode pin
-	//	CC_PORTX |= |= (1<<0) | (1<<1) | (1<<2) | (1<<3);
-	CC_PORTx |= (1 << cc[0]) | (1 << cc[1])   | (1 << cc[2])  | (1 << cc[3]);
+	CC_PORTx |= (1 << cc_pins[0]) | (1 << cc_pins[1])   | (1 << cc_pins[2])  | (1 << cc_pins[3]);
+}
+
+void ConfigureStandaloneLED() {
+	DDRC |= 1<<0;      // set PC0 as OUTPUT
+	PORTC &= ~(1<<0);  // set PC0 as LOW level
 }
 
 void ConfigureTimerCounter() {
@@ -107,7 +115,6 @@ void ConfigureTimerCounter() {
 	TIMSK |= 1<<TOIE0;  // Bit 0 – TOIE0: Timer/Counter0 Overflow Interrupt Enable
 	//// ================ END of Timer/Counter0 configuration ================
 	
-
 	// ====================== Configure Timer/Counter1 =====================
 	// set Prescaler (clk/64) for Timer/Counter1; 1'000'000 / 64 = 15'625 Hz ()
 	TCCR1B |= 1<<CS11 | 1<<CS10;
@@ -123,25 +130,22 @@ void ConfigureTimerCounter() {
 	sei();  // Status Register Bit 7 – I: Global Interrupt Enable
 }
 
-void ConfigureStandaloneLED() {
-	DDRC |= 1<<0;      // set PC0 as OUTPUT
-	PORTC &= ~(1<<0);  // set PC0 as LOW level
-}
+
 
 int main() {
 	ConfigureSegmentsPins();
 	ConfigureCommonCathodesPins();
-	ConfigureTimerCounter();
+	//ConfigureTimerCounter();
 	ConfigureStandaloneLED();
 
+	int number = 1297;
 	while (true) {
 		// all useful stuff is implemented in Interrupt Service Routines (ISR), or Interrupt Handlers
+		GetDigitsFromNumber(number);
+		for (size_t i = 0; i < d_length; ++i) {
+			TurnOnDigit(i);
+		}
 	}
 
 	return 0;
 }
-
-
-
-
-

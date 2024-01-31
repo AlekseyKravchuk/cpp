@@ -63,17 +63,18 @@ ISR(TIMER1_COMPA_vect) {
 
 // returns the position of the first non-zero digit (or pos = d_length-1 if number == 0) in a "d_length"-digit number
 int GetDigitsFromNumber(int number) {
-	if (!number) {
+	if (number == 0) {
+		digits_of_number[d_length - 1] = 0;
 		return d_length - 1;
 	}
 
-	int i = d_length - 1; // initial value of i == 3 in case of 4-digit 7-segment indicator
+	int i = d_length - 1; // initial value of i == 3
 	int pos = i;
 
 	while (number) {
 		digits_of_number[i--] = number % 10;
 		number /= 10;
-		
+
 		if (number) {
 			--pos;
 		}
@@ -125,7 +126,7 @@ void ConfigureTimerCounter() {
 	//// ================ END of Timer/Counter TCNT0 configuration ================
 	
 	// ======================= Configure Timer/Counter TCNT1 ======================
-	// set Prescaler (clk/64) for Timer/Counter1; 1'000'000 / 64 = 15'625 Hz ()
+	// set Prescaler (clk/64) for Timer/Counter1; 1'000'000 / 64 = 15'625 Hz (increment occurs 15625 times in TCNT1 per second)
 	TCCR1B |= 1<<CS11 | 1<<CS10;
 	TCCR1B &= ~(1<<CS12);
 	
@@ -135,8 +136,6 @@ void ConfigureTimerCounter() {
 	TCCR1B |= 1<<WGM12;  // reset TCNT1 immediately when match occured; mode #4: Clear Timer on Compare Match (CTC)
 	
 	// ================ END of Timer/Counter TCNT1 configuration ================
-	
-	sei();  // Status Register Bit 7 – I: Global Interrupt Enable
 }
 
 
@@ -148,6 +147,8 @@ int main() {
 	ConfigureStandaloneLED();
 
 	start_pos = GetDigitsFromNumber(seconds_counter);
+
+	sei();  // enable interrupts globally; Status Register(SREG) Bit 7 – I: Global Interrupt Enable
 	
 	while (true) {
 		// all useful stuff is implemented in Interrupt Service Routines (ISR), or Interrupt Handlers

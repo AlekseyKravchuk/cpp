@@ -33,7 +33,10 @@ int digits_7seg_CC[] = {  // PORTX values to highlight digits in 7-segment indic
 };
 
 // ================== Global variables ==================
-static int MAX_COUNTS = 80;     // MAX_COUNTS_increments * T_compare_interrupt = 80 * 0.1s = 8 seconds
+//static int MAX_COUNTS = 80;     // MAX_COUNTS_increments * T_compare_interrupt = 80 * 0.1s = 8 seconds
+static int MIN_VAL = 0;
+static int MAX_VAL = 9999;
+
 int cc_pins[4] = {0, 1, 2, 3};  // common cathodes pins for selected port (PB0, PB1, PB2, PB3)
 int cc_idx = 0;  // index of currently active common cathode (GROUND will be applied to that pin: [0,1,2,3])
 
@@ -52,29 +55,32 @@ ISR(TIMER0_OVF_vect) {
 	}
 
 	TurnOnDigit(cc_idx);
-	
+
 	if (cc_idx == (d_length - 2)) {  // when cc_idx == 2 in case of 4-digit 7-segment indicator
 		TurnOnDot();
 	}
-	
+
 	cc_idx = (cc_idx + 1) % 4;
 }
 
 // interrupt handler (when TCNT1 becomes equal to OCR1A) will be called each 0.1 second
 ISR(TIMER1_COMPA_vect) {
-	if (++seconds_counter > MAX_COUNTS) {
+	// use countdown
+	if (--seconds_counter <= MIN_VAL) {
 		seconds_counter = 0;
-		PORTC |= 1<<0;  // turn ON LED on PC0
-		
+
+		//when TC1 counts down to MIN_VAL, LED on PC0 will be turned ON - it simulates electrical circuit payload
+		PORTC |= 1<<0;
+
 		// prevent MCU resource consumption - stop stop all unnecessary timer/counters
 		TCCR1B &= ~(1<<CS12 | 1<<CS11 | 1<<CS10); // stop Timer/Counter1 (works in Clear Timer on Compare (CTC) mode)
-		
+
 		// we can't stop Timer/Counter0 because it is responsible for dynamic displaying digits
 		//TCCR0  &= ~(1<<CS02 | 1<<CS01 | 1<<CS00); // stop Timer/Counter0, so we prevent MCU resource consumption
-	} else {
+		} else {
 		start_pos = GetDigitsFromNumberWithDotForTenthsOfSecond(seconds_counter);
 	}
-	
+
 }
 
 // returns the position of the first non-zero digit before dot in a "d_length"-digit number
@@ -86,16 +92,16 @@ int GetDigitsFromNumberWithDotForTenthsOfSecond(int number) {
 	}
 
 	int i = d_length - 1; // initial value of i == 3
-	
+
 	while (number) {
 		digits_of_number[i] = number % 10;
 		number /= 10;
-		
+
 		if (number) {
 			--i;
 		}
 	}
-	
+
 	return (i == (d_length - 1)) ? i-1 : i;
 }
 
@@ -113,7 +119,7 @@ void TurnOnDigit(int cc_pin_index) {
 
 void TurnOnDot() {
 	SEG7_PORTx |= 1<<7;
-	
+
 	// apply GROUND to 2-nd common cathode pin
 	CC_PORTx &= ~(1<<cc_pins[2]);
 }
@@ -149,8 +155,8 @@ void ConfigureTimerCounter() {
 	//// ================ END of Timer/Counter TCNT0 configuration ================
 
 	// ======================= Configure Timer/Counter #1 ======================
-	// set Prescaler = clk/8 for Timer/Counter1; 1'000'000/8 = 125'000 Hz (125000 clocks(ticks) per second)
-	TCCR1B |= 1<<CS11;
+	// set Prescaler = clk/8 for Timer/Counter1; 1'000'000/8 = 125'000 Hz (125000 clocks(ticks) per second) and enable TC1
+	//TCCR1B |= 1<<CS11;
 
 	TCNT1 = 0;
 
@@ -166,19 +172,42 @@ void ConfigureTimerCounter() {
 	// ================ END of Timer/Counter TCNT1 configuration ================
 }
 
+void ConfigureButtons() {
+	DDRC &= ~(1<<1 | 1<<2 | 1<<3 | 1<<4);  // use PC1, PC2, PC3 and PC4 for buttons
+	PORTC |= 1<<1 | 1<<2 | 1<<3 | 1<<4;    // supply all inputs with HIGH potential
+}
+
 int main() {
 	ConfigureSegmentsPins();
 	ConfigureCommonCathodesPins();
 	ConfigureTimerCounter();
 	ConfigureStandaloneLED();
+	ConfigureButtons();
 
 	start_pos = GetDigitsFromNumberWithDotForTenthsOfSecond(seconds_counter);
-	
 	sei();  // enable interrupts globally: Status Register Bit 7 – I: Global Interrupt Enable
 
 	while (true) {
-		// all useful stuff is implemented in Interrupt Service Routines (ISR), or Interrupt Handlers
+		if (!(PINC & 1<<1)) {                // increase by 1 second (10 * 0.1s = 1 second)
+			while (!(PINC & (1<<1))) {}      // no matter how long we hold the button pressed, only one state switch should occur
+										     // so we simply wait for the button to be released in empty while loop (to eliminate contact bounce)
+				seconds_counter = (seconds_counter < 9999) ? seconds_counter + 10 : MAX_VAL;
+			} else if (!(PINC & 1<<2)) {     // decrease by 1 second (10 * 0.1s = 1 second)
+				while (!(PINC & (1<<2))) {}  // debouncing
+				seconds_counter = (seconds_counter > MIN_VAL) ? seconds_counter - 10 : MIN_VAL;
+			} else if (!(PINC & 1<<3)) {     // start_countdown
+				while (!(PINC & (1<<3))) {}  // debouncing
+
+			// set Prescaler = clk/8 for TC1; 1'000'000/8 = 125'000 Hz (125000 clocks per second) and enable TC1
+				TCCR1B |= 1<<CS11;
+			} else if (!(PINC & 1<<4)) {     // PAUSE timer/counter
+				while (!(PINC & (1<<4))) {}  // debouncing
+				TCCR1B &= ~(1<<CS11);		 // disable TC1
+		}
+
+		start_pos = GetDigitsFromNumberWithDotForTenthsOfSecond(seconds_counter);
 	}
 
 	return 0;
 }
+

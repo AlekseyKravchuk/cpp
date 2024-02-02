@@ -33,7 +33,7 @@ int digits_7seg_CC[] = {  // PORTX values to highlight digits in 7-segment indic
 };
 
 // ================== Global variables ==================
-static int MAX_COUNTS = 9999;
+static int MAX_COUNTS = 80;     // MAX_COUNTS_increments * T_compare_interrupt = 80 * 0.1s = 8 seconds
 int cc_pins[4] = {0, 1, 2, 3};  // common cathodes pins for selected port (PB0, PB1, PB2, PB3)
 int cc_idx = 0;  // index of currently active common cathode (GROUND will be applied to that pin: [0,1,2,3])
 
@@ -42,29 +42,39 @@ const size_t d_length = sizeof(digits_of_number) / sizeof(int); // length == 4
 
 int seconds_counter = 0;
 int start_pos = 0; // position of first nonzero digit in number (i.e. skipping leading zeros in number) BEFORE dot
-
 // =======================================================
 
-//interrupt handler will be called each 2 milliseconds for each digit, so period T = 2ms*4digits = 8ms
+//interrupt handler (on TCNT0 overflow) will be called each 2 milliseconds for each digit, so period T = 2ms*4digits = 8ms
 ISR(TIMER0_OVF_vect) {
+	// we don't want to display leading zeros in the number, so instead of "0089" the number "89" will be displayed
 	if (cc_idx < start_pos) {
 		cc_idx = start_pos;
 	}
 
 	TurnOnDigit(cc_idx);
-	if (cc_idx == 2) {
-		//SEG7_PORTx = 0x00;
+	
+	if (cc_idx == (d_length - 2)) {  // when cc_idx == 2 in case of 4-digit 7-segment indicator
 		TurnOnDot();
 	}
 	
 	cc_idx = (cc_idx + 1) % 4;
 }
 
-// interrupt handler will be called each 1 millisecond (10**-3 second) or 10**(-2) or 10**(-1) seconds
+// interrupt handler (when TCNT1 becomes equal to OCR1A) will be called each 0.1 second
 ISR(TIMER1_COMPA_vect) {
-	seconds_counter = (seconds_counter + 1) % (MAX_COUNTS + 1);
-	start_pos = GetDigitsFromNumberWithDotForTenthsOfSecond(seconds_counter);
-	PORTC ^= 1<<0;  // toggle LED connected to PC0
+	if (++seconds_counter > MAX_COUNTS) {
+		seconds_counter = 0;
+		PORTC |= 1<<0;  // turn ON LED on PC0
+		
+		// prevent MCU resource consumption - stop stop all unnecessary timer/counters
+		TCCR1B &= ~(1<<CS12 | 1<<CS11 | 1<<CS10); // stop Timer/Counter1 (works in Clear Timer on Compare (CTC) mode)
+		
+		// we can't stop Timer/Counter0 because it is responsible for dynamic displaying digits
+		//TCCR0  &= ~(1<<CS02 | 1<<CS01 | 1<<CS00); // stop Timer/Counter0, so we prevent MCU resource consumption
+	} else {
+		start_pos = GetDigitsFromNumberWithDotForTenthsOfSecond(seconds_counter);
+	}
+	
 }
 
 // returns the position of the first non-zero digit before dot in a "d_length"-digit number
@@ -128,7 +138,7 @@ void ConfigureStandaloneLED() {
 }
 
 void ConfigureTimerCounter() {
-	//// ====================== Configure Timer/Counter TCNT0 =====================
+	//// ====================== Configure Timer/Counter #0 =====================
 	// Timer/Counter0 Control Register: enable running TCNT0 and set prescaler = clk/8
 	// T_overflow = prescaler * max_TCNT0_val / freq_MCU = 8 * 255 / 10**6 = 0.00204 seconds ~ 2 miliseconds
 	TCCR0 |= 1<<CS01;
@@ -138,20 +148,21 @@ void ConfigureTimerCounter() {
 	TIMSK |= 1<<TOIE0;  // Bit 0 – TOIE0: Timer/Counter0 Overflow Interrupt Enable
 	//// ================ END of Timer/Counter TCNT0 configuration ================
 
-	// ======================= Configure Timer/Counter TCNT1 ======================
-	// set Prescaler (clk/8) for Timer/Counter1; 1'000'000 / 8 = 125'000 Hz
+	// ======================= Configure Timer/Counter #1 ======================
+	// set Prescaler = clk/8 for Timer/Counter1; 1'000'000 / 8 = 125'000 Hz (125000 clocks(ticks) per second)
 	TCCR1B |= 1<<CS11;
 
 	TCNT1 = 0;
 
-    // Output Compare Register, when TCNT1 becomes equal to OCR1AL, interrupt will be generated
-	// 125'000 ticks correspond to 1 second => 125'000/1000 corresponds to 1 millisecond
-	// OCR1A = 125000 / 1000; // for milliseconds
-	// OCR1A = 125000 / 100;  // for 10**(-2)
-	OCR1A = 125000 / 10;      // for 10**(-1) - tenths of a second
-	TIMSK |= 1<<OCIE1A;  // Bit 4 – OCIE1A: Timer/Counter1, Output Compare A Match Interrupt Enable
-	TCCR1B |= 1<<WGM12;  // reset TCNT1 immediately when match occured; mode #4: Clear Timer on Compare Match (CTC)
+	// Output Compare Register, when TCNT1 becomes equal to OCR1A, interrupt will be generated
+	// 125'000 clocks(ticks) correspond to 1 second
+	// if OCR1A==125'000/10 = 12500, then interrupt on compare match will be triggered every 0.1 second
+	// if OCR1A==125'000/100 = 1250, then interrupt on compare match will be triggered every 0.01 second
+	// if OCR1A==125'000/10 = 125,   then interrupt on compare match will be triggered every 0.001 second (1 millisecond)
 
+	OCR1A = 125000 / 10;  // interrupt on compare match (TIMER1_COMPA_vect) will be triggered every 0.1 second
+	TIMSK |= 1<<OCIE1A;   // Bit 4 – OCIE1A: Timer/Counter1, Output Compare A Match Interrupt Enable
+	TCCR1B |= 1<<WGM12;   // reset TCNT1 immediately when match occured; mode #4: Clear Timer on Compare Match (CTC)
 	// ================ END of Timer/Counter TCNT1 configuration ================
 
 	sei();  // Status Register Bit 7 – I: Global Interrupt Enable
@@ -171,6 +182,3 @@ int main() {
 
 	return 0;
 }
-
-
-

@@ -42,6 +42,7 @@ int GetDigitsFromNumber(int number) {
 void Test_GetIndexOfFirstNonZeroDigit_4digits() {
     {
         ResetDigits();
+        
         int number = 7965;
         int start_index_expected = 0;
         int first_digit_expected = 7;
@@ -55,6 +56,7 @@ void Test_GetIndexOfFirstNonZeroDigit_4digits() {
 
 void Test_GetIndexOfFirstNonZeroDigit_3digits() {
     ResetDigits();
+
     int number = 965;
     int start_index_expected = 1;
     int first_digit_expected = 9;
@@ -67,6 +69,7 @@ void Test_GetIndexOfFirstNonZeroDigit_3digits() {
 
 void Test_GetIndexOfFirstNonZeroDigit_2digits() {
     ResetDigits();
+
     int number = 65;
     int start_index_expected = 2;
     int first_digit_expected = 6;
@@ -79,6 +82,7 @@ void Test_GetIndexOfFirstNonZeroDigit_2digits() {
 
 void Test_GetIndexOfFirstNonZeroDigit_2digits_2() {
     ResetDigits();
+
     int number = 28;
     int start_index_expected = 2;
     int first_digit_expected = 2;
@@ -91,6 +95,7 @@ void Test_GetIndexOfFirstNonZeroDigit_2digits_2() {
 
 void Test_GetIndexOfFirstNonZeroDigit_1digit() {
     ResetDigits();
+
     int number = 5;
     int start_index_expected = 3;
     int first_digit_expected = 5;
@@ -103,6 +108,7 @@ void Test_GetIndexOfFirstNonZeroDigit_1digit() {
 
 void Test_GetIndexOfFirstNonZeroDigit_All_Zeros() {
     ResetDigits();
+
     int number = 0;
     int start_index_expected = 3;
     int first_digit_expected = 0;
@@ -127,7 +133,7 @@ void Test_DigitsFromNumber_4digits() {
 
 void Test_DigitsFromNumber_3digits() {
     ResetDigits();
-
+    
     int number = 469;
     GetDigitsFromNumber(number);
 
@@ -139,7 +145,6 @@ void Test_DigitsFromNumber_3digits() {
 
 void Test_DigitsFromNumber_2digits() {
     ResetDigits();
-
     int number = 69;
     GetDigitsFromNumber(number);
 
@@ -152,7 +157,6 @@ void Test_DigitsFromNumber_2digits() {
 void Test_DigitsFromNumber_1digits() {
     {
         ResetDigits();
-
         int number = 9;
         GetDigitsFromNumber(number);
 
@@ -164,7 +168,6 @@ void Test_DigitsFromNumber_1digits() {
 
     {
         ResetDigits();
-
         int number = 1;
         GetDigitsFromNumber(number);
 

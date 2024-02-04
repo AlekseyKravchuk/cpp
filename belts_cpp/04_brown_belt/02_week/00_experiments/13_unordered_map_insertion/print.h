@@ -76,12 +76,6 @@ std::ostream& operator<<(std::ostream& os, const std::set<KeyType>& s) {
 }
 // ==================================================================================================
 
-template <typename KeyType>
-std::ostream& operator<<(std::ostream& os, const std::multiset<KeyType>& m_set) {
-    return os << "{" << Join(m_set, ", ") << "}";
-}
-// ==================================================================================================
-
 template <typename KeyType, typename HasherType>
 std::ostream& operator<<(std::ostream& os, const std::unordered_set<KeyType, HasherType>& u_set) {
     return os << "{" << Join(u_set, ", ") << "}";

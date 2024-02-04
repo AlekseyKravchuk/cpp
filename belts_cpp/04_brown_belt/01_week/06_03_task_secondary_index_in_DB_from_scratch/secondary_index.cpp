@@ -16,7 +16,7 @@ struct Record {
 };
 
 class Database {
-  public:
+   public:
     bool Put(const Record& record);
     const Record* GetById(const string& id) const;
     bool Erase(const string& id);
@@ -30,27 +30,27 @@ class Database {
     template <typename Callback>
     void AllByUser(const string& user, Callback callback) const;
 
-  private:
-  using Timestamp = int;
-  using Karma = int;
-  using User = string;
-  using UserId = string;
+   private:
+    using UserId = string;
+    using User = string;
+    using Timestamp = int;
+    using Karma = int;
 
     struct ExtendedRecord {
         Record _record;
-        multimap<Timestamp, const Record*>::iterator _it_by_timestamp;  // iterator to secondary index "_ranged_by_timestamp"
-        multimap<Karma,     const Record*>::iterator _it_by_karma;      // iterator to secondary index "_ranged_by_karma"
-        multimap<User,      const Record*>::iterator _it_by_user;       // iterator to secondary index "_ranged_by_user"
+        multimap<User,      const Record*>::iterator _it_by_user;
+        multimap<Timestamp, const Record*>::iterator _it_by_timestamp;
+        multimap<Karma,     const Record*>::iterator _it_by_karma;
     };
 
     unordered_map<UserId, ExtendedRecord> _storage;
 
-    // ============ Secondary Indices (multimaps) ============
-    multimap<Timestamp, const Record*>  _ranged_by_timestamp;
-    multimap<Karma,     const Record*>  _ranged_by_karma;
-    multimap<User,      const Record*>  _ranged_by_user;
+    // ===================== Secondary indices =====================
+    multimap<User,      const Record*> _ranged_by_user;
+    multimap<Timestamp, const Record*> _ranged_by_timestamp;
+    multimap<Karma,     const Record*> _ranged_by_karma;
 
-    // ============== Template function wrapper ==============
+    // ===================== Auxiliary wrapper  =====================
     template <typename KeyType, typename Callback>
     void RangeBy(const multimap<KeyType, const Record*>& ranged_by_key,
                  const KeyType& low,
@@ -64,10 +64,9 @@ bool Database::Put(const Record& record) {
         ExtendedRecord& ext_record = it->second;
         Record* p_record = &(ext_record._record);
 
-        // "multimap<K,V>::emplace" returns an iterator to the inserted element (pair).
+        ext_record._it_by_user = _ranged_by_user.emplace(p_record->user, p_record);
         ext_record._it_by_timestamp = _ranged_by_timestamp.emplace(p_record->timestamp, p_record);
         ext_record._it_by_karma = _ranged_by_karma.emplace(p_record->karma, p_record);
-        ext_record._it_by_user = _ranged_by_user.emplace(p_record->user, p_record);
     }
 
     return inserted;
@@ -75,7 +74,6 @@ bool Database::Put(const Record& record) {
 
 const Record* Database::GetById(const string& id) const {
     auto it = _storage.find(id);
-
     return (it == _storage.end())
                ? nullptr
                : &(it->second._record);
@@ -83,15 +81,16 @@ const Record* Database::GetById(const string& id) const {
 
 bool Database::Erase(const string& id) {
     auto it = _storage.find(id);
-
     if (it == _storage.end()) {
         return false;
     }
 
-    auto& [_, ext_record] = *it;
+    ExtendedRecord& ext_record = it->second;
+
+    // сначала нужно почистить 3 вторичных индекса, и только потом - удалить элемент в основном хранилище "_storage"
+    _ranged_by_user.erase(ext_record._it_by_user);
     _ranged_by_timestamp.erase(ext_record._it_by_timestamp);
     _ranged_by_karma.erase(ext_record._it_by_karma);
-    _ranged_by_user.erase(ext_record._it_by_user);
     _storage.erase(it);
 
     return true;
@@ -109,8 +108,7 @@ void Database::RangeBy(const multimap<KeyType, const Record*>& ranged_by_key,
         return;
     }
 
-    for (auto it = lb; it != ub && callback(*(it->second)); ++it) {
-    }
+    for (auto it = lb; it != ub && callback(*(it->second)); ++it) { }
 }
 
 template <typename Callback>
@@ -128,7 +126,8 @@ void Database::AllByUser(const string& user, Callback callback) const {
     RangeBy(_ranged_by_user, user, user, callback);
 }
 
-// ====================================== Tests ======================================
+// ==================================================================
+
 void TestRangeBoundaries() {
     const int good_karma = 1000;
     const int bad_karma = -10;
@@ -138,11 +137,10 @@ void TestRangeBoundaries() {
     db.Put({"id2", "O>>-<", "general2", 1536107260, bad_karma});
 
     int count = 0;
-    db.RangeByKarma(bad_karma, good_karma,
-                    [&count](const Record&) {
-                        ++count;
-                        return true;
-                    });
+    db.RangeByKarma(bad_karma, good_karma, [&count](const Record&) {
+        ++count;
+        return true;
+    });
 
     ASSERT_EQUAL(2, count);
 }

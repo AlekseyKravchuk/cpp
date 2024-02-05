@@ -5,13 +5,13 @@
 #include <string>
 #include <vector>
 
-#define _GLIBCXX_DEBUG 1 // включить режим отладки
+#define _GLIBCXX_DEBUG 1  // включить режим отладки
 
 using namespace std;
 
 template <typename Iterator>
 class IteratorRange {
-  public:
+   public:
     IteratorRange(Iterator begin, Iterator end)
         : _first(begin), _last(end) {
     }
@@ -24,7 +24,7 @@ class IteratorRange {
         return _last;
     }
 
-  private:
+   private:
     Iterator _first;
     Iterator _last;
 };
@@ -59,7 +59,7 @@ vector<Person> ReadPeople(istream& input) {
 
 #ifdef _GLIBCXX_DEBUG
 class RedirectStandardInput {
-  public:
+   public:
     RedirectStandardInput(std::ifstream& input) {
         // сохраняем указатель на "streambuf"
         _cinbuf_bkp = std::cin.rdbuf();
@@ -69,24 +69,30 @@ class RedirectStandardInput {
     }
 
     ~RedirectStandardInput() {
-        std::cin.rdbuf(_cinbuf_bkp); // восстанавливаем standard input
+        std::cin.rdbuf(_cinbuf_bkp);  // восстанавливаем standard input
     }
 
-  private:
+   private:
     std::streambuf* _cinbuf_bkp{nullptr};
 };
-#endif //_GLIBCXX_DEBUG
+#endif  //_GLIBCXX_DEBUG
 
 int main() {
+    // Основной проблемой этого исходного решения является то, что в нём случайно изменяются исходные данные.
+    // Требуется переписать представленный ниже код таким образом, чтобы гарантировать, что изменения исходных
+    // данных не произойдёт, т.е. требуется организовать код т.о., чтобы в месте обработки запросов были видны
+    // только КОНСТАНТНЫЕ данные. Плюс нужно увеличить скорость работы программы.
+
 #ifdef _GLIBCXX_DEBUG
     // =========== Standard input redirection, debug mode ===========
-    std::string path = "test_1.txt"s;
+    // std::string path = "test_1.txt"s;
+    std::string path = "test_2.txt"s;
     std::ifstream input(path);
     if (!input) {
         throw std::runtime_error("File \""s + path + "\" is not opened"s);
     }
     RedirectStandardInput redirection(input);
-#endif //_GLIBCXX_DEBUG
+#endif  //_GLIBCXX_DEBUG
     // =================== End of input redirection ==================
 
     vector<Person> people = ReadPeople(cin);
@@ -103,7 +109,8 @@ int main() {
             cin >> adult_age;
 
             auto adult_begin = lower_bound(
-                begin(people), end(people), adult_age, [](const Person& lhs, int age) {
+                begin(people), end(people), adult_age,
+                [](const Person& lhs, int age) {
                     return lhs.age < age;
                 });
 
@@ -116,12 +123,14 @@ int main() {
             auto head = Head(people, count);
 
             partial_sort(
-                head.begin(), head.end(), end(people), [](const Person& lhs, const Person& rhs) {
+                head.begin(), head.end(), end(people),
+                [](const Person& lhs, const Person& rhs) {
                     return lhs.income > rhs.income;
                 });
 
             int total_income = accumulate(
-                head.begin(), head.end(), 0, [](int cur, Person& p) {
+                head.begin(), head.end(), 0,
+                [](int cur, /* const */ Person& p) {  // <== Здесь происходит изменение исходных данных
                     return p.income += cur;
                 });
             cout << "Top-" << count << " people have total income " << total_income << '\n';
@@ -131,9 +140,10 @@ int main() {
 
             IteratorRange range{
                 begin(people),
-                partition(begin(people), end(people), [gender](Person& p) {
-                    return p.is_male = (gender == 'M');
-                })};
+                partition(begin(people), end(people),
+                          [gender](Person& p) {
+                              return p.is_male = (gender == 'M');
+                          })};
             if (range.begin() == range.end()) {
                 cout << "No people of gender " << gender << '\n';
             } else {

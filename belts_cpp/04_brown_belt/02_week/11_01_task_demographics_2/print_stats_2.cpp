@@ -2,20 +2,20 @@
 #include <fstream>
 #include <iostream>
 #include <map>
-#include <numeric>
+#include <numeric>  // std::partial_sum
+#include <optional>
 #include <set>
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include <optional>
 
-#define _GLIBCXX_DEBUG 1 // включить режим отладки
+#define _GLIBCXX_DEBUG 1  // включить режим отладки
 
 using namespace std;
 
 template <typename Iterator>
 class IteratorRange {
-  public:
+   public:
     IteratorRange(Iterator begin, Iterator end)
         : _first(begin), _last(end) {
     }
@@ -28,7 +28,7 @@ class IteratorRange {
         return _last;
     }
 
-  private:
+   private:
     Iterator _first;
     Iterator _last;
 };
@@ -48,22 +48,25 @@ struct Person {
 };
 
 class PersonDB {
-  public:
-    PersonDB(istream& input)
-        : _persons(PersonsSortedByAge(input)) {}
-
+   public:
+    PersonDB(istream& input);
     size_t NumGreaterOrEqualMaturityAge(size_t maturity_age);
 
-  private:
+   private:
     const vector<Person> _persons;  // sorted by age
     vector<int> _cumulative_incomes;
     optional<string> _popular_male_name;
     optional<string> _popular_female_name;
 
-    vector<Person> PersonsSortedByAge(istream& input);
+    vector<Person> GetPersonsSortedByAge(istream& input);
+    vector<int> GetCumulativeIncomes();
 };
 
-vector<Person> PersonDB::PersonsSortedByAge(istream& input) {
+PersonDB::PersonDB(istream& input)
+    : _persons(GetPersonsSortedByAge(input)),
+      _cumulative_incomes(GetCumulativeIncomes()) {}
+
+vector<Person> PersonDB::GetPersonsSortedByAge(istream& input) {
     size_t count;
     input >> count;
 
@@ -78,10 +81,28 @@ vector<Person> PersonDB::PersonsSortedByAge(istream& input) {
     sort(result.begin(),
          result.end(),
          [](const Person& lhs, const Person& rhs) {
-             return lhs.age < rhs.age; // sort in ascending order
+             return lhs.age < rhs.age;  // sort in ascending order
          });
 
     return result;
+}
+
+auto cmp = [](const Person* lhs_ptr, const Person* rhs_ptr) {
+    return lhs_ptr->income > rhs_ptr->income;
+};
+
+vector<int> PersonDB::GetCumulativeIncomes() {
+    vector<int> cumulative_incomes(_persons.size());
+
+    transform(_persons.begin(), _persons.end(),
+              cumulative_incomes.begin(),
+              [](const Person& person) {
+                  return person.income;
+              });
+    sort(cumulative_incomes.begin(), cumulative_incomes.end(), greater<int>());
+    partial_sum(cumulative_incomes.begin(), cumulative_incomes.end(), cumulative_incomes.begin());
+
+    return cumulative_incomes;
 }
 
 size_t PersonDB::NumGreaterOrEqualMaturityAge(size_t maturity_age) {
@@ -111,7 +132,7 @@ vector<Person> ReadPeople(istream& input) {
 
 #ifdef _GLIBCXX_DEBUG
 class RedirectStandardInput {
-  public:
+   public:
     RedirectStandardInput(std::ifstream& input) {
         // сохраняем указатель на "streambuf"
         _cinbuf_bkp = std::cin.rdbuf();
@@ -121,13 +142,13 @@ class RedirectStandardInput {
     }
 
     ~RedirectStandardInput() {
-        std::cin.rdbuf(_cinbuf_bkp); // восстанавливаем standard input
+        std::cin.rdbuf(_cinbuf_bkp);  // восстанавливаем standard input
     }
 
-  private:
+   private:
     std::streambuf* _cinbuf_bkp{nullptr};
 };
-#endif //_GLIBCXX_DEBUG
+#endif  //_GLIBCXX_DEBUG
 
 int main() {
     // Основной проблемой этого исходного решения является то, что в нём случайно изменяются исходные данные.
@@ -144,7 +165,7 @@ int main() {
         throw std::runtime_error("File \""s + path + "\" is not opened"s);
     }
     RedirectStandardInput redirection(input);
-#endif //_GLIBCXX_DEBUG
+#endif  //_GLIBCXX_DEBUG
     // =================== End of input redirection ==================
 
     vector<Person> people = ReadPeople(cin);
@@ -182,7 +203,7 @@ int main() {
 
             int total_income = accumulate(
                 head.begin(), head.end(), 0,
-                [](int cur, /* const */ Person& p) { // <== Здесь происходит изменение исходных данных
+                [](int cur, /* const */ Person& p) {  // <== Здесь происходит изменение исходных данных
                     return p.income += cur;
                 });
             cout << "Top-" << count << " people have total income " << total_income << '\n';

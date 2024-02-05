@@ -3,6 +3,9 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <numeric>  // std::partial_sum
+
+#include "print.h"
 
 using namespace std;
 
@@ -14,11 +17,16 @@ struct Person {
 };
 
 int main() {
-    // vector<int> v = {1, 2, 2, 2, 3, 4, 5, 5, 5, 5, 6, 6, 7, 7, 7, 7, 8, 8, 9, 9, 9, 9, 9, 9, 9, 10, 11, 12, 12, 13};
-    vector<int> v = {1, 2, 2, 2, 3, 4, 5, 5, 5, 5, 6, 6, 7};
-    int number = 5;
-    auto lb = lower_bound(v.begin(), v.end(), number);
-    cout << "number of elements greater or equal to " << number << ": " << distance(lb, end(v)) << " items" << endl;
+    // // vector<int> v = {1, 2, 2, 2, 3, 4, 5, 5, 5, 5, 6, 6, 7, 7, 7, 7, 8, 8, 9, 9, 9, 9, 9, 9, 9, 10, 11, 12, 12, 13};
+    // vector<int> v = {1, 2, 2, 2, 3, 4, 5, 5, 5, 5, 6, 6, 7};
+    // int number = 5;
+    // auto lb = lower_bound(v.begin(), v.end(), number);
+    // cout << "number of elements greater or equal to " << number << ": " << distance(lb, end(v)) << " items" << endl;
+
+    // ================================================================================================================
+    vector<int> v = {1, 2, 2, 2, 3, 4, 5, 5, 5, 5, 6, 6};
+    partial_sum(v.begin(), v.end(), v.begin());
+    cout << "v after partial_sum: " << v << endl;
 
 //     istringstream input{
 //         R"(11

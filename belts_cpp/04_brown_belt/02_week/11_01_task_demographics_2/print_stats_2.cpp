@@ -63,6 +63,8 @@ class PersonsDB {
     optional<string> _popular_male_name;
     optional<string> _popular_female_name;
 
+   private:
+    // ============================ METHODS ============================
     vector<Person> GetPersonsSortedByAge(istream& input);
     vector<int> GetCumulativeIncomes();
     void SetPopularNames();
@@ -214,12 +216,10 @@ void ProcessCommands(const PersonsDB& db, istream& input, ostream& out) {
     for (string command; input >> command;) {
         switch (stringToEnum<Command>(command)) {
             case Command::AGE: {
-                int adult_age;
-                input >> adult_age;
-                out << "There are "
-                    << db.NumGreaterOrEqualMaturityAge(adult_age)
-                    << " adult people for maturity age " << adult_age << '\n';
-
+                int maturity_age;
+                input >> maturity_age;
+                out << "There are " << db.NumGreaterOrEqualMaturityAge(maturity_age)
+                    << " adult people for maturity age " << maturity_age << '\n';
                 break;
             }
             case Command::WEALTHY: {
@@ -227,7 +227,6 @@ void ProcessCommands(const PersonsDB& db, istream& input, ostream& out) {
                 input >> count;
                 out << "Top-" << count << " people have total income "
                     << db.GetTotalIncome(count) << '\n';
-
                 break;
             }
             case Command::POPULAR_NAME: {
@@ -241,10 +240,8 @@ void ProcessCommands(const PersonsDB& db, istream& input, ostream& out) {
                 } else {
                     out << "No people of gender " << gender << '\n';
                 }
-
                 break;
             }
-
             default:
                 throw std::logic_error("Unknown command in input stream: " + command);
                 break;

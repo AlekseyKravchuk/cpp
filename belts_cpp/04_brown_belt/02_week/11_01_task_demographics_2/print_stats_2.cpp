@@ -2,20 +2,20 @@
 #include <fstream>
 #include <iostream>
 #include <map>
-#include <numeric>  // std::partial_sum
+#include <numeric> // std::partial_sum
 #include <optional>
 #include <set>
 #include <string>
 #include <unordered_map>
 #include <vector>
 
-#define _GLIBCXX_DEBUG 1  // включить режим отладки
+#define _GLIBCXX_DEBUG 1 // включить режим отладки
 
 using namespace std;
 
 template <typename Iterator>
 class IteratorRange {
-   public:
+  public:
     IteratorRange(Iterator begin, Iterator end)
         : _first(begin), _last(end) {
     }
@@ -28,16 +28,15 @@ class IteratorRange {
         return _last;
     }
 
-   private:
+  private:
     Iterator _first;
     Iterator _last;
 };
 
 template <typename Collection>
-auto Head(Collection& collection, size_t top) {
-    return IteratorRange{collection.begin(),
-                         next(collection.begin(),
-                              min(top, collection.size()))};
+auto Head(Collection& c, size_t top) {
+    return IteratorRange{c.begin(),
+                         next(c.begin(), min(top, c.size()))};
 }
 
 struct Person {
@@ -47,26 +46,30 @@ struct Person {
     bool is_male;
 };
 
-class PersonDB {
-   public:
-    PersonDB(istream& input);
+class PersonsDB {
+  public:
+    PersonsDB(istream& input);
     size_t NumGreaterOrEqualMaturityAge(size_t maturity_age);
 
-   private:
-    const vector<Person> _persons;  // sorted by age
+  private:
+    const vector<Person> _persons; // sorted by age
     vector<int> _cumulative_incomes;
     optional<string> _popular_male_name;
     optional<string> _popular_female_name;
 
     vector<Person> GetPersonsSortedByAge(istream& input);
     vector<int> GetCumulativeIncomes();
+    void SetPopularNames();
+
+    template <typename Iterator>
+    optional<string> FindPopularName(IteratorRange<Iterator> iter_range);
 };
 
-PersonDB::PersonDB(istream& input)
+PersonsDB::PersonsDB(istream& input)
     : _persons(GetPersonsSortedByAge(input)),
       _cumulative_incomes(GetCumulativeIncomes()) {}
 
-vector<Person> PersonDB::GetPersonsSortedByAge(istream& input) {
+vector<Person> PersonsDB::GetPersonsSortedByAge(istream& input) {
     size_t count;
     input >> count;
 
@@ -81,17 +84,13 @@ vector<Person> PersonDB::GetPersonsSortedByAge(istream& input) {
     sort(result.begin(),
          result.end(),
          [](const Person& lhs, const Person& rhs) {
-             return lhs.age < rhs.age;  // sort in ascending order
+             return lhs.age < rhs.age; // sort in ascending order
          });
 
     return result;
 }
 
-auto cmp = [](const Person* lhs_ptr, const Person* rhs_ptr) {
-    return lhs_ptr->income > rhs_ptr->income;
-};
-
-vector<int> PersonDB::GetCumulativeIncomes() {
+vector<int> PersonsDB::GetCumulativeIncomes() {
     vector<int> cumulative_incomes(_persons.size());
 
     transform(_persons.begin(), _persons.end(),
@@ -99,13 +98,32 @@ vector<int> PersonDB::GetCumulativeIncomes() {
               [](const Person& person) {
                   return person.income;
               });
-    sort(cumulative_incomes.begin(), cumulative_incomes.end(), greater<int>());
-    partial_sum(cumulative_incomes.begin(), cumulative_incomes.end(), cumulative_incomes.begin());
+    sort(cumulative_incomes.begin(), cumulative_incomes.end(), greater<int>()); // sort in descending order
+    partial_sum(cumulative_incomes.begin(), cumulative_incomes.end(),
+                cumulative_incomes.begin());
 
     return cumulative_incomes;
 }
 
-size_t PersonDB::NumGreaterOrEqualMaturityAge(size_t maturity_age) {
+void PersonsDB::SetPopularNames() {
+    vector<Person> persons_copy{_persons};
+    auto border = partition(persons_copy.begin(), persons_copy.end(),
+                            [](const Person& p) {
+                                return p.is_male;
+                            });
+    IteratorRange males{persons_copy.begin(), border};
+    IteratorRange females{border, persons_copy.end()};
+
+    _popular_male_name = FindPopularName(males);
+    _popular_female_name = FindPopularName(females);
+}
+
+template <typename Iterator>
+optional<string> FindPopularName(IteratorRange<Iterator> iter_range) {
+    // TODO
+}
+
+size_t PersonsDB::NumGreaterOrEqualMaturityAge(size_t maturity_age) {
     auto lb = lower_bound(begin(_persons),
                           end(_persons),
                           maturity_age,
@@ -132,7 +150,7 @@ vector<Person> ReadPeople(istream& input) {
 
 #ifdef _GLIBCXX_DEBUG
 class RedirectStandardInput {
-   public:
+  public:
     RedirectStandardInput(std::ifstream& input) {
         // сохраняем указатель на "streambuf"
         _cinbuf_bkp = std::cin.rdbuf();
@@ -142,13 +160,13 @@ class RedirectStandardInput {
     }
 
     ~RedirectStandardInput() {
-        std::cin.rdbuf(_cinbuf_bkp);  // восстанавливаем standard input
+        std::cin.rdbuf(_cinbuf_bkp); // восстанавливаем standard input
     }
 
-   private:
+  private:
     std::streambuf* _cinbuf_bkp{nullptr};
 };
-#endif  //_GLIBCXX_DEBUG
+#endif //_GLIBCXX_DEBUG
 
 int main() {
     // Основной проблемой этого исходного решения является то, что в нём случайно изменяются исходные данные.
@@ -165,7 +183,7 @@ int main() {
         throw std::runtime_error("File \""s + path + "\" is not opened"s);
     }
     RedirectStandardInput redirection(input);
-#endif  //_GLIBCXX_DEBUG
+#endif //_GLIBCXX_DEBUG
     // =================== End of input redirection ==================
 
     vector<Person> people = ReadPeople(cin);
@@ -203,7 +221,7 @@ int main() {
 
             int total_income = accumulate(
                 head.begin(), head.end(), 0,
-                [](int cur, /* const */ Person& p) {  // <== Здесь происходит изменение исходных данных
+                [](int cur, /* const */ Person& p) { // <== Здесь происходит изменение исходных данных
                     return p.income += cur;
                 });
             cout << "Top-" << count << " people have total income " << total_income << '\n';

@@ -1,7 +1,7 @@
 #include <functional>
 #include <iostream>
 #include <string>
-#include <utility> // std::move
+#include <utility>  // std::move, std::as_const
 using namespace std;
 
 // 3. Capture using move-semantics
@@ -10,7 +10,7 @@ struct MyStruct {
     int field = 5;
 
     auto get_callable(int i) const {
-        std::string s = "abcde";
+        /* static */ std::string s = "abcde";  // без "static" при захвате по константной ссылке будет UB
 
         // начиная с С++14 мы можем захватывать в лямбда-функцию с помощью std::move
         auto f = [s = std::move(s), i]() {
@@ -20,13 +20,26 @@ struct MyStruct {
                 << endl;
         };
 
+        // // начиная с С++14 мы можем также захватывать в лямбда-функцию по КОНСТАНТНОЙ ссылке?
+        // // !!! но это чревато UB !!!
+        // auto f = [&s = std::as_const(s), i]() {
+        //     cout << "i = " << i
+        //          << ", s = \"" << s
+        //          << "\", s[" << i << "] = " << s[i]
+        //          << endl;
+        // };
+
         return f;
     }
 };
 
 int main() {
     {
-        auto callable_1 = MyStruct().get_callable(1);
+        MyStruct obj;
+        auto callable_1 = obj.get_callable(1);
+
+        // auto callable_1 = MyStruct().get_callable(1);
+
         cout << "size(callable_1) = " << sizeof(callable_1) << endl;
         callable_1();
     }

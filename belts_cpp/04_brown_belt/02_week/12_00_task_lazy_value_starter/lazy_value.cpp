@@ -18,7 +18,10 @@ class LazyValue {
 void UseExample() {
     const string big_string = "Giant amounts of memory";
 
-    LazyValue<string> lazy_string([&big_string] { return big_string; });
+    LazyValue<string> lazy_string([&big_string]() {
+                                       return big_string;
+                                  }
+    );
 
     ASSERT(!lazy_string.HasValue());
     ASSERT_EQUAL(lazy_string.Get(), big_string);

@@ -9,13 +9,15 @@ using namespace std;
 // create global mutex object
 std::mutex mtx;
 
+// Рекомендуется не использовать функции lock и unlock напрямую
 void shared_print(string msg, int id) {
     // before printing the message we need to lock mutex
     mtx.lock();
     cout << msg << id << endl; // <== POTENTIAL PROBLEM: what if EXCEPTION occurs here??? ==> Mutex will be blocked forever
-    if (id >= 50) {
-        throw std::logic_error("Intentional exception from shared_print");
-    }
+
+    // if (id >= 50) {
+    //     throw std::logic_error("Intentional exception from shared_print");
+    // }
 
     // and after printing it we need to unlock mutex
     mtx.unlock();

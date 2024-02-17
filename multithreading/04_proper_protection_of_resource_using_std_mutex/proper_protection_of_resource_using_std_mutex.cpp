@@ -21,7 +21,7 @@ class LogFile {
     void shared_print(std::string id, int value);
 
   private:
-    std::string _filename;
+    std::string _fname;
     std::mutex _mtx;
     std::ofstream _out; // защищаемый ресурс
 
@@ -31,12 +31,12 @@ class LogFile {
 };
 
 LogFile::LogFile(std::string fname)
-    : _filename(fname) {
+    : _fname(fname) {
 
-    _out.open(_filename);
+    _out.open(_fname);
 
     if (!_out) {
-        throw std::runtime_error("Could not open file \"" + _filename + "\" for writing to.");
+        throw std::runtime_error("Could not open file \"" + _fname + "\" for writing to.");
     }
 }
 
@@ -45,7 +45,7 @@ LogFile::~LogFile() {
         _out.close();
     }
 
-    cout << R"(File ")"<< _filename << R"(" is closed.)" << endl;
+    cout << R"(File ")"<< _fname << R"(" is closed.)" << endl;
 }
 
 void LogFile::shared_print(string id, int value) {
@@ -55,12 +55,14 @@ void LogFile::shared_print(string id, int value) {
     _out << "From " << id << ": " << value << endl;
 }
 
+// пишем в лог-файл
 void fun_1(LogFile& log) {
     for (int i = 0; i > -100; --i) {
         log.shared_print(string("From fun_1: "), i);
     }
 }
 
+// пишем в лог-файл
 void fun_2(LogFile& log) {
     for (int i = 0; i < 100; ++i) {
         log.shared_print(string("From fun_2: "), i);

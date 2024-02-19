@@ -5,21 +5,20 @@
 
 using namespace std;
 
+// we have 2 global variables that needs to be taken care of
 std::mutex mu;
 std::condition_variable cond_var;
 
 // нам нужно вернуть результат в "родительский" поток
 void factorial(int N, size_t& res_placeholder) {
-    // "res_placeholder" is a shared variable between the child thread and the parent thread
-    // so we need to protect it with some kind of mutex
-
     size_t res = 1;
     for (size_t i = N; i > 1; --i) {
         res *= i;
     }
 
-    // нам нужно быть уверенными, что переменная "res_placeholder" будет установлена в дочернем потоке РАНЬШЕ,
-    // чем родительский поток воспользуется этим значением => используем механизм condition variable
+    // "res_placeholder" is a shared variable between two threads so we need to protect it with some kind of mutex
+    // При этом нам нужно быть уверенными, что переменная "res_placeholder" будет установлена в потоке "factorial" РАНЬШЕ,
+    // чем родительский поток (main) воспользуется этим значением => используем механизм condition variable
 
     std::unique_lock<std::mutex> ulocker(mu);
     res_placeholder = res;

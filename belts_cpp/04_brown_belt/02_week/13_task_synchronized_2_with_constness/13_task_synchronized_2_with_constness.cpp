@@ -6,6 +6,8 @@
 #include <future>
 #include <mutex>
 #include <queue>
+#include <utility>  // std::move
+
 using namespace std;
 
 template <typename T>
@@ -18,15 +20,20 @@ public:
     template<typename ValueType>
     struct Access {
         ValueType& ref_to_value;
-        lock_guard<mutex> lock
+        lock_guard<mutex> lock;
     };
 
     // TODO
-    ? ? ? GetAccess();
-    ? ? ? GetAccess() const;
+    Access<T> GetAccess() {
+        return {_value, lock_guard<mutex>(_mu)};
+    }
+    Access<const T> GetAccess() const {
+        return {_value, lock_guard<mutex>(_mu)};
+    }
 
 private:
     T _value;
+    mutable std::mutex _mu;
 };
 
 void TestConcurrentUpdate()
@@ -71,7 +78,7 @@ vector<int> Consume(Synchronized<deque<int>> &common_queue)
             // Размер критической секции существенно влияет на быстродействие
             // многопоточных программ.
             auto access = common_queue.GetAccess();
-            q = move(access.ref_to_value);
+            q = std::move(access.ref_to_value);
         }
 
         for (int item : q)
@@ -107,7 +114,7 @@ void TestProducerConsumer()
     const size_t item_count = 100000;
     for (size_t i = 1; i <= item_count; ++i)
     {
-        common_queue.GetAccess().ref_to_value.push_back(i);
+        common_queue.GetAccess().ref_to_value.push_back(static_cast<int>(i));
     }
     common_queue.GetAccess().ref_to_value.push_back(-1);
 

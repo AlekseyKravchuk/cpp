@@ -2,6 +2,7 @@
 #include <cmath>     // std::abs
 #include <future>
 #include <iterator>
+#include <map>
 #include <mutex>
 #include <numeric>     // std::iota
 #include <random>      // std::default_random_engine
@@ -32,7 +33,7 @@ class ConcurrentMap {
               ref_to_value(bucket.dict[key]) {}
     };
 
-    explicit ConcurrentMap(size_t bucket_count) : _buckets(bucket_count) { }
+    explicit ConcurrentMap(size_t bucket_count) : _buckets(bucket_count) {}
 
     Access operator[](const KeyType& key) {
         auto& bucket = _buckets[static_cast<uint64_t>(key) % _buckets.size()];
@@ -46,7 +47,7 @@ class ConcurrentMap {
             std::lock_guard g(mutex);
             result.insert(dict.begin(), dict.end());
         }
-        
+
         return result;
     }
 

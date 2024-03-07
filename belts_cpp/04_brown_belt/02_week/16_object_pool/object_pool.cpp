@@ -4,7 +4,8 @@
 #include <string>
 #include <queue>
 #include <stdexcept>
-#include <set>
+#include <unordered_map>
+#include <memory>  // std::unique_ptr
 
 using namespace std;
 
@@ -22,22 +23,24 @@ public:
     T* Allocate();
     T* TryAllocate();
     void Deallocate(T* object);
-    ~ObjectPool();
 
 private:
-    queue<T*> free;     // выделенные объекты
-    set<T*> allocated;  // освобожденные объекты
+    queue<std::unique_ptr<T>> free;       // выделенные объекты
+    unordered_map<T*, unique_ptr<T>>    allocated;  // освобожденные объекты
 };
 
 template<typename T>
 T* ObjectPool<T>::Allocate() {
     if (free.empty()) {
-        free.push(new T);
+        free.push(make_unique<T>());
     }
-    auto ret = free.front();
+    auto uptr = std::move(free.front());
     free.pop();
-    allocated.insert(ret);
-    return ret;
+
+    T* raw_ptr = uptr.get();
+    allocated[raw_ptr] = std::move(uptr);
+
+    return raw_ptr;
 }
 
 template<typename T>
@@ -50,23 +53,13 @@ T* ObjectPool<T>::TryAllocate() {
 
 template<typename T>
 void ObjectPool<T>::Deallocate(T* object) {
-    if (allocated.find(object) == allocated.end()) {
+    auto it = allocated.find(object);
+    if (it == allocated.end()) {
         throw invalid_argument("");
     }
-    allocated.erase(object);
-    free.push(object);
-}
+    free.push(std::move(it->second));
+    allocated.erase(it);
 
-template<typename T>
-ObjectPool<T>::~ObjectPool() {
-    for (auto x: allocated) {
-        delete x;
-    }
-    while (!free.empty()) {
-        auto x = free.front();
-        free.pop();
-        delete x;
-    }
 }
 
 void TestObjectPool() {

@@ -58,7 +58,7 @@ This may block other processes from manipulating this file, which is an undesira
 We would instead open the file when the first call to addOption function occurs.
 */
 int main() {
-    // Config config_file;
+    Config config_file;
 
     std::cout << "Some operations..." << std::endl;
 

@@ -24,47 +24,50 @@ class LruCache : public ICache {
         lock_guard<mutex> lock(_mu_books);
         Rank new_rank{book_name, std::chrono::steady_clock::now()};
 
+        // Если книга с таким названием уже есть в кэше, её ранг поднимается до максимального (строго больше, чем у всех остальных)
         if (_books.count(book_name)) {
             Item& item = _books.at(book_name);
             _cache.erase(item.rank);
             _cache.insert(new_rank);
-            item.rank = new_rank;
+            item.rank = std::move(new_rank);
 
             return item.book_ptr;
         }
 
+        // Если такой книги нет в кэше, то она добавляется в кэш, и её ранг, опять же, выставляется в максимальный.
         std::unique_ptr<IBook> unpacked_book_ptr = _books_unpacker->UnpackBook(book_name);
-        BookPtr result{unpacked_book_ptr.release()};  // using BookPtr = std::shared_ptr<const IBook>;
+        BookPtr ptr{unpacked_book_ptr.release()};  // using BookPtr = std::shared_ptr<const IBook>;
 
-        if (result->GetContent().size() <= _settings.max_memory) {
-            auto LRU_begin = _cache.begin();
-            auto LRU_end = LRU_begin;
+        if (ptr->GetContent().size() <= _settings.max_memory) {
+            auto it_begin = _cache.begin();
+            auto it = it_begin;
 
+            // если общий размер книг превышает ограничение max_memory, из кэша удаляются книги с наименьшим рангом, пока это необходимо
             while (_memory_used > 0 &&
-                   _memory_used + result->GetContent().size() > _settings.max_memory) {
-                _memory_used -= _books.at(LRU_end->bname).book_ptr->GetContent().size();
-                _books.erase(LRU_end->bname);
-                ++LRU_end;
+                   _memory_used + ptr->GetContent().size() > _settings.max_memory) {
+                _memory_used -= _books.at(it->book_name).book_ptr->GetContent().size();
+                _books.erase(it->book_name);
+                ++it;
             }
 
-            _cache.erase(LRU_begin, LRU_end);
+            _cache.erase(it_begin, it);
 
-            _memory_used += result->GetContent().size();
-            _books[book_name] = {new_rank, result};
+            _memory_used += ptr->GetContent().size();
+            _books[book_name] = {new_rank, ptr};
             _cache.insert(new_rank);
         }
 
-        return result;
+        return ptr;
     }
 
   private:
     struct Rank {
-        string bname;
+        string book_name;
         chrono::time_point<chrono::steady_clock> time;
     };
 
     struct Item {
-        Rank rank;         // Rank = {bname: string, time: chrono::time_point<chrono::steady_clock>}
+        Rank rank;         // Rank = {book_name: string, time: chrono::time_point<chrono::steady_clock>}
         BookPtr book_ptr;  // BookPtr = std::shared_ptr<const IBook>;
     };
 

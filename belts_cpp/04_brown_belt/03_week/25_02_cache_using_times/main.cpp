@@ -51,10 +51,9 @@ class BooksUnpacker : public IBooksUnpacker {
 public:
   unique_ptr<IBook> UnpackBook(const string& book_name) override {
     ++unpacked_books_count_;
-    return make_unique<Book>(
-      book_name,
-      "Dummy content of the book " + book_name,
-      memory_used_by_books_
+    return make_unique<Book>(book_name,
+                             "Dummy content of the book " + book_name,
+                              memory_used_by_books_
     );
   }
 
@@ -178,8 +177,7 @@ void TestAsync(const Library& lib) {
 int main() {
   BooksUnpacker unpacker;
   const Library lib(
-    // Названия книг для локального тестирования. В тестирующей системе курсеры
-    // будет другой набор, намного больше.
+    // Названия книг для локального тестирования. В тестирующей системе курсеры будет другой набор, намного больше.
     {
       "Sherlock Holmes",
       "Don Quixote",

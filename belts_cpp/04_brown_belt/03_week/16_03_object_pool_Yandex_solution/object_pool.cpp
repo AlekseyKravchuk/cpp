@@ -8,6 +8,13 @@
 
 using namespace std;
 
+int counter = 0;
+
+struct Counted {
+    Counted() { ++counter; }
+    ~Counted() { --counter; }
+};
+
 template<class T>
 class ObjectPool {
 public:
@@ -17,25 +24,25 @@ public:
     ~ObjectPool();
 
 private:
-    queue<T*> free;
-    set<T*> allocated;
+    queue<T*> _free;
+    set<T*> _allocated;
 };
 
 template<typename T>
 T* ObjectPool<T>::Allocate() {
-    if (free.empty()) {
-        free.push(new T);
+    if (_free.empty()) {
+        _free.push(new T);
     }
 
-    auto ret = free.front();
-    free.pop();
-    allocated.insert(ret);
+    auto ret = _free.front();
+    _free.pop();
+    _allocated.insert(ret);
     return ret;
 }
 
 template<typename T>
 T* ObjectPool<T>::TryAllocate() {
-    if (free.empty()) {
+    if (_free.empty()) {
         return nullptr;
     }
     return Allocate();
@@ -43,21 +50,21 @@ T* ObjectPool<T>::TryAllocate() {
 
 template<typename T>
 void ObjectPool<T>::Deallocate(T* object) {
-    if (allocated.find(object) == allocated.end()) {
+    if (_allocated.find(object) == _allocated.end()) {
         throw invalid_argument("");
     }
-    allocated.erase(object);
-    free.push(object);
+    _allocated.erase(object);
+    _free.push(object);
 }
 
 template<typename T>
 ObjectPool<T>::~ObjectPool() {
-    for (auto x: allocated) {
+    for (auto x: _allocated) {
         delete x;
     }
-    while (!free.empty()) {
-        auto x = free.front();
-        free.pop();
+    while (!_free.empty()) {
+        auto x = _free.front();
+        _free.pop();
         delete x;
     }
 }
@@ -84,8 +91,27 @@ void TestObjectPool() {
     pool.Deallocate(p1);
 }
 
+void run() {
+    ObjectPool<Counted> pool;
+    const int MAX_OBJECTS_IN_POOL = 1000000;
+
+    for (int i = 0; i < MAX_OBJECTS_IN_POOL; ++i) {
+        cout << "Allocating object #" << i << endl;
+        pool.Allocate();
+    }
+
+
+    cout << "counter from run() = " << counter << endl;
+}
+
 int main() {
-    TestRunner tr;
-    RUN_TEST(tr, TestObjectPool);
+    // TODO: эмулируем нехватку памяти (08:28)
+    //  порядок запуска в терминале:
+    // (ulimit -v 10000 && exec ./16_02_object_pool_from_scratch)
+    // -v: максимальный объем виртуальной памяти, доступной процессам
+    run();
+    cout << "counter from main() = " << counter << endl;
+//    TestRunner tr;
+//    RUN_TEST(tr, TestObjectPool);
     return 0;
 }

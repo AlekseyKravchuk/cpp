@@ -7,10 +7,14 @@
 
 using namespace std;
 
-vector<string> ReadDomains(istream& in = cin) {
+// Good job! (Max time used: 0.15/3.00, max preprocess time used: 0/None, max memory used: 118267904/536870912.)
+
+vector<string> ReadDomainsIntoVector(istream& in = cin) {
     size_t count;
     in >> count;
     vector<string> domains;
+    domains.reserve(count);
+
     for (size_t i = 0; i < count; ++i) {
         string domain;
         in >> domain;
@@ -20,38 +24,49 @@ vector<string> ReadDomains(istream& in = cin) {
     return domains;
 }
 
+unordered_set<string> ReadDomainsInUnorderedSet(istream& in = cin) {
+    size_t count;
+    in >> count;
+    unordered_set<string> domains;
+
+    for (size_t i = 0; i < count; ++i) {
+        string domain;
+        in >> domain;
+        domains.insert(std::move(domain));
+    }
+
+    return domains;
+}
+
 int main() {
-    const std::unordered_set<string> forbidden = []() {
-        std::unordered_set<string> result;
-        for (const string& domain: ReadDomains(cin)) {
-            result.emplace(domain);
-        }
-        return result;
-    }();
-    const vector<string> domains_to_check = ReadDomains(cin);
+    const unordered_set<string> banned_domains = ReadDomainsInUnorderedSet();
+    const vector<string> domains_to_check = ReadDomainsIntoVector();
 
     for (const string& domain: domains_to_check) {
-        if (forbidden.find(domain) != forbidden.end()) {
+        if (banned_domains.find(domain) != banned_domains.end()) {
             cout << "Bad\n";
             continue;
         }
 
         string_view subdomain = domain;
         bool is_forbiden = false;
+
         std::size_t dot_pos = subdomain.find(".");
         while (dot_pos != string::npos) {
             subdomain = subdomain.substr(dot_pos + 1);
-            if (forbidden.find(string(subdomain)) != forbidden.end()) {
+            if (banned_domains.find(string(subdomain)) != banned_domains.end()) {
                 is_forbiden = true;
                 break;
             }
             dot_pos = subdomain.find(".");
         }
 
-        if (is_forbiden)
+        if (is_forbiden) {
             cout << "Bad\n";
-        else
+        } else {
             cout << "Good\n";
+        }
     }
+
     return 0;
 }

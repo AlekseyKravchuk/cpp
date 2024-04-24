@@ -35,11 +35,36 @@ void TestTrimFunctions() {
 
 }
 
-//void TestParsingFunctions() {
-//
-//}
+void TestSplitBy() {
+    string s = "Tolstopaltsevo: 55.611087, 37.20829";
+    vector<string_view> expected = {
+            "Tolstopaltsevo",
+            "55.611087, 37.20829"
+    };
+
+    vector<string_view> result = SplitBy(s, ':');
+    ASSERT_EQUAL(result, expected);
+}
+
+void TestParseStopView() {
+    {
+        string s =
+                "       Tolstopaltsevo:  55.611087,   37.20829                     ";
+        Stop expected_stop = Stop{
+                "Tolstopaltsevo",
+                55.611087,
+                37.20829};
+
+        Stop result = ParseStopView(s);
+        ASSERT_EQUAL(expected_stop.stop_name, result.stop_name);
+        ASSERT_EQUAL(expected_stop.latitude, result.latitude);
+        ASSERT_EQUAL(expected_stop.longitude, result.longitude);
+    }
+}
 
 void TestAll() {
     TestRunner tr;
     RUN_TEST(tr, TestTrimFunctions);
+    RUN_TEST(tr, TestSplitBy);
+    RUN_TEST(tr, TestParseStopView);
 }

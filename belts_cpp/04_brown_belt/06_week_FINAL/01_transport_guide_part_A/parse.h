@@ -36,5 +36,5 @@ std::vector<std::string_view> SplitBy(std::string_view s, char sep);
 //}
 
 // ====
-StopsInfo ParseStop(std::string s);
+Stop ParseStopView(std::string_view s);
 

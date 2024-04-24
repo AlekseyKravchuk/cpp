@@ -3,5 +3,6 @@
 #include "test_runner.h"
 
 void TestTrimFunctions();
-//void TestParsingFunctions();
+void TestSplitBy();
+void TestParseStopView();
 void TestAll();

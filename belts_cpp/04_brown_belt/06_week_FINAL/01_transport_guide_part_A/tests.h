@@ -5,4 +5,6 @@
 void TestTrimFunctions();
 void TestSplitBy();
 void TestParseStopView();
+void TestParseStopQueries();
+
 void TestAll();

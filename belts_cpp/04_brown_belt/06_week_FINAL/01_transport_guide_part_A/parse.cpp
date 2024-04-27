@@ -1,8 +1,11 @@
-#include "parse.h"
-
 #include <algorithm>
 #include <cmath>
+#include <iostream>
+#include <optional>
 #include <string>
+#include <utility>  // std::pair
+
+#include "parse.h"
 
 using namespace std;
 
@@ -34,31 +37,54 @@ vector<string_view> SplitBy(string_view s, char sep) {
     return result;
 }
 
-// parsing string_view in the following format: "StopName: latitude, longitude"
-// For example:
-// Tolstopaltsevo: 55.611087, 37.20829
-Stop ParseStopView(string_view s) {
-    Stop stop;
-    vector<string_view> first;
-    vector<string_view> second;
-    first.reserve(2);
-    second.reserve(2);
-
-    first = SplitBy(s, ':');          // first[0] = "Tolstopaltsevo", first[1] = "latitude, longitude"
-    stop.stop_name = first[0];
-
-    second = SplitBy(first[1], ',');  // second[0] = "55.611087", second[1] = "37.20829"
-    stop.latitude = stod(string{second[0]});
-    stop.longitude = stod(string{second[1]});
-
-    return stop;
+pair<string_view, string_view> SplitIntoTwoParts(string_view s, char sep) {
+    size_t pos = s.find(sep);
+    if (pos != string_view::npos) {
+        return {trim_view(s.substr(0, pos)),
+                trim_view(s.substr(pos + 1))};
+    } else {
+        return {};
+    }
 }
 
+Stop ParseStopView(string_view s) {
+    auto [stop_name, coordinates] = SplitIntoTwoParts(s, ':');
+    auto [latitude, longitude] = SplitIntoTwoParts(coordinates, ',');
 
-// Stop Tolstopaltsevo: 55.611087, 37.20829
-// После предобработки:
-// Tolstopaltsevo: 55.611087, 37.20829
-//StopsInfo ParseStop(string s) {
-//    deque<Stop> stops;
-//    unordered_map<string_view, shared_ptr<Stop>> stopname_to_stopptr;
-//}
+    return {string(stop_name),
+            stod(string{latitude}),
+            stod(string{longitude})};
+}
+
+StopsInfo ParseStopQueries(istream& in, vector<string>& buffer) {
+    size_t add_queries_count;
+    in >> add_queries_count >> ws;
+    deque<Stop> stops;
+    StopNameToStopPtr stop_name_to_stop_ptr;
+
+    // обрабатываем ту часть входного потока, которая касается остановок
+    string line;
+    for(size_t i = 0; i < add_queries_count; ++i) {
+        getline(in, line);
+        string_view s{line};
+        string_view command_part_holder = s.substr(0, MAX_COMMAND_LENGTH);
+
+        if (string command = "Stop"; command_part_holder.find(command) != string_view::npos) {
+            s.remove_prefix(command.size() + 1); // remove command name with space that follows it
+            stops.push_back(ParseStopView(s));
+            stop_name_to_stop_ptr[stops.back().stop_name] = &stops.back();
+//            stop_name_to_stop_ptr[stops.back().stop_name] = make_shared<Stop>(stops.back());
+
+//            stop_name_to_stop_ptr.insert({string_view{stops.back().stop_name},
+//                                          make_shared<Stop>(stops.back())});
+
+//            Stop& stop = stops.back();
+//            stop_name_to_stop_ptr[stop.stop_name] = make_shared<Stop>(stop);
+        } else {
+            // запросы на создание маршрутов сохраняем во временном буфере
+            buffer.push_back(std::move(line));
+        }
+    }
+
+    return {std::move(stops), std::move(stop_name_to_stop_ptr)};
+}

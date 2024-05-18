@@ -1,6 +1,4 @@
 #include <algorithm>
-#include <cmath>
-#include <iostream>
 #include <optional>
 #include <string>
 #include <utility>  // std::pair
@@ -47,6 +45,9 @@ pair<string_view, string_view> SplitIntoTwoParts(string_view s, char sep) {
     }
 }
 
+// parse string in the following format:
+// stop_name: latitude, longitude
+// Tolstopaltsevo: 55.611087, 37.20829
 Stop ParseStopView(string_view s) {
     auto [stop_name, coordinates] = SplitIntoTwoParts(s, ':');
     auto [latitude, longitude] = SplitIntoTwoParts(coordinates, ',');
@@ -55,34 +56,3 @@ Stop ParseStopView(string_view s) {
             stod(string{latitude}),
             stod(string{longitude})};
 }
-
-StopsInfo ParseStopQueries(istream& in, vector<string>& buffer) {
-    size_t add_queries_count;
-    in >> add_queries_count >> ws;
-    deque<Stop> stops;
-    StopNameToStopPtr stop_name_to_stop_ptr;
-
-    // обрабатываем ТОЛЬКО ту часть входного потока, которая касается остановок
-    string line;
-    for(size_t i = 0; i < add_queries_count; ++i) {
-        getline(in, line);
-        string_view s{line};
-        string_view command_part_holder = s.substr(0, MAX_COMMAND_LENGTH);
-
-        if (string command = "Stop"; command_part_holder.find(command) != string_view::npos) {
-            s.remove_prefix(command.size() + 1); // remove command name with space that follows it
-            stops.push_back(ParseStopView(s));
-            Stop& stop = stops.back();
-            stop_name_to_stop_ptr[stop.stop_name] = &stop;
-        } else {
-            // запросы на создание маршрутов сохраняем во временном буфере
-            buffer.push_back(std::move(line));
-        }
-    }
-
-    return {std::move(stops), std::move(stop_name_to_stop_ptr)};
-}
-
-//BusRoutesInfo ParseBusRoutesQueries(vector<string>& buffer) {
-//
-//}

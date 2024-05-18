@@ -25,6 +25,11 @@ struct StopsInfo {
     std::unordered_map<std::string_view, Stop*> stop_name_to_stop_ptr;
 };
 
+struct BusRoutesInfo {
+    std::deque<std::vector<Stop*>> bus_routes;
+    std::unordered_map<std::string_view, std::vector<Stop*>> busname_to_busroute;  // BusRouteName => vector<Stop*>
+};
+
 using StopNameToStopPtr = std::unordered_map<std::string_view, Stop*>;
 
 class TransportGuide {

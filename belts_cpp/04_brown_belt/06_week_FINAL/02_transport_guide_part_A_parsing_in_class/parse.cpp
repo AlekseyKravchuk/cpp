@@ -46,7 +46,7 @@ pair<string_view, string_view> SplitIntoTwoParts(string_view s, char sep) {
 }
 
 // parse string in the following format:
-// stop_name: latitude, longitude
+// stop_name: latitude_deg, longitude_deg
 // Tolstopaltsevo: 55.611087, 37.20829
 Stop ParseStopView(string_view s) {
     auto [stop_name, coordinates] = SplitIntoTwoParts(s, ':');
@@ -56,3 +56,4 @@ Stop ParseStopView(string_view s) {
             stod(string{latitude}),
             stod(string{longitude})};
 }
+

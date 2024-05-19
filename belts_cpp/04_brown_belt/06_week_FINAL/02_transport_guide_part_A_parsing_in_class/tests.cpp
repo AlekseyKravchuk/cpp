@@ -60,8 +60,8 @@ void TestParseStopView() {
 
         Stop result = ParseStopView(s);
         ASSERT_EQUAL(expected_stop.stop_name, result.stop_name);
-        ASSERT_EQUAL(expected_stop.latitude, result.latitude);
-        ASSERT_EQUAL(expected_stop.longitude, result.longitude);
+        ASSERT_EQUAL(expected_stop.latitude_deg, result.latitude_deg);
+        ASSERT_EQUAL(expected_stop.longitude_deg, result.longitude_deg);
     }
 }
 
@@ -109,8 +109,8 @@ Bus 751
 
     for (size_t i = 0; i < stops_size; ++i) {
         ASSERT_EQUAL(stops[i].stop_name, expected_stops[i].stop_name);
-        ASSERT_EQUAL(stops[i].latitude, expected_stops[i].latitude);
-        ASSERT_EQUAL(stops[i].longitude, expected_stops[i].longitude);
+        ASSERT_EQUAL(stops[i].latitude_deg, expected_stops[i].latitude_deg);
+        ASSERT_EQUAL(stops[i].longitude_deg, expected_stops[i].longitude_deg);
     }
 
     const auto& stop_name_to_stop_ptr = guide.GetStopNameToStopPtr();
@@ -118,23 +118,23 @@ Bus 751
 
     Stop* p1 = stop_name_to_stop_ptr.at("Tolstopaltsevo");
     ASSERT_EQUAL(p1->stop_name, "Tolstopaltsevo");
-    ASSERT_EQUAL(p1->latitude, 55.611087);
-    ASSERT_EQUAL(p1->longitude, 37.20829);
+    ASSERT_EQUAL(p1->latitude_deg, 55.611087);
+    ASSERT_EQUAL(p1->longitude_deg, 37.20829);
 
     Stop* p2 = stop_name_to_stop_ptr.at("Universam");
     ASSERT_EQUAL(p2->stop_name, "Universam");
-    ASSERT_EQUAL(p2->latitude, 55.587655);
-    ASSERT_EQUAL(p2->longitude, 37.645687);
+    ASSERT_EQUAL(p2->latitude_deg, 55.587655);
+    ASSERT_EQUAL(p2->longitude_deg, 37.645687);
 
     Stop* p3 = stop_name_to_stop_ptr.at("Biryulyovo Tovarnaya");
     ASSERT_EQUAL(p3->stop_name, "Biryulyovo Tovarnaya");
-    ASSERT_EQUAL(p3->latitude, 55.592028);
-    ASSERT_EQUAL(p3->longitude, 37.653656);
+    ASSERT_EQUAL(p3->latitude_deg, 55.592028);
+    ASSERT_EQUAL(p3->longitude_deg, 37.653656);
 
     Stop* p4 = stop_name_to_stop_ptr.at("Biryulyovo Passazhirskaya");
     ASSERT_EQUAL(p4->stop_name, "Biryulyovo Passazhirskaya");
-    ASSERT_EQUAL(p4->latitude, 55.580999);
-    ASSERT_EQUAL(p4->longitude, 37.659164);
+    ASSERT_EQUAL(p4->latitude_deg, 55.580999);
+    ASSERT_EQUAL(p4->longitude_deg, 37.659164);
 }
 
 void TestBuffer() {
@@ -191,7 +191,7 @@ Bus 751
     guide.CreateDB(iss);
 
     const auto& bus_routes = guide.GetBusRoutes();
-    const auto& bus_name_to_busroute_ptr = guide.GetBusNameToBusRoutePtr();
+    const auto& bus_name_to_busroute_ptr = guide.GetBusNameToBusRouteMapping();
 
     ASSERT_EQUAL(bus_routes.size(), 2u);
     ASSERT_EQUAL(bus_name_to_busroute_ptr.size(), 2u);
@@ -231,8 +231,49 @@ Bus 751
         cout << "Bus 750 not found" << endl;
     }
 
-    vector<size_t> expected_unique_stops_on_each_bus_route = {5, 3};
-    ASSERT_EQUAL(expected_unique_stops_on_each_bus_route, guide.GetUniqueStopsForBusRoutes());
+    ASSERT_EQUAL(5u, guide.GetUniqueStopsCountForBusRoute("256"));
+    ASSERT_EQUAL(3u, guide.GetUniqueStopsCountForBusRoute("750"))
+}
+
+void TestRouteStatistics() {
+    istringstream iss{R"(
+10
+Stop Tolstopaltsevo: 55.611087, 37.20829
+Stop Marushkino: 55.595884, 37.209755
+Bus 256: Biryulyovo Zapadnoye > Biryusinka > Universam > Biryulyovo Tovarnaya > Biryulyovo Passazhirskaya > Biryulyovo Zapadnoye
+Bus 750: Tolstopaltsevo - Marushkino - Rasskazovka
+Stop Rasskazovka: 55.632761, 37.333324
+Stop Biryulyovo Zapadnoye: 55.574371, 37.6517
+Stop Biryusinka: 55.581065, 37.64839
+Stop Universam: 55.587655, 37.645687
+Stop Biryulyovo Tovarnaya: 55.592028, 37.653656
+Stop Biryulyovo Passazhirskaya: 55.580999, 37.659164
+3
+Bus 256
+Bus 750
+Bus 751
+)"};
+
+    TransportGuide guide;
+    guide.CreateDB(iss);
+
+    BusRouteStats bus_256_stats_expected {
+        6,
+        5,
+        4371.01725085208
+    };
+
+    BusRouteStats bus_256_stats = guide.GetStatsForBusRoute("256");
+    ASSERT(bus_256_stats_expected == bus_256_stats);
+
+    BusRouteStats bus_750_stats_expected {
+            5,
+            3,
+            20939.483046751142
+    };
+
+    BusRouteStats bus_750_stats = guide.GetStatsForBusRoute("750");
+    ASSERT(bus_750_stats_expected == bus_750_stats);
 }
 
 void TestAll() {
@@ -243,4 +284,5 @@ void TestAll() {
     RUN_TEST(tr, TestAddStops);
     RUN_TEST(tr, TestBuffer);
     RUN_TEST(tr, TestAddBusRoutes);
+    RUN_TEST(tr, TestRouteStatistics);
 }

@@ -4,7 +4,8 @@
 using namespace std;
 
 int main() {
-    TestAll();
-
+//    TestAll();
+    TransportGuide guide;
+    guide.CreateDB(cin);
     return 0;
 }

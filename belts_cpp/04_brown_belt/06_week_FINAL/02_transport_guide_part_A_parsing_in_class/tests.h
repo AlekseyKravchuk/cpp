@@ -8,5 +8,6 @@ void TestParseStopView();
 void TestAddStops();
 void TestBuffer();
 void TestAddBusRoutes();
+void TestRouteStatistics();
 
 void TestAll();

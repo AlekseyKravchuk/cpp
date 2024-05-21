@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.28)
-project(03_transport_guide_part_B)
+project(02_transport_guide_part_B)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)

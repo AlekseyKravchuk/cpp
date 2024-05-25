@@ -13,8 +13,10 @@
 #include <utility>  // std::move, std::pair
 #include <vector>
 
+using StopName = std::string_view;
+
 struct Stop {
-    std::string stop_name;      // название остановки
+    StopName stop_name;      // название остановки
     double latitude_deg;        // широта в градусах
     double longitude_deg;       // долгота в градусах
 
@@ -120,6 +122,6 @@ class TransportGuide {
         }
     };
 
-    std::unordered_map<std::pair<Stop*, Stop*>, size_t, PairOfStopPointersHasher> _stop_ptr_pair_to_distance;
+    std::unordered_map<std::pair<Stop*, Stop*>, size_t, PairOfStopPointersHasher> _stops_pair_to_distance;
 };
 

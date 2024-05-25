@@ -158,10 +158,18 @@ void TransportGuide::ProcessCreateQuery(std::string_view s) {
             // складываем во временный буфер предобработанные запросы на создание маршрута (без слова "Bus")
             _buffer.emplace_back(s);
             break;
-        case CreateCommand::Stop:
-            _stops.push_back(ParseAddStopQuery(s));
+        case CreateCommand::Stop: {
+            auto [stop, optional_pair] = ParseAddStopQuery(s);
+            _stops.push_back(stop);
             _stop_name_to_stop_ptr.insert({_stops.back().stop_name, &(_stops.back())});
+
+            // TODO: реализовать заполнение таблицы расстояний между остановками
+            if (optional_pair) {
+
+//                _stops_pair_to_distance
+            }
             break;
+        }
     }
 }
 

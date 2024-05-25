@@ -2,6 +2,7 @@
 #include <optional>
 #include <string>
 #include <utility>  // std::pair
+#include <exception>
 
 #include "parse.h"
 
@@ -21,14 +22,14 @@ std::string_view trim_view(std::string_view s) {
     return ltrim_view(rtrim_view(s));
 }
 
-vector<string_view> SplitBy(string_view s, char sep) {
+vector<string_view> SplitBy(string_view s, const string& sep) {
     vector<string_view> result;
 
     while (!s.empty()) {
         size_t pos = s.find(sep);
         result.push_back(trim_view(s.substr(0, pos)));
         s.remove_prefix(pos != string_view::npos
-                        ? pos + 1
+                        ? pos + sep.size()
                         : s.size());
     }
 
@@ -49,21 +50,30 @@ pair<string_view, string_view> SplitIntoTwoPartsView(string_view s, char sep) {
 // 1) "stop_name: latitude_deg, longitude_deg"
 //     Tolstopaltsevo: 55.611087, 37.20829
 // 2) "stop_name: latitude_deg, longitude_deg DISTANCEm to other_stop_name"
-Stop ParseAddStopQuery(string_view s) {
-    // TODO: реализовать обработку расширенной информации об остановке, т.е. когда указывается расстояние
-    //       до другой остановки
+pair<Stop, optional<pair<StopName, DistanceToStopByRoad>>> ParseAddStopQuery(string_view s) {
     auto [stop_name, rest_part] = SplitIntoTwoPartsView(s, ':');
-    vector<string_view> stop_info = SplitBy(rest_part, ',');
-    auto latitude = rest_part[0];
-    auto longitude = rest_part[1];
+    vector<string_view> stop_info = SplitBy(rest_part, ",");
 
-    if (stop_info.size() == 3u) {
-        auto distance_measured_by_roads = rest_part[2];
+    auto latitude = stop_info[0];
+    auto longitude = stop_info[1];
+
+    if (stop_info.size() == 2u) {
+        return {Stop{string(stop_name),
+                     stod(string{latitude}),
+                     stod(string{longitude})},
+                nullopt};
+    } else if (stop_info.size() == 3u) {
+        vector<string_view> v = SplitBy(stop_info[2], string("to"));
+        v[0].remove_suffix(1);  // remove letter 'm' at the end of distance
+        StopName stop_to = v[1];
+        size_t distance = static_cast<size_t>(std::stoi(string(v[0])));
+        return {Stop{string(stop_name),
+                     stod(string{latitude}),
+                     stod(string{longitude})},
+                pair{stop_to, distance}};
+    } else {
+        throw std::logic_error("Wrong format for adding stop: " + string(stop_name));
     }
 
-
-    return {string(stop_name),
-            stod(string{latitude}),
-            stod(string{longitude})};
 }
 

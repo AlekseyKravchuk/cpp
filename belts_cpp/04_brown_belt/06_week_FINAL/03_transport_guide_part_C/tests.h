@@ -6,6 +6,7 @@ void TestTrimFunctions();
 void TestSplitBy();
 void TestParseStopView();
 void TestAddStops();
+void TestAddStops_Extended();
 void TestBuffer();
 void TestAddBusRoutes();
 void TestRouteStatistics();

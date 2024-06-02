@@ -4,10 +4,10 @@
 using namespace std;
 
 int main() {
-    TestAll();
-//    TransportGuide guide;
-//    guide.CreateDB(cin);
-//    guide.ProcessRetrievalQueries(cin);
+//    TestAll();
+    TransportGuide guide;
+    guide.ProcessCreationQueries(cin);
+    guide.ProcessRetrievalQueries(cin);
 
     return 0;
 }

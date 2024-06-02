@@ -36,44 +36,14 @@ vector<string_view> SplitBy(string_view s, const string& sep) {
     return result;
 }
 
-pair<string_view, string_view> SplitIntoTwoPartsView(string_view s, char sep) {
+pair<string_view, string_view> SplitIntoTwoPartsView(string_view s, const string& sep) {
     size_t pos = s.find(sep);
     if (pos != string_view::npos) {
         return {trim_view(s.substr(0, pos)),
-                trim_view(s.substr(pos + 1))};
+                trim_view(s.substr(pos + sep.size()))};
     } else {
         return {};
     }
 }
 
-// parse string in the following of 2 formats:
-// 1) "stop_name: latitude_deg, longitude_deg"
-//     Tolstopaltsevo: 55.611087, 37.20829
-// 2) "stop_name: latitude_deg, longitude_deg DISTANCEm to other_stop_name"
-pair<Stop, optional<pair<StopName, DistanceToStopByRoad>>> ParseAddStopQuery(string_view s) {
-    auto [stop_name, rest_part] = SplitIntoTwoPartsView(s, ':');
-    vector<string_view> stop_info = SplitBy(rest_part, ",");
-
-    auto latitude = stop_info[0];
-    auto longitude = stop_info[1];
-
-    if (stop_info.size() == 2u) {
-        return {Stop{string(stop_name),
-                     stod(string{latitude}),
-                     stod(string{longitude})},
-                nullopt};
-    } else if (stop_info.size() == 3u) {
-        vector<string_view> v = SplitBy(stop_info[2], string("to"));
-        v[0].remove_suffix(1);  // remove letter 'm' at the end of distance
-        StopName stop_to = v[1];
-        size_t distance = static_cast<size_t>(std::stoi(string(v[0])));
-        return {Stop{string(stop_name),
-                     stod(string{latitude}),
-                     stod(string{longitude})},
-                pair{stop_to, distance}};
-    } else {
-        throw std::logic_error("Wrong format for adding stop: " + string(stop_name));
-    }
-
-}
 

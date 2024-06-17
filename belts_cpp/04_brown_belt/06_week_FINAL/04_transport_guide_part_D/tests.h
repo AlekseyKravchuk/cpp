@@ -3,9 +3,8 @@
 #include "test_runner.h"
 
 void TestAddStops();
-void TestAddStops_Extended();
-void TestBuffer();
+void TestDistancesTable();
 void TestAddBusRoutes();
-void TestRouteStatistics();
+//void TestRouteStatistics();
 
 void TestAll();

@@ -21,6 +21,9 @@ using NextStopName = std::string_view;
 using DistanceByRoad = size_t;
 using NextStopsToDistancesMap = std::unordered_map<NextStopName, DistanceByRoad>;
 
+using BusRouteName = std::string_view;
+using StopNamesOnBusRoute = std::vector<std::string_view>;
+
 struct Stop {
     constexpr static const double PI = 3.1415926535;
 
@@ -86,13 +89,25 @@ class TransportGuide {
     };
 
     using DistancesTable = std::unordered_map<std::pair<Stop*, Stop*>,
-            DistanceByRoad,
-            PairOfStopPointersHasher>;
+                                              DistanceByRoad,
+                                              PairOfStopPointersHasher>;
 
   public:
     TransportGuide() = default;
-    void ProcessCreationQueries(std::istream& in);
+
+    void AddStopsAndPreprocessBusRoutes(const std::vector<Json::Node>& create_requests);
+    void CreateDistancesTable();
+    void FinallyProcessBusRoutes();
+    void CalculateBusRouteStatistics(BusRouteName bus_name,
+                                     BusRoute& bus_route,
+                                     const StopNamesOnBusRoute& stop_names,
+                                     const std::unordered_set<std::string_view>& unique_stops);
+
+    void CreateDataBaseFromJSON(const std::vector<Json::Node>& base_requests);
+
+    // TODO: implement method:
     void ProcessRetrievalQueries(std::istream& in, std::ostream& out = std::cout);
+
     void PrintBusRouteInfo(std::string_view bus_route_name, std::ostream& out = std::cout) const;
     void PrintStopInfo(std::string_view stop_name, std::ostream& out = std::cout) const;
 
@@ -108,16 +123,16 @@ class TransportGuide {
     const BusNameToBusRoute& GetBusNameToBusRouteMapping() const;
     const BusRouteStats& GetStatsForBusRoute(std::string_view bus_route_name) const;
 
-    void CreateDistancesTable();
-    void CreateDataBaseFromJSON(const std::vector<Json::Node>& create_requests);
+
 
   private:
     std::pair<Stop,
-         std::optional<NextStopsToDistancesMap>> GetStopFromJsonMap(const std::map<std::string, Json::Node>& json_map);
+         std::optional<NextStopsToDistancesMap>> GetStopFromJsonMap(const std::map<std::string, Json::Node>& request_as_json_map);
 
     std::pair<std::string_view,
-              std::vector<std::string_view>> GetBusRouteFromJsonMap(const std::map<std::string, Json::Node>& json_map);
+              std::vector<std::string_view>> GetBusRouteFromJsonMap(const std::map<std::string, Json::Node>& request_as_json_map);
 
+    static double CalculateGeoDistanceBetweenTwoStops(Stop* stop_1, Stop* stop_2);
 
   private:
     enum class CreateCommand : char {
@@ -140,24 +155,21 @@ class TransportGuide {
             {"Stop", RetrieveCommand::Stop}
     };
     // =============================================
-
+    std::unordered_map<BusRouteName, StopNamesOnBusRoute> _bus_name_to_stop_names;  // temporary storage
     std::unordered_set<std::string> _stop_names;
     std::unordered_set<std::string> _bus_names;
     std::deque<Stop>  _stops;                      // std::deque doesn't invalidate refs after insertion
     StopNameToStopPtr _stop_name_to_stop_ptr;      // hash table: stop name(string_view) => address of "Stop" instance
 
+
     std::deque<BusRoute> _bus_routes;              // each element of the deque is vector<Stop*>
     BusNameToBusRoute _bus_name_to_bus_route;      // hash table: bus name(string) => address of "BusRoute" instance
     BusNameToBusRouteStats _bus_name_to_bus_route_stats;  // statistics on a given bus route
 
-    // =========== Transport Guide, part B ===========
     std::unordered_map<std::string_view, std::set<std::string_view>> _stop_name_to_bus_routes;
 
-    // =========== Transport Guide, part B ===========
     std::unordered_map<std::pair<Stop*, Stop*>, size_t, PairOfStopPointersHasher> _stops_pair_to_distance;
 
-
-    // =========== Transport Guide, part C ===========
     std::unordered_map<std::pair<CurrentStopName, NextStopName>,
                        DistanceByRoad,
                        PairOfStopNameViewHasher> _pair_stop_names_view_to_distance;

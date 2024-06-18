@@ -225,93 +225,125 @@ void TestAddBusRoutes() {
     ASSERT_EQUAL(3u, transport_guide.GetUniqueStopsCountForBusRoute("828"))
 }
 
-// TODO: implement test
-//void TestRouteStatistics() {
-//    istringstream iss{R"(
-//10
-//Stop Tolstopaltsevo: 55.611087, 37.20829
-//Stop Marushkino: 55.595884, 37.209755
-//Bus 256: Biryulyovo Zapadnoye > Biryusinka > Universam > Biryulyovo Tovarnaya > Biryulyovo Passazhirskaya > Biryulyovo Zapadnoye
-//Bus 750: Tolstopaltsevo - Marushkino - Rasskazovka
-//Stop Rasskazovka: 55.632761, 37.333324
-//Stop Biryulyovo Zapadnoye: 55.574371, 37.6517
-//Stop Biryusinka: 55.581065, 37.64839
-//Stop Universam: 55.587655, 37.645687
-//Stop Biryulyovo Tovarnaya: 55.592028, 37.653656
-//Stop Biryulyovo Passazhirskaya: 55.580999, 37.659164
-//3
-//Bus 256
-//Bus 750
-//Bus 751
-//)"};
-//
-//    TransportGuide guide;
-//    guide.ProcessCreationQueries(iss);
-//
-//    BusRouteStats bus_256_stats_expected {
-//        6,
-//        5,
-//        {4371.01725085208, 0}
-//    };
-//
-//    BusRouteStats bus_256_stats = guide.GetStatsForBusRoute("256");
-//    ASSERT(bus_256_stats_expected == bus_256_stats);
-//
-//    BusRouteStats bus_750_stats_expected {
-//            5,
-//            3,
-//            {20939.483046751142, 0}
-//    };
-//
-//    BusRouteStats bus_750_stats = guide.GetStatsForBusRoute("750");
-//    ASSERT(bus_750_stats_expected == bus_750_stats);
-//}
-//
-//void TestStopRetrieveQuery() {
-//    istringstream iss_creation_part(
-//            R"(13
-//Stop Tolstopaltsevo: 55.611087, 37.20829, 3900m to Marushkino
-//Stop Marushkino: 55.595884, 37.209755, 9900m to Rasskazovka
-//Bus 256: Biryulyovo Zapadnoye > Biryusinka > Universam > Biryulyovo Tovarnaya > Biryulyovo Passazhirskaya > Biryulyovo Zapadnoye
-//Bus 750: Tolstopaltsevo - Marushkino - Rasskazovka
-//Stop Rasskazovka: 55.632761, 37.333324
-//Stop Biryulyovo Zapadnoye: 55.574371, 37.6517, 7500m to Rossoshanskaya ulitsa, 1800m to Biryusinka, 2400m to Universam
-//Stop Biryusinka: 55.581065, 37.64839, 750m to Universam
-//Stop Universam: 55.587655, 37.645687, 5600m to Rossoshanskaya ulitsa, 900m to Biryulyovo Tovarnaya
-//Stop Biryulyovo Tovarnaya: 55.592028, 37.653656, 1300m to Biryulyovo Passazhirskaya
-//Stop Biryulyovo Passazhirskaya: 55.580999, 37.659164, 1200m to Biryulyovo Zapadnoye
-//Bus 828: Biryulyovo Zapadnoye > Universam > Rossoshanskaya ulitsa > Biryulyovo Zapadnoye
-//Stop Rossoshanskaya ulitsa: 55.595579, 37.605757
-//Stop Prazhskaya: 55.611678, 37.603831
-//)");
-//
-//    istringstream iss_retrieval_part(R"(
-//6
-//Bus 256
-//Bus 750
-//Bus 751
-//Stop Samara
-//Stop Prazhskaya
-//Stop Biryulyovo Zapadnoye
-//)");
-//
-//    TransportGuide guide;
-//    guide.ProcessCreationQueries(iss_creation_part);
-//
-//    istringstream iss_expected_retrieval(
-//            R"(Bus 256: 6 stops on route, 5 unique stops, 5950 route length, 1.361239 curvature
-//Bus 750: 5 stops on route, 3 unique stops, 27600 route length, 1.318084 curvature
-//Bus 751: not found
-//Stop Samara: not found
-//Stop Prazhskaya: no buses
-//Stop Biryulyovo Zapadnoye: buses 256 828
-//)");
-//
-//    ostringstream oss_retrieval;
-//    guide.ProcessRetrievalQueries(iss_retrieval_part, oss_retrieval);
-//    ASSERT_EQUAL(iss_expected_retrieval.str(), oss_retrieval.str());
-//}
+void TestRouteStatistics() {
+    string input_json_file_name = "input.json";
+    ifstream input(input_json_file_name);
 
+    if (!input) {
+        throw std::runtime_error("File \"" + input_json_file_name + "\" is not opened.");
+    }
+
+    Json::Document document = Json::Load(input);
+    const map<string, Json::Node>& root_map = document.GetRoot().AsMap();
+
+    TransportGuide transport_guide;
+    transport_guide.CreateDataBaseFromJSON(root_map.at("base_requests").AsArray());
+
+    // ============== test bus route #256 ==============
+    BusRouteStats bus_256_stats_expected {
+        6,                 // stops on route
+        5,                 // unique stops
+        4371.01725085208,  // length by geo coordinates
+        5950               // length by roads
+    };
+
+    const auto& bus_256_stats = transport_guide.GetStatsForBusRoute("256");
+    if (bus_256_stats) {
+        ASSERT(bus_256_stats_expected == *bus_256_stats);
+    }
+
+
+    // ============== test bus route #750 ==============
+    BusRouteStats bus_750_stats_expected {
+            5,                  // stops on route
+            3,                  // unique stops
+            20939.483046751142, // length by geo coordinates
+            27600               // length by roads
+    };
+
+    const auto& bus_750_stats = transport_guide.GetStatsForBusRoute("750");
+    ASSERT(bus_750_stats_expected == bus_750_stats);
+
+    // ============== test bus route #828 ==============
+    BusRouteStats bus_828_stats_expected {
+            4,                  // stops on route
+            3,                  // unique stops
+            7911.8811000350706, // length by geo coordinates
+            15500               // length by roads
+    };
+
+    const auto& bus_828_stats = transport_guide.GetStatsForBusRoute("828");
+    ASSERT(bus_828_stats_expected == bus_828_stats);
+}
+// ========================
+
+void TestProcessRetrieveQueries() {
+    string input_json_file_name = "input.json";
+    ifstream input(input_json_file_name);
+
+    if (!input) {
+        throw std::runtime_error("File \"" + input_json_file_name + "\" is not opened.");
+    }
+
+    Json::Document document = Json::Load(input);
+    const map<string, Json::Node>& root_map = document.GetRoot().AsMap();
+
+    TransportGuide transport_guide;
+    transport_guide.CreateDataBaseFromJSON(root_map.at("base_requests").AsArray());
+
+    istringstream iss_expected_retrieval(
+            R"([
+  {
+    "route_length": 5950,
+    "request_id": 1965312327,
+    "curvature": 1.36124,
+    "stop_count": 6,
+    "unique_stop_count": 5
+  },
+  {
+    "route_length": 27600,
+    "request_id": 519139350,
+    "curvature": 1.31808,
+    "stop_count": 5,
+    "unique_stop_count": 3
+  },
+  {
+    "request_id": 194217464,
+    "error_message": "not found"
+  },
+  {
+    "request_id": 746888088,
+    "error_message": "not found"
+  },
+  {
+    "buses": [],
+    "request_id": 65100610
+  },
+  {
+    "buses": [
+      "256",
+      "828"
+    ],
+    "request_id": 1042838872
+  }
+])");
+
+    ostringstream oss_retrieval;
+    transport_guide.ProcessRetrieveQueries(root_map.at("stat_requests").AsArray(), oss_retrieval);
+
+    // дублируем вывод в файл в целях отладки
+    string output_file_name = "output.json";
+    ofstream output(output_file_name);
+
+    if (!output) {
+        throw std::runtime_error("File \"" + input_json_file_name + "\" is not opened for write operations.");
+    }
+    transport_guide.ProcessRetrieveQueries(root_map.at("stat_requests").AsArray(), output);
+    // ==========================
+
+    ASSERT_EQUAL(iss_expected_retrieval.str(), oss_retrieval.str());
+}
+// ========================
 
 void TestAll() {
     TestRunner tr;
@@ -319,7 +351,6 @@ void TestAll() {
     /*1*/  RUN_TEST(tr, TestAddStops);
     /*2*/  RUN_TEST(tr, TestDistancesTable);
     /*3*/  RUN_TEST(tr, TestAddBusRoutes);
-//    /*5*/  RUN_TEST(tr, TestRouteStatistics);
-//    /*6*/  RUN_TEST(tr, TestStopRetrieveQuery);
-//    /*7*/
+    /*4*/  RUN_TEST(tr, TestRouteStatistics);
+    /*5*/  RUN_TEST(tr, TestProcessRetrieveQueries);
 }

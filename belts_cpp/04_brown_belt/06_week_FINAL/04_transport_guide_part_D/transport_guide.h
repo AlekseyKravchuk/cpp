@@ -47,21 +47,19 @@ std::pair<Stop, std::optional<NextStopsToDistancesMap>> RetrieveStopFromJsonMap(
 
 // statistics for a given bus route
 struct BusRouteStats {
-    struct BusRouteLengths {
-        double geo_length{};
-        unsigned long roads_length{};
-    };
+    static constexpr double REASONABLE_ERROR = 0.0001;
 
     size_t stops_count{0};
     size_t unique_stops_count{0};
-    BusRouteLengths lengths{0.0, 0u};
-
-    static constexpr double REASONABLE_ERROR = 0.0001;
+    double length_by_geo_coordinates{};
+    unsigned long length_by_roads{};
+    double curvature{};
 
     bool operator==(const BusRouteStats& rhs) const {
         return stops_count == rhs.stops_count &&
-                unique_stops_count == rhs.unique_stops_count &&
-                fabs(lengths.geo_length - rhs.lengths.geo_length) < REASONABLE_ERROR;
+               unique_stops_count == rhs.unique_stops_count &&
+               fabs(length_by_geo_coordinates - rhs.length_by_geo_coordinates) < REASONABLE_ERROR &&
+               length_by_roads == rhs.length_by_roads;
     }
 };
 
@@ -71,8 +69,6 @@ class TransportGuide {
     using StopNameToStopPtr = std::unordered_map<std::string_view, Stop*>;
     using BusNameToBusRoute = std::unordered_map<std::string_view, BusRoute*>;
     using BusNameToBusRouteStats = std::unordered_map<std::string_view, BusRouteStats>;
-
-
 
     struct PairOfStopNameViewHasher {
         size_t operator()(const std::pair<std::string_view, std::string_view>& p) const {
@@ -105,11 +101,8 @@ class TransportGuide {
 
     void CreateDataBaseFromJSON(const std::vector<Json::Node>& base_requests);
 
-    // TODO: implement method:
-    void ProcessRetrievalQueries(std::istream& in, std::ostream& out = std::cout);
-
-    void PrintBusRouteInfo(std::string_view bus_route_name, std::ostream& out = std::cout) const;
-    void PrintStopInfo(std::string_view stop_name, std::ostream& out = std::cout) const;
+    void ProcessRetrieveQueries(const std::vector<Json::Node>& retrieve_requests,
+                                std::ostream& out_stream = std::cout);
 
     const std::deque<Stop>& GetStops() const;
     const StopNameToStopPtr& GetStopNameToStopPtr() const;
@@ -121,9 +114,8 @@ class TransportGuide {
 
     const std::deque<BusRoute>& GetBusRoutes() const;
     const BusNameToBusRoute& GetBusNameToBusRouteMapping() const;
-    const BusRouteStats& GetStatsForBusRoute(std::string_view bus_route_name) const;
-
-
+//    const BusRouteStats& GetStatsForBusRoute(std::string_view bus_route_name) const;
+    std::optional<std::reference_wrapper<const BusRouteStats>> GetStatsForBusRoute(std::string_view bus_route_name) const;
 
   private:
     std::pair<Stop,

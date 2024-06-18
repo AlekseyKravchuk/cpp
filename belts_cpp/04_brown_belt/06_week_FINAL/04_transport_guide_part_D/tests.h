@@ -5,6 +5,7 @@
 void TestAddStops();
 void TestDistancesTable();
 void TestAddBusRoutes();
-//void TestRouteStatistics();
+void TestRouteStatistics();
+void TestProcessRetrieveQueries();
 
 void TestAll();

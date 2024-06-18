@@ -44,7 +44,7 @@ TransportGuide::GetBusRouteFromJsonMap(const map<string, Json::Node>& request_as
                                     ? stop_names_as_json_nodes.size()
                                     : stop_names_as_json_nodes.size() * 2 - 1);
 
-    for (const auto& json_stop_name : stop_names_as_json_nodes) {
+    for (const auto& json_stop_name: stop_names_as_json_nodes) {
         auto [it_stop_name_on_route, is_inserted] = _stop_names.insert(json_stop_name.AsString());
         stop_names_on_bus_route.push_back(*it_stop_name_on_route);
     }
@@ -59,7 +59,7 @@ TransportGuide::GetBusRouteFromJsonMap(const map<string, Json::Node>& request_as
 }
 
 void TransportGuide::AddStopsAndPreprocessBusRoutes(const vector<Json::Node>& create_requests) {
-    for (const auto& request_as_JSON_map_node : create_requests) {
+    for (const auto& request_as_JSON_map_node: create_requests) {
         const map<string, Json::Node>& request_as_map = request_as_JSON_map_node.AsMap();
         const string& request_type = request_as_map.at("type").AsString();
 
@@ -129,94 +129,31 @@ void TransportGuide::CalculateBusRouteStatistics(string_view bus_name,
     unsigned long length_by_roads = accumulate(road_distances.begin(),
                                                road_distances.end(),
                                                0ul);
+    double curvature = static_cast<double>(length_by_roads) / length_by_coordinates;
 
     _bus_name_to_bus_route_stats[bus_name] = BusRouteStats{
             stop_names.size(),
             unique_stops.size(),
-            {length_by_coordinates, length_by_roads}
+            length_by_coordinates,
+            length_by_roads,
+            curvature
     };
 }
 
 void TransportGuide::FinallyProcessBusRoutes() {
-    for (auto& [bus_name, stop_names]: _bus_name_to_stop_names) {
+    for (auto& [bus_name_view, stop_names]: _bus_name_to_stop_names) {
         _bus_routes.emplace_back(stop_names.size());
         BusRoute& current_bus_route = _bus_routes.back();
-        _bus_name_to_bus_route[bus_name] = &current_bus_route;
+        _bus_name_to_bus_route[bus_name_view] = &current_bus_route;
 
         unordered_set<string_view> unique_stops;
         for (size_t i = 0; i < stop_names.size(); ++i) {
             current_bus_route[i] = _stop_name_to_stop_ptr[stop_names[i]];
             unique_stops.insert(stop_names[i]);
-            _stop_name_to_bus_routes[stop_names[i]].insert(bus_name);
+            _stop_name_to_bus_routes[stop_names[i]].insert(bus_name_view);
         }
 
-        CalculateBusRouteStatistics(bus_name, current_bus_route, stop_names, unique_stops);
-    }
-}
-
-void TransportGuide::CreateDataBaseFromJSON(const vector<Json::Node>& base_requests) {
-    AddStopsAndPreprocessBusRoutes(base_requests);
-    CreateDistancesTable();
-    FinallyProcessBusRoutes();
-}
-// =============================================================================================
-
-void TransportGuide::PrintBusRouteInfo(std::string_view bus_route_name, std::ostream& out) const {
-    if (_bus_name_to_bus_route.count(bus_route_name)) {
-        const BusRouteStats& bus_stats = GetStatsForBusRoute(bus_route_name);
-        out << "Bus " << bus_route_name << ": "
-            << bus_stats.stops_count << " stops on route, "
-            << bus_stats.unique_stops_count << " unique stops, "
-            << std::setprecision(6) << bus_stats.lengths.roads_length << " route length, "
-            << std::setprecision(7) << (double(bus_stats.lengths.roads_length) / bus_stats.lengths.geo_length) << " curvature"
-            << endl;
-    } else {
-        out << "Bus " << bus_route_name
-            << ": not found"
-            << endl;
-    }
-}
-
-void TransportGuide::PrintStopInfo(std::string_view stop_name, std::ostream& out) const {
-    if (!_stop_name_to_stop_ptr.count(stop_name)) {
-        out << "Stop " << stop_name
-            << ": not found"
-            << endl;
-    } else {
-        if (!_stop_name_to_bus_routes.count(stop_name)) {
-            out << "Stop " << stop_name
-                << ": no buses"
-                << endl;
-        } else {
-            out << "Stop " << stop_name
-                << ": buses";
-            for (const auto bus_name: _stop_name_to_bus_routes.at(stop_name)) {
-                out << " " << bus_name;
-            }
-            out << endl;
-        }
-    }
-}
-
-// TODO: implement method
-void TransportGuide::ProcessRetrievalQueries(std::istream& in, std::ostream& out) {
-    size_t retrieve_queries_count;
-    in >> retrieve_queries_count >> std::ws;
-
-    string line{};
-    for (size_t i = 0; i < retrieve_queries_count; ++i) {
-        getline(in, line);
-        const auto& [command, arg] = SplitIntoTwoPartsView(line, " ");
-
-        switch (str_to_retrieve_command[command]) {
-            case RetrieveCommand::Bus:
-                PrintBusRouteInfo(arg, out);
-                break;
-            case RetrieveCommand::Stop: {
-                PrintStopInfo(arg, out);
-                break;
-            }
-        }
+        CalculateBusRouteStatistics(bus_name_view, current_bus_route, stop_names, unique_stops);
     }
 }
 
@@ -252,6 +189,82 @@ void TransportGuide::CreateDistancesTable() {
     }
 }
 
+void TransportGuide::CreateDataBaseFromJSON(const vector<Json::Node>& base_requests) {
+    AddStopsAndPreprocessBusRoutes(base_requests);
+    CreateDistancesTable();
+    FinallyProcessBusRoutes();
+}
+// =============================================================================================
+// TODO: refactor code, split it into methods, make it more readable
+void TransportGuide::ProcessRetrieveQueries(const std::vector<Json::Node>& retrieve_requests,
+                                            std::ostream& out_stream) {
+    out_stream.precision(6);
+    out_stream << "[";
+
+    bool is_first_map = true;
+    for (const auto& request: retrieve_requests) {
+        const auto& request_map = request.AsMap();
+        const string& type = request_map.at("type").AsString();
+        int request_id = request_map.at("id").AsInt();
+
+        if (!is_first_map) {
+            out_stream << ',';
+        }
+        is_first_map = false;
+        out_stream << '\n' << "  {" << '\n';
+
+        if (type == "Bus") {
+            string_view bus_name = request_map.at("name").AsString();
+
+            if (const auto& bus_stats_opt = GetStatsForBusRoute(bus_name);
+                    bus_stats_opt.has_value()) {
+                const auto& bus_stats = *bus_stats_opt;
+                out_stream << R"(    "route_length": )" << bus_stats.get().length_by_roads << "," << '\n'
+                           << R"(    "request_id": )" << request_id << "," << '\n'
+                           << R"(    "curvature": )" << bus_stats.get().curvature << "," << '\n'
+                           << R"(    "stop_count": )" << bus_stats.get().stops_count << "," << '\n'
+                           << R"(    "unique_stop_count": )" << bus_stats.get().unique_stops_count << '\n';
+            } else {
+                out_stream << R"(    "request_id": )" << request_id << "," << '\n'
+                           << R"(    "error_message": "not found")" << '\n';
+            }
+        } else if (type == "Stop") {
+            string_view stop_name = request_map.at("name").AsString();
+
+            if (_stop_names.count(string(stop_name))) {
+                if (_stop_name_to_bus_routes.count(stop_name)) {
+                    out_stream << R"(    "buses": [)";
+                    const set<string_view>& bus_names = _stop_name_to_bus_routes.at(stop_name);
+
+                    bool is_first_bus_name = true;
+                    for (auto bus_name: bus_names) {
+                        if (!is_first_bus_name) {
+                            out_stream << ',';
+                        }
+                        is_first_bus_name = false;
+                        out_stream << '\n'
+                                   << R"(      ")" << bus_name << R"(")";
+                    }
+                    out_stream << '\n'
+                               << R"(    ],)" << '\n'
+                               << R"(    "request_id": )" << request_id << '\n';
+                } else {  // остановка с именем "bus_name" существует, но через неё не проходит ни один маршрут
+                    out_stream << R"(    "buses": [],)" << '\n'
+                               << R"(    "request_id": )" << request_id << '\n';
+                }
+            } else {  // остановка с именем "bus_name" НЕ существует
+                out_stream << R"(    "request_id": )" << request_id << "," << '\n'
+                           << R"(    "error_message": "not found")" << '\n';
+            }
+        } else {
+            throw std::logic_error(R"(Unsupported request type: ")" + type + R"(" encountered.)");
+        }
+
+        out_stream << "  }";
+    }  // END of FOR LOOP
+    out_stream << '\n' << "]";
+}
+
 const deque<Stop>& TransportGuide::GetStops() const {
     return _stops;
 }
@@ -272,8 +285,12 @@ size_t TransportGuide::GetUniqueStopsCountForBusRoute(string_view bus_route_name
     return _bus_name_to_bus_route_stats.at(bus_route_name).unique_stops_count;
 }
 
-const BusRouteStats& TransportGuide::GetStatsForBusRoute(string_view bus_route_name) const {
-    return _bus_name_to_bus_route_stats.at(bus_route_name);
+optional<reference_wrapper<const BusRouteStats>> TransportGuide::GetStatsForBusRoute(string_view bus_route_name) const {
+    if (_bus_name_to_bus_route_stats.count(bus_route_name)) {
+        return _bus_name_to_bus_route_stats.at(bus_route_name);
+    } else {
+        return nullopt;
+    }
 }
 
 const TransportGuide::DistancesTable& TransportGuide::GetDistancesTable() const {

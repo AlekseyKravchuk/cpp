@@ -101,8 +101,14 @@ class TransportGuide {
 
     void CreateDataBaseFromJSON(const std::vector<Json::Node>& base_requests);
 
+    void PrintBusStatsIntoJSON(const std::map<std::string, Json::Node>& request_map,
+                               std::ostream& out_stream) const;
+
+    void PrintStopStatsIntoJSON(const std::map<std::string, Json::Node>& request_map,
+                               std::ostream& out_stream) const;
+
     void ProcessRetrieveQueries(const std::vector<Json::Node>& retrieve_requests,
-                                std::ostream& out_stream = std::cout);
+                                std::ostream& out_stream = std::cout) const;
 
     const std::deque<Stop>& GetStops() const;
     const StopNameToStopPtr& GetStopNameToStopPtr() const;

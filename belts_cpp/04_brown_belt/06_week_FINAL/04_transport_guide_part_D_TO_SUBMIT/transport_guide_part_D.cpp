@@ -1,16 +1,347 @@
 #include <algorithm>
-#include <cmath>    // std::acos, std::sin
-#include <iomanip>  // std::setprecision
+#include <cmath>
+#include <deque>
 #include <iostream>
-#include <numeric>  // std::accumulate
+#include <map>
+#include <memory>  // std::hash
+#include <numeric> // std::accumulate
+#include <optional>
+#include <set>
+#include <sstream>
+#include <string>
+#include <string_view>
+#include <unordered_map>
 #include <unordered_set>
-
-#include "parse.h"
-#include "transport_guide.h"
-#include "json.h"
+#include <utility> // std::move, std::pair
+#include <variant>
+#include <vector>
 
 using namespace std;
 
+// ====================================================================================================================
+namespace Json {
+
+    class Node : std::variant<
+            std::string,
+            std::vector<Node>,
+            std::map<std::string, Node>,
+            int,
+            double,
+            bool> {
+      public:
+        using variant::variant;
+
+        const auto& AsArray() const {
+            return std::get<std::vector<Node>>(*this);
+        }
+
+        const auto& AsMap() const {
+            return std::get<std::map<std::string, Node>>(*this);
+        }
+
+        int AsInt() const {
+            return std::get<int>(*this);
+        }
+
+        const auto& AsString() const {
+            return std::get<std::string>(*this);
+        }
+
+        double AsDouble() const {
+            double res;
+            try {
+                res = std::get<double>(*this);
+            } catch (std::bad_variant_access&) {
+                res = static_cast<double>(std::get<int>(*this));
+            }
+            return res;
+        }
+
+        bool AsBool() const {
+            return std::get<bool>(*this);
+        }
+    };
+
+    class Document {
+      public:
+        explicit Document(Node root);
+
+        const Node& GetRoot() const;
+
+      private:
+        Node root;
+    };
+
+    Document Load(std::istream& input);
+}  // namespace Json
+// ====================================================================================================================
+namespace Json {
+
+    Document::Document(Node root)
+            : root(std::move(root)) { }
+
+    const Node& Document::GetRoot() const {
+        return root;
+    }
+
+    Node LoadNode(istream& input);  // forward declaration
+
+    Node LoadArray(istream& input) {
+        vector<Node> result;
+
+        for (char c; input >> c && c != ']';) {
+            if (c != ',') {
+                input.putback(c);
+            }
+            result.push_back(LoadNode(input));
+        }
+
+        return Node{std::move(result)};
+    }
+
+    Node LoadString(istream& input) {
+        string line;
+        getline(input, line, '"');
+        return Node{std::move(line)};
+    }
+
+    Node LoadDict(istream& input) {
+        map<string, Node> result;
+
+        for (char c; input >> c && c != '}';) {
+            if (c == ',') {
+                input >> c;
+            }
+
+            string key = LoadString(input).AsString();
+            input >> c;
+            result.emplace(std::move(key), LoadNode(input));
+        }
+
+        return Node{std::move(result)};
+    }
+
+    Node LoadVal(istream& input) {
+        string str;
+        char c;
+        input >> c;
+        while (isdigit(c) || c == '-' || c == '.') {
+            str += c;
+            input >> c;
+        }
+        input.putback(c);
+
+        if (str.find('.') == string::npos) {
+            return Node{stoi(str)};
+        }
+
+        return Node{stod(str)};
+    }
+
+    Node LoadBool(istream& input) {
+        string str;
+        char c;
+        input >> c;
+        while (isalpha(c)) {
+            str += c;
+            input >> c;
+        }
+
+        if (c == ',' || c == '}') {
+            input.putback(c);
+        }
+
+        if (str == "false") {
+            return Node{false};
+        }
+
+        return Node{true};
+    }
+
+    Node LoadNode(istream& input) {
+        char c;
+        input >> c;
+
+        if (c == '[') {
+            return LoadArray(input);
+        } else if (c == '{') {
+            return LoadDict(input);
+        } else if (c == '"') {
+            return LoadString(input);
+        } else if (isalpha(c)) {
+            input.putback(c);
+            return LoadBool(input);
+        } else {
+            input.putback(c);
+            return LoadVal(input);
+        }
+    }
+
+    Document Load(istream& input) {
+        return Document{LoadNode(input)};
+    }
+}  // namespace Json
+// ====================================================================================================================
+using CurrentStopName = std::string_view;
+using NextStopName = std::string_view;
+using DistanceByRoad = size_t;
+using NextStopsToDistancesMap = std::unordered_map<NextStopName, DistanceByRoad>;
+
+using BusRouteName = std::string_view;
+using StopNamesOnBusRoute = std::vector<std::string_view>;
+
+struct Stop {
+    constexpr static const double PI = 3.1415926535;
+
+    std::string_view stop_name_view;  // название остановки
+    double latitude_deg;              // широта в градусах
+    double longitude_deg;             // долгота в градусах
+
+    double latitude_rad;              // широта в радианах
+    double longitude_rad;             // долгота в радианах
+
+    Stop(std::string_view stop_name_as_view, double latitude_in_degrees, double longitude_in_degrees)
+            : stop_name_view(stop_name_as_view),
+              latitude_deg(latitude_in_degrees),
+              longitude_deg(longitude_in_degrees) {
+        latitude_rad = latitude_deg * PI / 180;
+        longitude_rad = longitude_deg * PI / 180;
+    }
+};
+
+std::pair<Stop, std::optional<NextStopsToDistancesMap>> RetrieveStopFromJsonMap(const std::map<std::string, Json::Node>& stop_info_map);
+
+struct BusRouteStats {  // statistics for a given bus route
+    static constexpr double REASONABLE_ERROR = 0.0001;
+
+    size_t stops_count{0};
+    size_t unique_stops_count{0};
+    double length_by_geo_coordinates{};
+    unsigned long length_by_roads{};
+    double curvature{};
+
+    bool operator==(const BusRouteStats& rhs) const {
+        return stops_count == rhs.stops_count &&
+               unique_stops_count == rhs.unique_stops_count &&
+               fabs(length_by_geo_coordinates - rhs.length_by_geo_coordinates) < REASONABLE_ERROR &&
+               length_by_roads == rhs.length_by_roads;
+    }
+};
+
+class TransportGuide {
+  public:
+    using BusRoute = std::vector<Stop*>;
+    using StopNameToStopPtr = std::unordered_map<std::string_view, Stop*>;
+    using BusNameToBusRoute = std::unordered_map<std::string_view, BusRoute*>;
+    using BusNameToBusRouteStats = std::unordered_map<std::string_view, BusRouteStats>;
+
+    struct PairOfStopNameViewHasher {
+        size_t operator()(const std::pair<std::string_view, std::string_view>& p) const {
+            auto seed = std::hash<std::string_view>{}(p.second);
+            return std::hash<std::string_view>{}(p.first) + 0x9e3779b9 + (seed<<6) + (seed>>2);
+        }
+    };
+
+    struct PairOfStopPointersHasher {
+        size_t operator()(const std::pair<Stop*, Stop*>& p) const {
+            auto seed = std::hash<Stop*>{}(p.second);
+            return std::hash<Stop*>{}(p.first) + 0x9e3779b9 + (seed<<6) + (seed>>2);
+        }
+    };
+
+    using DistancesTable = std::unordered_map<std::pair<Stop*, Stop*>,
+            DistanceByRoad,
+            PairOfStopPointersHasher>;
+
+  public:
+    TransportGuide() = default;
+
+    void AddStopsAndPreprocessBusRoutes(const std::vector<Json::Node>& create_requests);
+    void CreateDistancesTable();
+    void FinallyProcessBusRoutes();
+    void CalculateBusRouteStatistics(BusRouteName bus_name,
+                                     BusRoute& bus_route,
+                                     const StopNamesOnBusRoute& stop_names,
+                                     const std::unordered_set<std::string_view>& unique_stops);
+
+    void CreateDataBaseFromJSON(const std::vector<Json::Node>& base_requests);
+
+    void PrintBusStatsIntoJSON(const std::map<std::string, Json::Node>& request_map,
+                               std::ostream& out_stream) const;
+
+    void PrintStopStatsIntoJSON(const std::map<std::string, Json::Node>& request_map,
+                                std::ostream& out_stream) const;
+
+    void ProcessRetrieveQueries(const std::vector<Json::Node>& retrieve_requests,
+                                std::ostream& out_stream = std::cout) const;
+
+    const std::deque<Stop>& GetStops() const;
+    const StopNameToStopPtr& GetStopNameToStopPtr() const;
+
+    const std::unordered_map<std::pair<Stop*, Stop*>,
+            DistanceByRoad,
+            PairOfStopPointersHasher>& GetDistancesTable() const;
+    size_t GetUniqueStopsCountForBusRoute(std::string_view bus_route_name) const;
+
+    const std::deque<BusRoute>& GetBusRoutes() const;
+    const BusNameToBusRoute& GetBusNameToBusRouteMapping() const;
+//    const BusRouteStats& GetStatsForBusRoute(std::string_view bus_route_name) const;
+    std::optional<std::reference_wrapper<const BusRouteStats>> GetStatsForBusRoute(std::string_view bus_route_name) const;
+
+  private:
+    std::pair<Stop,
+            std::optional<NextStopsToDistancesMap>> GetStopFromJsonMap(const std::map<std::string, Json::Node>& request_as_json_map);
+
+    std::pair<std::string_view,
+            std::vector<std::string_view>> GetBusRouteFromJsonMap(const std::map<std::string, Json::Node>& request_as_json_map);
+
+    static double CalculateGeoDistanceBetweenTwoStops(Stop* stop_1, Stop* stop_2);
+
+  private:
+    enum class CreateCommand : char {
+        Bus,
+        Stop
+    };
+
+    std::unordered_map<std::string_view, CreateCommand> str_to_create_command = {
+            {"Bus",  CreateCommand::Bus},
+            {"Stop", CreateCommand::Stop}
+    };
+
+    enum class RetrieveCommand : char {
+        Bus,
+        Stop
+    };
+
+    std::unordered_map<std::string_view, RetrieveCommand> str_to_retrieve_command = {
+            {"Bus",  RetrieveCommand::Bus},
+            {"Stop", RetrieveCommand::Stop}
+    };
+
+    std::unordered_map<BusRouteName, StopNamesOnBusRoute> _bus_name_to_stop_names;  // temporary storage
+    std::unordered_set<std::string> _stop_names;
+    std::unordered_set<std::string> _bus_names;
+    std::deque<Stop>  _stops;                      // std::deque doesn't invalidate refs after insertion
+    StopNameToStopPtr _stop_name_to_stop_ptr;      // hash table: stop name(string_view) => address of "Stop" instance
+
+
+    std::deque<BusRoute> _bus_routes;              // each element of the deque is vector<Stop*>
+    BusNameToBusRoute _bus_name_to_bus_route;      // hash table: bus name(string) => address of "BusRoute" instance
+    BusNameToBusRouteStats _bus_name_to_bus_route_stats;  // statistics on a given bus route
+
+    std::unordered_map<std::string_view, std::set<std::string_view>> _stop_name_to_bus_routes;
+
+    std::unordered_map<std::pair<Stop*, Stop*>, size_t, PairOfStopPointersHasher> _stops_pair_to_distance;
+
+    std::unordered_map<std::pair<CurrentStopName, NextStopName>,
+            DistanceByRoad,
+            PairOfStopNameViewHasher> _pair_stop_names_view_to_distance;
+
+    DistancesTable _distances_table;
+};
+// ====================================================================================================================
+
+// ====================================================================================================================
 pair<Stop, optional<NextStopsToDistancesMap>>
 TransportGuide::GetStopFromJsonMap(const map<string, Json::Node>& request_as_json_map) {
     auto [it_to_current_stop_name, is_inserted1] = _stop_names.insert(request_as_json_map.at("name").AsString());
@@ -122,7 +453,7 @@ void TransportGuide::CalculateBusRouteStatistics(string_view bus_name,
             }
         }
     }
-    // =============================================================
+    // =============================================
     double length_by_coordinates = accumulate(geo_distances.begin(),
                                               geo_distances.end(),
                                               0.0);
@@ -194,7 +525,7 @@ void TransportGuide::CreateDataBaseFromJSON(const vector<Json::Node>& base_reque
     CreateDistancesTable();
     FinallyProcessBusRoutes();
 }
-// =============================================================================================
+// ====================================================================================================================
 void TransportGuide::PrintBusStatsIntoJSON(const map<string, Json::Node>& request_map,
                                            ostream& out_stream ) const {
     string_view bus_name = request_map.at("name").AsString();
@@ -215,7 +546,7 @@ void TransportGuide::PrintBusStatsIntoJSON(const map<string, Json::Node>& reques
 }
 
 void TransportGuide::PrintStopStatsIntoJSON(const map<string, Json::Node>& request_map,
-                                           ostream& out_stream ) const {
+                                            ostream& out_stream ) const {
     string_view stop_name = request_map.at("name").AsString();
     int request_id = request_map.at("id").AsInt();
 
@@ -307,5 +638,15 @@ optional<reference_wrapper<const BusRouteStats>> TransportGuide::GetStatsForBusR
 const TransportGuide::DistancesTable& TransportGuide::GetDistancesTable() const {
     return _distances_table;
 }
+// ====================================================================================================================
 
+int main() {
+    Json::Document document = Json::Load(cin);
+    const map<string, Json::Node>& root_map = document.GetRoot().AsMap();
 
+    TransportGuide transport_guide;
+    transport_guide.CreateDataBaseFromJSON(root_map.at("base_requests").AsArray());
+    transport_guide.ProcessRetrieveQueries(root_map.at("stat_requests").AsArray());
+
+    return 0;
+}

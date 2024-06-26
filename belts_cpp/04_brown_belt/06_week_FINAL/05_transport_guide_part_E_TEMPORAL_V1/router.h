@@ -19,7 +19,7 @@ namespace Graph {
     using Graph = DirectedWeightedGraph<Weight>;
 
   public:
-    Router(const Graph& graph);
+    explicit Router(const Graph& graph);
 
     using RouteId = uint64_t;
 

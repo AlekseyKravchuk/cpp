@@ -42,10 +42,10 @@ public:
   RouteInfo GetRouteInfo(std::string from, std::string to, size_t request_id);
 
 private:
-  std::unordered_map<std::string, size_t> _stop_idx;
+  std::unordered_map<std::string, size_t> _stop_name_to_idx;
   std::vector<Stop> _stops;
   std::unordered_map<size_t, std::unordered_map<size_t, unsigned int>> _distances;
-  std::unordered_map<RouteNumber, BusRoute> _buses;
+  std::unordered_map<RouteNumber, BusRoute> _bus_name_to_bus_route;
   RoutingSettings _routing_settings;
   std::unique_ptr<Graph::DirectedWeightedGraph<double>> _road_graph{nullptr};
   std::unique_ptr<Graph::Router<double>> _router{nullptr};

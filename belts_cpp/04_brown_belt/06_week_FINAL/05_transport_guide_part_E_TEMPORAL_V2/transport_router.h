@@ -78,11 +78,9 @@ private:  // Types
 
     struct EdgeHash {
         inline size_t operator()(const graph::Edge<Weight>& edge) const {
-            // clang-format off
             return kPrimeValue * std::hash<size_t>{}(edge.from) +
                    kPrimeValue * kPrimeValue * std::hash<size_t>{}(edge.to) +
                    kPrimeValue * kPrimeValue * kPrimeValue * std::hash<Weight>{}(edge.weight);
-            // clang-format on
         }
 
     private:
@@ -90,18 +88,18 @@ private:  // Types
     };
 
 private:  // Fields
-    const catalogue::TransportCatalogue& catalogue_;
-    Settings settings_;
+    const catalogue::TransportCatalogue& _catalogue;
+    Settings _settings;
 
-    std::unordered_map<std::string_view, StopVertices> stop_to_vertex_;
-    std::unordered_map<graph::Edge<Weight>, ResponseItem, EdgeHash> edge_to_response_;
+    std::unordered_map<std::string_view, StopVertices> _stop_to_vertex;
+    std::unordered_map<graph::Edge<Weight>, ResponseItem, EdgeHash> _edge_to_response;
 
     /// @brief Graph, which stores all possible routes for the given TransportCatalogue
     /// @details Each stop in graph consists from the two vertices: {start, end} to take into account passenger wait for
     /// the bus on the stop.
     /// @example Passenger arrives to stop A and moves to the stop B: A_start -> wait for the bus -> A_end -> B_start
-    std::unique_ptr<Graph> routes_{nullptr};
-    std::unique_ptr<Router> router_{nullptr};
+    std::unique_ptr<Graph> _routes{nullptr};
+    std::unique_ptr<Router> _router{nullptr};
 };
 
 using TransportRouterOpt = std::optional<TransportRouter>;

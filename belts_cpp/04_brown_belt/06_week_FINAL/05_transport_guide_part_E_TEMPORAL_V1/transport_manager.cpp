@@ -119,6 +119,7 @@ void TransportManager::CreateRoutes() {
         .to = 2 * i + 1,
         .weight = static_cast<double>(_routing_settings.bus_wait_time),
     });
+
     _edge_description.emplace_back(WaitActivity{
       .type = "Wait",
       .time = _routing_settings.bus_wait_time,
@@ -126,7 +127,7 @@ void TransportManager::CreateRoutes() {
     });
   }
 
-  for (const auto& [bus_no, bus_route] : _bus_name_to_bus_route) {
+  for (const auto& [bus_name, bus_route] : _bus_name_to_bus_route) {
     const vector<string>& bus_stops = bus_route.Stops();
 
     for (size_t i = 0; i < bus_stops.size(); ++i) {
@@ -144,7 +145,7 @@ void TransportManager::CreateRoutes() {
         _edge_description.emplace_back(BusActivity{
           .type = "Bus",
           .time = time_sum,
-          .bus = bus_no,
+          .bus = bus_name,
           .span_count = ++span_count,
         });
       }

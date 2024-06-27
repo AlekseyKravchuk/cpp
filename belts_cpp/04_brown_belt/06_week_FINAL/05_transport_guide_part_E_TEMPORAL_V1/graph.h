@@ -52,6 +52,8 @@ namespace Graph {
 
 
   template <typename Weight>
+
+  // добавляем "vertex_count" векторов
   DirectedWeightedGraph<Weight>::DirectedWeightedGraph(size_t vertex_count)
           : _incidence_lists(vertex_count) {}
 

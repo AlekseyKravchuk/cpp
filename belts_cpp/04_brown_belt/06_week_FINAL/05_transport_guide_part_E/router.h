@@ -22,7 +22,6 @@ namespace Graph {
         explicit Router(const Graph& graph);
 
         using RouteId = uint64_t;
-
         struct RouteInfo {
             RouteId id;
             Weight weight;
@@ -34,26 +33,27 @@ namespace Graph {
         void ReleaseRoute(RouteId route_id);
 
       private:
-        const Graph& graph_;
+        const Graph& _graph;
 
         struct RouteInternalData {
             Weight weight;
             std::optional<EdgeId> prev_edge;
         };
-        using RoutesInternalData = std::vector<std::vector<std::optional<RouteInternalData>>>;
 
+        using RoutesInternalData = std::vector<std::vector<std::optional<RouteInternalData>>>;
         using ExpandedRoute = std::vector<EdgeId>;
-        mutable RouteId next_route_id_ = 0;
-        mutable std::unordered_map<RouteId, ExpandedRoute> expanded_routes_cache_;
+
+        mutable RouteId _next_route_id = 0;
+        mutable std::unordered_map<RouteId, ExpandedRoute> _expanded_routes_cache;
 
         void InitializeRoutesInternalData(const Graph& graph) {
             const size_t vertex_count = graph.GetVertexCount();
             for (VertexId vertex = 0; vertex < vertex_count; ++vertex) {
-                routes_internal_data_[vertex][vertex] = RouteInternalData{0, std::nullopt};
+                _routes_internal_data[vertex][vertex] = RouteInternalData{0, std::nullopt};
                 for (const EdgeId edge_id: graph.GetIncidentEdges(vertex)) {
                     const auto& edge = graph.GetEdge(edge_id);
                     assert(edge.weight >= 0);
-                    auto& route_internal_data = routes_internal_data_[vertex][edge.to];
+                    auto& route_internal_data = _routes_internal_data[vertex][edge.to];
                     if (!route_internal_data || route_internal_data->weight > edge.weight) {
                         route_internal_data = RouteInternalData{edge.weight, edge_id};
                     }
@@ -61,9 +61,11 @@ namespace Graph {
             }
         }
 
-        void RelaxRoute(VertexId vertex_from, VertexId vertex_to,
-                        const RouteInternalData& route_from, const RouteInternalData& route_to) {
-            auto& route_relaxing = routes_internal_data_[vertex_from][vertex_to];
+        void RelaxRoute(VertexId vertex_from,
+                        VertexId vertex_to,
+                        const RouteInternalData& route_from,
+                        const RouteInternalData& route_to) {
+            auto& route_relaxing = _routes_internal_data[vertex_from][vertex_to];
             const Weight candidate_weight = route_from.weight + route_to.weight;
             if (!route_relaxing || candidate_weight < route_relaxing->weight) {
                 route_relaxing = {
@@ -77,9 +79,9 @@ namespace Graph {
 
         void RelaxRoutesInternalDataThroughVertex(size_t vertex_count, VertexId vertex_through) {
             for (VertexId vertex_from = 0; vertex_from < vertex_count; ++vertex_from) {
-                if (const auto& route_from = routes_internal_data_[vertex_from][vertex_through]) {
+                if (const auto& route_from = _routes_internal_data[vertex_from][vertex_through]) {
                     for (VertexId vertex_to = 0; vertex_to < vertex_count; ++vertex_to) {
-                        if (const auto& route_to = routes_internal_data_[vertex_through][vertex_to]) {
+                        if (const auto& route_to = _routes_internal_data[vertex_through][vertex_to]) {
                             RelaxRoute(vertex_from, vertex_to, *route_from, *route_to);
                         }
                     }
@@ -87,14 +89,14 @@ namespace Graph {
             }
         }
 
-        RoutesInternalData routes_internal_data_;
-    };
-
+        RoutesInternalData _routes_internal_data;  // RoutesInternalData = vector<vector<optional<RouteInternalData>>>;
+    };  // END of class Router DECLARATION
+// ====================================================================================================================
 
     template<typename Weight>
     Router<Weight>::Router(const Graph& graph)
-            : graph_(graph),
-              routes_internal_data_(graph.GetVertexCount(),
+            : _graph(graph),
+              _routes_internal_data(graph.GetVertexCount(),
                                     std::vector<std::optional<RouteInternalData>>(graph.GetVertexCount())) {
         InitializeRoutesInternalData(graph);
 
@@ -106,7 +108,7 @@ namespace Graph {
 
     template<typename Weight>
     std::optional<typename Router<Weight>::RouteInfo> Router<Weight>::BuildRoute(VertexId from, VertexId to) const {
-        const auto& route_internal_data = routes_internal_data_[from][to];
+        const auto& route_internal_data = _routes_internal_data[from][to];
         if (!route_internal_data) {
             return std::nullopt;
         }
@@ -114,25 +116,24 @@ namespace Graph {
         std::vector<EdgeId> edges;
         for (std::optional<EdgeId> edge_id = route_internal_data->prev_edge;
              edge_id;
-             edge_id = routes_internal_data_[from][graph_.GetEdge(*edge_id).from]->prev_edge) {
+             edge_id = _routes_internal_data[from][_graph.GetEdge(*edge_id).from]->prev_edge) {
             edges.push_back(*edge_id);
         }
         std::reverse(std::begin(edges), std::end(edges));
 
-        const RouteId route_id = next_route_id_++;
+        const RouteId route_id = _next_route_id++;
         const size_t route_edge_count = edges.size();
-        expanded_routes_cache_[route_id] = std::move(edges);
+        _expanded_routes_cache[route_id] = std::move(edges);
         return RouteInfo{route_id, weight, route_edge_count};
     }
 
     template<typename Weight>
     EdgeId Router<Weight>::GetRouteEdge(RouteId route_id, size_t edge_idx) const {
-        return expanded_routes_cache_.at(route_id)[edge_idx];
+        return _expanded_routes_cache.at(route_id)[edge_idx];
     }
 
     template<typename Weight>
     void Router<Weight>::ReleaseRoute(RouteId route_id) {
-        expanded_routes_cache_.erase(route_id);
+        _expanded_routes_cache.erase(route_id);
     }
-
-}
+}  // END of namespace Graph

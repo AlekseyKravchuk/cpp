@@ -52,9 +52,9 @@ namespace Graph {
         std::vector<IncidenceList> _incidence_lists;
     };
 
-
     template<typename Weight>
-    DirectedWeightedGraph<Weight>::DirectedWeightedGraph(size_t vertex_count) : _incidence_lists(vertex_count) {}
+    DirectedWeightedGraph<Weight>::DirectedWeightedGraph(size_t vertex_count)
+            : _incidence_lists(vertex_count) {}
 
     template<typename Weight>
     EdgeId DirectedWeightedGraph<Weight>::AddEdge(const Edge<Weight>& edge) {

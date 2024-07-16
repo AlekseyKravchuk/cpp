@@ -6,7 +6,7 @@
  * To construct a thread properly, we have to pass CALLABLE object as an argument to the std::thread class constructor.
  * If this callable takes parameters, we have to pass those parameters properly as well.
  * Such a thread object is JOINABLE.
- * --> For any "joinable" thread, we CALL must either 'join' or 'detach' method.
+ * --> For any "joinable" thread, we must CALL either 'join' or 'detach' method.
  * --> After we made such a call ('join' or 'detach') that thread becomes NON JOINABLE.
  *
  * If you forgot to join() or detach() on joinable thread, then at the time of destructor call to that thread object,

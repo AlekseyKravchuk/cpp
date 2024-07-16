@@ -8,13 +8,12 @@
 
 namespace Json {
 
-    class Node : std::variant<
-            std::string,
-            std::vector<Node>,
-            std::map<std::string, Node>,
-            int,
-            double,
-            bool> {
+    class Node : std::variant<std::string,
+                              std::vector<Node>,
+                              std::map<std::string, Node>,
+                              int,
+                              double,
+                              bool> {
       public:
         using variant::variant;
 

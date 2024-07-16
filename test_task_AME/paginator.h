@@ -3,6 +3,7 @@
 #include <iterator> // std::distance, std::next, std::advance
 #include <numeric>
 #include <vector>
+#include <cmath>
 
 template <typename Iterator>
 class IteratorRange {
@@ -38,12 +39,12 @@ template <typename Iterator>
 class Paginator {
   public:
     Paginator(Iterator it_begin, Iterator it_end, size_t page_size) {
-        int len = static_cast<int>(std::distance(it_begin, it_end));
-        int n_full_pages = len / static_cast<int>(page_size);
-        int remainder = len % static_cast<int>(page_size);
+        size_t data_size = std::abs(std::distance(it_begin, it_end));
+        size_t n_full_pages = data_size / page_size;
+        size_t remainder = data_size % page_size;
 
         Iterator page_start = it_begin;
-        for (int i = 0; i < n_full_pages; ++i) {
+        for (size_t i = 0; i < n_full_pages; ++i) {
             Iterator page_end = std::next(page_start, page_size);
             _pages.emplace_back(page_start, page_end);
             page_start = page_end;
@@ -54,18 +55,48 @@ class Paginator {
         }
     }
 
+    // Copy constructor
+    Paginator(const Paginator& other)
+            : _pages(other._pages) {}
+
+    // Copy assignment operator
+    Paginator& operator=(const Paginator& other) {
+        if (this != &other) {
+            _pages = other._pages;
+        }
+        return *this;
+    }
+
+    // Move constructor
+    Paginator(Paginator&& other) noexcept
+            : _pages(std::move(other._pages)) {}
+
+    // Move assignment operator
+    Paginator& operator=(Paginator&& other) noexcept {
+        if (this != &other) {
+            _pages = std::move(other._pages);
+        }
+        return *this;
+    }
+
     auto begin() const { return _pages.begin(); }
     auto end() const { return _pages.end(); }
 
     auto begin() { return _pages.begin(); }
     auto end() { return _pages.end(); }
 
-    size_t size() const {
-        return _pages.size();
-    }
+    size_t size() const { return _pages.size(); }
 
     IteratorRange<Iterator>& operator[](size_t index) {
         return _pages[index];
+    }
+
+    void PushBack(const IteratorRange<Iterator>& range) {
+        _pages.push_back(range);
+    }
+
+    IteratorRange<Iterator>& Back() {
+        return _pages.back();
     }
 
   private:

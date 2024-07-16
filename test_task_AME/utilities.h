@@ -1,7 +1,7 @@
 #pragma once
 
-#include <vector>
 #include <cstddef>
+#include <vector>
 
 std::vector<int> GenerateRandomVectorOfInt(int sample_size = 10'000'000, int seed = 93);
 

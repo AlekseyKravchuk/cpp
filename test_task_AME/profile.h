@@ -1,6 +1,7 @@
 #pragma once
 
 #include <chrono>
+#include <iomanip>
 #include <iostream>
 #include <string>
 
@@ -18,7 +19,7 @@ class LogDuration {
     ~LogDuration() {
         auto end = std::chrono::high_resolution_clock::now();
         auto duration = end - _start;
-        std::cout << _message
+        std::cout << std::left <<std::setw(35) << _message
                   << std::chrono::duration_cast<std::chrono::milliseconds>(duration).count()
                   << " milliseconds" << std::endl;
     }

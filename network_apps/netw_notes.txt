@@ -1,0 +1,5 @@
+# List open ports on server
+nmap -n -PN -sT -sU -p- IP_address
+
+# Check if Boost library is installed and it's version
+dpkg -s libboost-dev | grep 'Version'

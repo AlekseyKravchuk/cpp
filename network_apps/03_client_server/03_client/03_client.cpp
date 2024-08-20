@@ -7,7 +7,7 @@
 #include <sys/socket.h>  // socket(...), recv(...)
 #include <cstdlib>       // exit(...)
 #include <netinet/in.h>  // struct sockaddr_in, struct in_addr, htons(...)
-//#include <arpa/inet.h>   // inet_pton(...)
+#include <arpa/inet.h>   // inet_pton(...)
 #include <cstdio>
 #include <unistd.h>      // close(...)
 #include <netdb.h>       // struct hostent *gethostbyname(const char *name);
@@ -25,7 +25,7 @@ int main(int argc, char* argv[]) {
     // ============== Connection parameters ==============
     const size_t MAX_BUFFER_LEN = 4096;  // max buffer size to hold a response from the server
     char buffer[MAX_BUFFER_LEN];
-    const string srv_ip = "127.0.0.5";
+    const string srv_ip = "127.0.0.1";
     const int srv_port = 43180;
 
     // ============== Create a socket ==============
@@ -55,17 +55,17 @@ int main(int argc, char* argv[]) {
         .sin_zero = {}
     };
 
-
-//    if (inet_pton(AF_INET, srv_ip.c_str(), &srv_addr.sin_addr) <= 0) {
-//        cerr << "Wrong server IP-address: " << strerror(errno) << endl;
-//        close(client_socket_fd);
-//        exit(EXIT_FAILURE);
-//    }
+    if (inet_pton(AF_INET, srv_ip.c_str(), &srv_addr.sin_addr) <= 0) {
+        cerr << "Wrong server IP-address: " << strerror(errno) << endl;
+        close(client_socket_fd);
+        exit(EXIT_FAILURE);
+    }
 
     // ================= connect ==================
     int connection_status = connect(client_socket_fd,
                                     (struct sockaddr*) &srv_addr,
                                     sizeof(srv_addr));
+    // TODO: fix error "There was an error making a connection to the remote socket 127.0.0.1:43180"
     if (connection_status < 0) {
         std::cerr << "Connect error: " << std::strerror(errno) << std::endl;
         cerr << "There was an error making a connection to the remote socket "

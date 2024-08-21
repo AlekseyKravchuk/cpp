@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.28)
-project(03_client)
+project(server)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
@@ -20,15 +20,10 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall \
                                         -O0")
 set(CMAKE_BUILD_TYPE Debug)
 
-#get_filename_component(PARENT_DIR ../ ABSOLUTE)
-#include_directories(${PARENT_DIR})
-
 set(SOURCES
-        03_client.cpp
-        )
+        03_server.cpp)
 
-#set(HEADERS
-#        some_header.h)
+#set(HEADERS)
 
 #add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
 add_executable(${PROJECT_NAME} ${SOURCES})

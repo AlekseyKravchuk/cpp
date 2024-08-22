@@ -19,19 +19,24 @@
 using namespace std;
 
 int main(int argc, char* argv[]) {
-//    if (argc != 2) {
-//        cerr << "usage: " << argv[0] << " <port_to_listen_to>" << endl;
-//        perror("wrong number of arguments");
-//        exit(EXIT_FAILURE);
-//    }
+    //    const int port_listen_to = htons(static_cast<uint16_t>(stoi(argv[1])));
+    uint16_t port_listen_to = 43180;
 
-//    So first we will create a string to hold the data that we're going to send all the clients
-//    const char* server_message = "You have reached the server";
+    // =============
+    if (argc == 1) {
+        cout << "parameterless usage:  " << argv[0] << R"( <port_listen_to=43180>)" << endl;
+    } else if (argc == 2) {
+        port_listen_to = static_cast<uint16_t>(std::stoul(argv[1]));
+    } else {
+        cerr << "usage: " << argv[0] << " <port_listen_to>" << endl << "OR\n"
+             << "usage: " << argv[0] << endl;
+        perror("wrong number of arguments");
+        exit(EXIT_FAILURE);
+    }
 
+    // Сообщение, которое будет передаваться всем клиентам при их подключении к серверу
     string server_message = "You have reached the server";
     const int MAX_QUEUE_PENDING_CONNECTIONS_LEN = 10;
-    //    const int port_listen_to = htons(static_cast<uint16_t>(stoi(argv[1])));
-    const int port_listen_to = 43180;
 
     // ====== Создаем серверный сокет (Listening Socket) =====
     int server_sock = socket(AF_INET, SOCK_STREAM, 0);
@@ -44,7 +49,7 @@ int main(int argc, char* argv[]) {
     // ======== Настраиваем структуру адреса сервера =========
     struct sockaddr_in server_address = {
             .sin_family = AF_INET,
-            .sin_port = port_listen_to,
+            .sin_port = htons(port_listen_to),
             .sin_addr = {INADDR_ANY},
             .sin_zero = {}
     };
@@ -66,7 +71,7 @@ int main(int argc, char* argv[]) {
     cout << "Server is waiting connection on port " << port_listen_to << "..." << endl;
 
     // =============== Принимаем соединение от клиента ===============
-    sockaddr_in client_address;
+    sockaddr_in client_address{};
     socklen_t client_address_len = sizeof(client_address);
 
     int client_sock = accept(server_sock,
@@ -85,7 +90,7 @@ int main(int argc, char* argv[]) {
     ssize_t bytes_received;
 
     while( (bytes_received = recv(client_sock, buffer, sizeof(buffer), 0)) > 0) {
-        received_data.append(buffer, bytes_received);
+        received_data.append(buffer, static_cast<size_t>(bytes_received));
     }
 
     if (bytes_received < 0) {

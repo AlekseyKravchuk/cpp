@@ -15,18 +15,45 @@
 
 using namespace std;
 
+/*
+ * Приложение, собирающееся использовать ТРАНСПОРТНЫЙ уровень для обмена данными, должно предоставить интерфейсу
+ * сокетов (socket)  следующую информацию:
+ * 1) указание на протокол, который надо использовать при обмене данными:
+ *        socket (AF_*, SOCK_STREAM, 0);  // 0 means 'auto choice' protocol number
+ *                  эквивалентно
+ *        socket (AF_*, SOCK_STREAM, 6);  // 6 means 'TCP' protocol inside IP packet
+ *
+ *    кроме потоковой передачи данных бывают ещё и другие:
+ *        SOCK_STREAM - bidirectional data streaming
+ *        SOCK_DGRAM  - unidirectional short messages (UDP)
+ *        SOCK_RAW    - IP level custom packets
+ *        SOCK_PACKET - Linux-only Ethernet-level custom frames
+ *  2) сетевой адрес другого абонента (IP-адрес)
+ *  3) номер порта, который будет использовать транспортный уровень
+ *  4) сами данные в виде массива байтов
+ */
+
 int main(int argc, char* argv[]) {
-//    if (argc != 3) {
-//        cerr << "usage: a.out <server_IP_address> <server_port>" << endl;
-//        perror("wrong number of arguments");
-//        exit(EXIT_FAILURE);
-//    }
+    string srv_ip = "127.0.0.1";
+    uint16_t srv_port = 43180;
+
+    if (argc == 1) {
+        cout << "parameterless usage:"
+             << argv[0] << "  <server_IP_address> = " << srv_ip << " <server_port> = " << srv_port << endl;
+    } else if (argc == 3) {
+        srv_ip = argv[1];
+        srv_port = static_cast<uint16_t>(std::stoul(argv[2]));
+    } else {
+        cerr << "usage: " << argv[0] << " <server_IP_address> <server_port>" << endl
+             << "OR (parameterless):\n"
+             << "usage: " << argv[0] << endl;
+        perror("wrong number of arguments");
+        exit(EXIT_FAILURE);
+    }
 
     // ============== Connection parameters ==============
     const size_t MAX_BUFFER_LEN = 4096;  // max buffer size to hold a response from the server
     char buffer[MAX_BUFFER_LEN];
-    const string srv_ip = "127.0.0.1";
-    const int srv_port = 43180;
 
     // ============== Create a socket ==============
     int client_socket_fd;
@@ -78,7 +105,7 @@ int main(int argc, char* argv[]) {
     string srv_response;
     ssize_t bytes_received;
     while ((bytes_received = recv(client_socket_fd, buffer, sizeof(buffer), 0) ) > 0) {
-        srv_response.append(buffer, bytes_received);
+        srv_response.append(buffer, static_cast<size_t>(bytes_received));
     }
 
     if (bytes_received < 0) {

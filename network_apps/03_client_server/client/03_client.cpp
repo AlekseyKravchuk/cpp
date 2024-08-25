@@ -104,16 +104,28 @@ int main(int argc, char* argv[]) {
     // ============== receive data ================
     string srv_response;
     ssize_t bytes_received;
-    while ((bytes_received = recv(client_socket_fd, buffer, sizeof(buffer), 0) ) > 0) {
-        srv_response.append(buffer, static_cast<size_t>(bytes_received));
+//    while ((bytes_received = recv(client_socket_fd, buffer, sizeof(buffer), 0) ) > 0) {
+//        srv_response.append(buffer, static_cast<size_t>(bytes_received));
+//    }
+
+    while ((bytes_received = read(client_socket_fd, buffer, MAX_BUFFER_LEN)) > 0) {
+        buffer[0] = 0; // null-terminate
+        if (fputs(buffer, stdout) == EOF) {
+            std::cerr << "fputs error: " << std::strerror(errno) << std::endl;
+            exit(EXIT_FAILURE);
+        }
+
+        if (bytes_received < 0) {
+            std::cerr << "read error: " << std::strerror(errno) << std::endl;
+        }
     }
 
-    if (bytes_received < 0) {
-        cerr << "Reading data error: " << strerror(errno) << endl;
-    } else {
-        cout << "Data received from the server " << srv_ip << ":" << srv_port
-             << ": " << srv_response << endl;
-    }
+//    if (bytes_received < 0) {
+//        cerr << "Reading data error: " << strerror(errno) << endl;
+//    } else {
+//        cout << "Data received from the server " << srv_ip << ":" << srv_port
+//             << ": " << srv_response << endl;
+//    }
 
     // print out the server's response
     printf("The server sent the data: %s\n", buffer);

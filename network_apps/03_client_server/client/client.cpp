@@ -56,11 +56,11 @@ int main(int argc, char* argv[]) {
     char buffer[MAX_BUFFER_LEN];
 
     // ============== Create a socket ==============
-    int client_socket_fd;
+    int sock_fd;
 
     // функция "socket" создает потоковый TCP-сокет (AF_INET - это красивое название для обычного сокета)
     // SOCK_STREAM <=> TCP; SOCK_DGRAM <=> UDP
-    if ((client_socket_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+    if ((sock_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         cerr << "Creating socket error: " << strerror(errno) << endl;
         exit(EXIT_FAILURE);
     }
@@ -84,26 +84,26 @@ int main(int argc, char* argv[]) {
 
     if (inet_pton(AF_INET, srv_ip.c_str(), &srv_addr.sin_addr) <= 0) {
         cerr << "Wrong server IP-address: " << strerror(errno) << endl;
-        close(client_socket_fd);
+        close(sock_fd);
         exit(EXIT_FAILURE);
     }
 
     // ================= connect ==================
-    int connection_status = connect(client_socket_fd,
+    int connection_status = connect(sock_fd,
                                     (struct sockaddr*) &srv_addr,
                                     sizeof(srv_addr));
     if (connection_status < 0) {
         std::cerr << "Connect error: " << std::strerror(errno) << std::endl;
         cerr << "There was an error making a connection to the remote socket "
              << srv_ip << ':' << srv_port << endl;
-        close(client_socket_fd);
+        close(sock_fd);
         exit(EXIT_FAILURE);
     }
 
     // ============== receive data ================
     string srv_response;
     ssize_t bytes_received;
-    while ((bytes_received = recv(client_socket_fd, buffer, sizeof(buffer), 0) ) > 0) {
+    while ((bytes_received = recv(sock_fd, buffer, sizeof(buffer), 0) ) > 0) {
         srv_response.append(buffer, static_cast<size_t>(bytes_received));
     }
 
@@ -118,7 +118,7 @@ int main(int argc, char* argv[]) {
     printf("The server sent the data: %s\n", buffer);
 
     // ============= close connection =============
-    close(client_socket_fd);
+    close(sock_fd);
 
     return 0;
 }

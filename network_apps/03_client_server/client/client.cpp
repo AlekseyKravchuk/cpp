@@ -52,14 +52,14 @@ int main(int argc, char* argv[]) {
     }
 
     // ============== Connection parameters ==============
-    const size_t MAX_BUFFER_LEN = 4096;  // max buffer size to hold a response from the server
-    char buffer[MAX_BUFFER_LEN];
+    const size_t MAX_BUFFER_SIZE = 4096;  // max buffer size to hold a response from the server
+    char buffer[MAX_BUFFER_SIZE];
 
     // ============== Create a socket ==============
     int sock_fd;
 
-    // функция "socket" создает потоковый TCP-сокет (AF_INET - это красивое название для обычного сокета)
-    // SOCK_STREAM <=> TCP; SOCK_DGRAM <=> UDP
+    // AF_INET: IPv4; AF_INET6: IPv6
+    // SOCK_STREAM: TCP; SOCK_DGRAM: UDP
     if ((sock_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         cerr << "Creating socket error: " << strerror(errno) << endl;
         exit(EXIT_FAILURE);
@@ -102,12 +102,13 @@ int main(int argc, char* argv[]) {
 
     // ============== receive data ================
     string srv_response;
-    ssize_t bytes_received;
-    while ((bytes_received = recv(sock_fd, buffer, sizeof(buffer), 0) ) > 0) {
-        srv_response.append(buffer, static_cast<size_t>(bytes_received));
+    ssize_t n;  // number of bytes received
+
+    while ((n = recv(sock_fd, buffer, MAX_BUFFER_SIZE, 0) ) > 0) {
+        srv_response.append(buffer, static_cast<size_t>(n));
     }
 
-    if (bytes_received < 0) {
+    if (n < 0) {
         cerr << "Reading data error: " << strerror(errno) << endl;
     } else {
         cout << "Data received from the server " << srv_ip << ":" << srv_port

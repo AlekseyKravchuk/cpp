@@ -85,19 +85,19 @@ int main(int argc, char* argv[]) {
     cout << "Client is connected!" << endl;
 
     // =============== Читаем данные от клиента ===============
-    string received_data;
-    char buffer[1024];
-    ssize_t bytes_received;
-
-    while( (bytes_received = recv(client_sock, buffer, sizeof(buffer), 0)) > 0) {
-        received_data.append(buffer, static_cast<size_t>(bytes_received));
-    }
-
-    if (bytes_received < 0) {
-        cerr << "Reading data error (recv): " << strerror(errno) << endl;
-    } else {
-        cout << "Following message is received from client: " << received_data << endl;
-    }
+//    string received_data;
+//    char buffer[1024];
+//    ssize_t bytes_received;
+//
+//    while( (bytes_received = recv(client_sock, buffer, sizeof(buffer), 0)) > 0) {
+//        received_data.append(buffer, static_cast<size_t>(bytes_received));
+//    }
+//
+//    if (bytes_received < 0) {
+//        cerr << "Reading data error (recv): " << strerror(errno) << endl;
+//    } else {
+//        cout << "Following message is received from client: " << received_data << endl;
+//    }
 
     // =============== Отправляем ответ клиенту ===============
     const string response = "Hello, Client!";

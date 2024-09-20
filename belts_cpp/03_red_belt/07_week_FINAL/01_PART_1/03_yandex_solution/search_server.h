@@ -16,7 +16,8 @@ using namespace std;
 class InvertedIndex {
 public:
   struct Entry {
-    size_t docid, hitcount;
+    size_t docid;
+    size_t hitcount;
   };
 
   InvertedIndex() = default;

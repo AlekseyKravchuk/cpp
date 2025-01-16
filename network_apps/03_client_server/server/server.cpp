@@ -20,6 +20,8 @@ using namespace std;
 
 int main(int argc, char* argv[]) {
     //    const int port_listen_to = htons(static_cast<uint16_t>(stoi(argv[1])));
+
+    // задаем hardcoded значение порта для прослушивания
     uint16_t port_listen_to = 43180;
 
     // =============

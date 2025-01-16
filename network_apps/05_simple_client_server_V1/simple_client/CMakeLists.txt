@@ -15,7 +15,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall \
 set(CMAKE_BUILD_TYPE Debug)
 
 set(SOURCES
-        client.cpp
+        simple_client.cpp
 )
 
 #set(HEADERS
@@ -24,3 +24,6 @@ set(SOURCES
 
 #add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
 add_executable(${PROJECT_NAME} ${SOURCES})
+
+# Ссылка на библиотеку shared
+target_link_libraries(client PRIVATE shared)

@@ -29,3 +29,5 @@ ssize_t Send(int socket_fd, const void *buf, size_t len, int flags=0);
 
 void Close(int fd);
 
+void client_check_arguments(int argc, char* argv[], std::string& server_ip, uint16_t& server_port);
+

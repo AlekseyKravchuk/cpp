@@ -115,3 +115,14 @@ void Close(int fd) {
     }
 }
 
+void client_check_arguments(int argc, char* argv[], string& server_ip, uint16_t& server_port) {
+    if (argc != 3) {
+        cerr << "usage: " << argv[0] << " <server_IP_address> <server_port>" << endl;
+        cerr << "Error: wrong number of arguments" << endl;
+        exit(EXIT_FAILURE);
+    } else {
+        server_ip = argv[1];
+        server_port = static_cast<uint16_t>(std::stoul(argv[2]));
+    }
+}
+

@@ -19,17 +19,10 @@ int main(int argc, char* argv[]) {
     int socket_fd = 0;
     constexpr size_t buffer_size = 1024;
     char buffer[buffer_size];
-    string srv_ip{};
-    uint16_t srv_port{};
+    string server_ip{};
+    uint16_t server_port{};
 
-    if (argc != 3) {
-        cerr << "usage: " << argv[0] << " <server_IP_address> <server_port>" << endl;
-        perror("wrong number of arguments");
-        exit(EXIT_FAILURE);
-    } else {
-        srv_ip = argv[1];
-        srv_port = static_cast<uint16_t>(std::stoul(argv[2]));
-    }
+    client_check_arguments(argc, argv, server_ip, server_port);
 
     // ============== Create a socket ==============
     socket_fd = Socket(AF_INET, SOCK_STREAM, 0);
@@ -37,13 +30,13 @@ int main(int argc, char* argv[]) {
     // Частично заполняем server_address типа "sockaddr_in":
     sockaddr_in server_address {
             .sin_family = AF_INET,
-            .sin_port = htons(srv_port),
+            .sin_port = htons(server_port),
             .sin_addr = {},
             .sin_zero = {}
     };
 
-    // Преобразование IP-адреса из точечно-десятичной нотации в двоичный вид ()
-    Inet_pton(AF_INET, srv_ip.c_str(), &server_address.sin_addr);
+    // Преобразование IP-адреса из точечно-десятичной нотации в двоичный вид (network-byte order)
+    Inet_pton(AF_INET, server_ip.c_str(), &server_address.sin_addr);
 
     Connect(socket_fd, (sockaddr*) &server_address, sizeof(server_address));
 
@@ -64,6 +57,7 @@ int main(int argc, char* argv[]) {
     // ============= close connection =============
     if (socket_fd > 0) {
         close(socket_fd);
+        cout << "\nClient socket was closed successfully." << endl;
     } else {
         cerr << "Client socket <= 0." << endl;
     }

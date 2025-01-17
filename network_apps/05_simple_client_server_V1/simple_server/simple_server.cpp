@@ -29,7 +29,7 @@ int main(int argc, char* argv[]) {
     const int MAX_QUEUE_PENDING_CONNECTIONS_LEN = 10;
     // ===========================================================================
 
-    constexpr size_t buffer_size = 256;
+    constexpr size_t buffer_size = 1024;
     char buffer[buffer_size];
     const char* message = "Война и мир, Лев Толстой (фрагмент)\n\n"
                           "В первый раз война, как мы знаем, началась, но она была странной. "
@@ -92,6 +92,7 @@ int main(int argc, char* argv[]) {
     sockaddr_in client_address{};
     socklen_t client_address_len = sizeof(client_address);
 
+    // TODO: сделать так, чтобы сервер мог обрабатывать множество клиентов, а не только одного
     client_fd = accept(server_fd,
                        (struct sockaddr*) &client_address,
                        &client_address_len);
@@ -108,35 +109,24 @@ int main(int argc, char* argv[]) {
     inet_ntop(AF_INET, &client_address.sin_addr, client_ip, INET_ADDRSTRLEN);
     cout << "Connected client ==> " << client_ip << ":" << ntohs(client_address.sin_port) << endl << endl;
 
+    // std::this_thread::sleep_for(30s); // 30 секунд
 
-    // =============== Отправка данных клиенту ===============
+    // =============== Отправка данных подключившемуся клиенту ===============
     size_t message_len = strlen(message);
     size_t total_sent = 0;
 
     size_t count = 0;
-
     while (total_sent < message_len) {
         size_t len_to_send = std::min(buffer_size, message_len - total_sent);
         memcpy(buffer, message + total_sent, len_to_send);
         ssize_t num_bytes_sent = Send(client_fd, buffer, len_to_send, 0);
-
-//        ssize_t num_bytes_sent = send(client_fd, buffer, len_to_send, 0);
-//        if (num_bytes_sent < 0) {
-//            cerr << "Sending data error (send call): " << strerror(errno) << endl;
-//            exit(EXIT_FAILURE);
-//        }
-
         ++count;
-
-
-
         total_sent += static_cast<size_t>(num_bytes_sent);
     }
+    // ==========================
 
     cout << "Function send was called " << count << " times." << endl;
     cout << "Message sent to client." << endl;
-
-    std::this_thread::sleep_for(10s); // 10 секунд
 
     // Первым закрывается сокет клиента (client_fd), т.к. этот сокет участвует в процессе обмена данными с клиентом,
     // и его нужно закрыть сразу после завершения общения с клиентом.

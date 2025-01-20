@@ -24,7 +24,7 @@ using namespace std;
 using namespace std::chrono_literals;
 
 int main(int argc, char* argv[]) {
-    int server_fd, client_fd;
+    int listen_fd, client_fd;
     uint16_t port_listen_to = 0;
     const int MAX_QUEUE_PENDING_CONNECTIONS_LEN = 10;
     // ===========================================================================
@@ -45,19 +45,10 @@ int main(int argc, char* argv[]) {
                           "эта борьба будет долгой и трудной. Этот момент был одним из тех, когда жизнь человечества "
                           "поменяла свою траекторию. Все, кто принял участие, поняли это в тот момент, когда началась война.";
 
-    if (argc != 2) {
-        cerr << "usage: " << argv[0] << " <port_listen_to>" << endl;
-        perror("wrong number of arguments");
-        exit(EXIT_FAILURE);
-    } else {
-        port_listen_to = static_cast<uint16_t>(std::stoul(argv[1]));
-    }
+    server_check_arguments(argc, argv, port_listen_to);
 
-    // ====== Создаем серверный сокет (Listening Socket) =====
-    if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
-        cerr << "Server socket error: " << strerror(errno) << endl;
-        exit(EXIT_FAILURE);
-    }
+    // ====== Создаем сокет для приема запросов на соединение (listening socket) =====
+    listen_fd = Socket(AF_INET, SOCK_STREAM, 0);
 
     // ======== Настраиваем структуру адреса сервера =========
     struct sockaddr_in server_address = {
@@ -66,25 +57,12 @@ int main(int argc, char* argv[]) {
             .sin_addr = {INADDR_ANY},
             .sin_zero = {}
     };
-    // =======================================================
 
     // ========== Привязываем сокет к адресу и порту =========
-    if (bind(server_fd, (struct sockaddr*)&server_address, sizeof(server_address)) < 0) {
-        cerr << "Socket bind error: " << strerror(errno) << std::endl;
-        if (server_fd > 0) {
-            close(server_fd);
-        }
-        exit(EXIT_FAILURE);
-    }
+    Bind(listen_fd, (struct sockaddr*)&server_address, sizeof(server_address));
 
     // =============== Ожидание входящих соединений на прослушиваемом порту ===============
-    if ((listen(server_fd, MAX_QUEUE_PENDING_CONNECTIONS_LEN)) < 0) {
-        cerr << "Listen error on server socket: " << strerror(errno) << endl;
-        if (server_fd > 0) {
-            close(server_fd);
-        }
-        exit(EXIT_FAILURE);
-    }
+    Listen(listen_fd, MAX_QUEUE_PENDING_CONNECTIONS_LEN);
     cout << "Server is waiting connection on port " << port_listen_to << "..." << endl;
 
     // =============== Принятие соединения с клиентом ===============
@@ -92,17 +70,10 @@ int main(int argc, char* argv[]) {
     sockaddr_in client_address{};
     socklen_t client_address_len = sizeof(client_address);
 
-    // TODO: сделать так, чтобы сервер мог обрабатывать множество клиентов, а не только одного
-    client_fd = accept(server_fd,
-                       (struct sockaddr*) &client_address,
-                       &client_address_len);
-    if (client_fd < 0) {
-        cerr << "Accept connection error: " << strerror(errno) << endl;
-        if (server_fd > 0) {
-            close(server_fd);
-        }
-        exit(EXIT_FAILURE);
-    }
+//    // TODO: 1) сделать так, чтобы сервер мог обрабатывать множество клиентов, а не только одного;
+//             2) завернуть клиентов и сервер в сеть на основе docker;
+//             3)
+    client_fd = Accept(listen_fd, (struct sockaddr*) &client_address, &client_address_len);
 
     // =============== Вывод информации о подключении клиента ===============
     char client_ip[INET_ADDRSTRLEN];
@@ -123,7 +94,6 @@ int main(int argc, char* argv[]) {
         ++count;
         total_sent += static_cast<size_t>(num_bytes_sent);
     }
-    // ==========================
 
     cout << "Function send was called " << count << " times." << endl;
     cout << "Message sent to client." << endl;
@@ -131,18 +101,14 @@ int main(int argc, char* argv[]) {
     // Первым закрывается сокет клиента (client_fd), т.к. этот сокет участвует в процессе обмена данными с клиентом,
     // и его нужно закрыть сразу после завершения общения с клиентом.
     // После этого сокет становится бесполезным, и его необходимо закрыть, чтобы освободить ресурсы.
-    if (client_fd > 0) {
-        close(client_fd);
-    }
+    Close(client_fd);
 
-    // Закрытие сокета сервера (server_fd) происходит после того, как ВСЕ соединения с клиентами завершены,
+    // Закрытие сокета сервера (listen_fd) происходит после того, как ВСЕ соединения с клиентами завершены,
     // то есть после того, как все клиентские сокеты были закрыты:
-    // server_fd продолжает слушать входящие соединения, даже после того, как вы закрыли client_fd.
+    // listen_fd продолжает слушать входящие соединения, даже после того, как вы закрыли client_fd.
     // Если по какой-то причине сервер закрывает свой сокет раньше, чем завершается обработка клиентских соединений,
     // он больше не сможет принимать новые подключения.
-    if (server_fd > 0) {
-        close(server_fd);
-    }
+    Close(listen_fd);
 
     return 0;
 }

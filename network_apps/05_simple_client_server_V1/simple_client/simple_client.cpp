@@ -16,7 +16,6 @@
 using namespace std;
 
 int main(int argc, char* argv[]) {
-    int socket_fd = 0;
     constexpr size_t buffer_size = 1024;
     char buffer[buffer_size];
     string server_ip{};
@@ -25,7 +24,7 @@ int main(int argc, char* argv[]) {
     client_check_arguments(argc, argv, server_ip, server_port);
 
     // ============== Create a socket ==============
-    socket_fd = Socket(AF_INET, SOCK_STREAM, 0);
+    int socket_fd = Socket(AF_INET, SOCK_STREAM, 0);
 
     // Частично заполняем server_address типа "sockaddr_in":
     sockaddr_in server_address {

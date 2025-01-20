@@ -31,3 +31,5 @@ void Close(int fd);
 
 void client_check_arguments(int argc, char* argv[], std::string& server_ip, uint16_t& server_port);
 
+void server_check_arguments(int argc, char* argv[], uint16_t& port_listen_to);
+

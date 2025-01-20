@@ -61,7 +61,7 @@ ssize_t Recv(int socket_fd, void *buffer, size_t buffer_size, int flags) {
     if (bytes_read == 0) {
         cout << "Connection closed by server." << endl;
     } else if (bytes_read < 0) {
-        cerr << "Socket read error: " << strerror(errno) << endl;
+        cerr << "socket read error: " << strerror(errno) << endl;
         exit(EXIT_FAILURE);
     }
 
@@ -69,32 +69,40 @@ ssize_t Recv(int socket_fd, void *buffer, size_t buffer_size, int flags) {
 }
 
 void Bind(int sockfd, const struct sockaddr* addr, socklen_t addrlen) {
-    int res = bind(sockfd, addr, addrlen);
-    if (res == -1) {
-        perror("bind error");
+    int result = bind(sockfd, addr, addrlen);
+
+    if (result == -1) {
+        cerr << "bind error: " << strerror(errno) << endl;
         exit(EXIT_FAILURE);
     }
 }
-
 
 void Listen(int sockfd, int backlog) {
-    int res = listen(sockfd, backlog);
+    char* ptr;
+    char** endptr = nullptr;
 
-    if (res == -1) {
-        perror("listen() failed.");
+    // May be override 2nd argument with environment variable
+    if ( (ptr = getenv("LISTENQ")) != nullptr) {
+        backlog = static_cast<int>(strtol(ptr, endptr, 10));
+    }
+
+    int result = listen(sockfd, backlog);
+
+    if (result == -1) {
+        cerr << "listen failed: " << strerror(errno) << endl;
         exit(EXIT_FAILURE);
     }
 }
 
-int Accept(int fd, struct sockaddr* sa, socklen_t* salenptr) {
-    int res;
+int Accept(int listen_fd, struct sockaddr* sa, socklen_t* salenptr) {
+    int client_socket_fd;
 
-    if ((res = accept(fd, sa, salenptr)) < 0) {
-        perror("accept failed.");
+    if ( (client_socket_fd = accept(listen_fd, sa, salenptr)) < 0) {
+        cerr << "accept connection error: " << strerror(errno) << endl;
         exit(EXIT_FAILURE);
     }
 
-    return res;
+    return client_socket_fd;
 }
 
 ssize_t Send(int socket_fd, const void *buf, size_t len, int flags=0) {
@@ -110,12 +118,14 @@ ssize_t Send(int socket_fd, const void *buf, size_t len, int flags=0) {
 
 void Close(int fd) {
     if (close(fd) == -1) {
-        perror("close error");
+        cerr << "close error: " << strerror(errno) << endl;
         exit(EXIT_FAILURE);
     }
 }
 
-void client_check_arguments(int argc, char* argv[], string& server_ip, uint16_t& server_port) {
+void client_check_arguments(int argc, char* argv[],
+                            string& server_ip,
+                            uint16_t& server_port) {
     if (argc != 3) {
         cerr << "usage: " << argv[0] << " <server_IP_address> <server_port>" << endl;
         cerr << "Error: wrong number of arguments" << endl;
@@ -123,6 +133,18 @@ void client_check_arguments(int argc, char* argv[], string& server_ip, uint16_t&
     } else {
         server_ip = argv[1];
         server_port = static_cast<uint16_t>(std::stoul(argv[2]));
+    }
+}
+
+void server_check_arguments(int argc,
+                            char* argv[],
+                            uint16_t& port_listen_to) {
+    if (argc != 2) {
+        cerr << "usage: " << argv[0] << " <port_listen_to>" << endl;
+        perror("wrong number of arguments");
+        exit(EXIT_FAILURE);
+    } else {
+        port_listen_to = static_cast<uint16_t>(std::stoul(argv[1]));
     }
 }
 

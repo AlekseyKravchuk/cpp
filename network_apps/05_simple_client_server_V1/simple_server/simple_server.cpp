@@ -35,9 +35,6 @@ int main(int argc, char* argv[]) {
 
     server_check_arguments(argc, argv, port_listen_to, file_path);
 
-    constexpr size_t buffer_size = 1024;
-    char buffer[buffer_size];
-
     try {
         message = get_content(file_path);
     } catch (const std::runtime_error& e) {
@@ -86,6 +83,9 @@ int main(int argc, char* argv[]) {
     size_t total_sent = 0;
 
     size_t count = 0;
+    constexpr size_t buffer_size = 1024;
+    char buffer[buffer_size];
+    
     while (total_sent < message_len) {
         size_t len_to_send = std::min(buffer_size, message_len - total_sent);
         memcpy(buffer, message.c_str() + total_sent, len_to_send);

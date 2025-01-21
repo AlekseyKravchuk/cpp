@@ -7,6 +7,7 @@
 #include <sys/types.h>
 #include <arpa/inet.h>
 #include <unistd.h>      // write
+#include <fstream>
 
 int Socket(int domain, int type, int protocol);
 
@@ -31,5 +32,9 @@ void Close(int fd);
 
 void client_check_arguments(int argc, char* argv[], std::string& server_ip, uint16_t& server_port);
 
-void server_check_arguments(int argc, char* argv[], uint16_t& port_listen_to);
+//void server_check_arguments(int argc, char* argv[], uint16_t& port_listen_to);
+int server_check_arguments(int argc, char* argv[], uint16_t& port_listen_to, std::string& filepath);
+
+std::string get_content(const std::string& file_path);
+
 

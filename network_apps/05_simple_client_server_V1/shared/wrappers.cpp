@@ -3,14 +3,18 @@
 //
 #include <iostream>
 
-#include <cstdio>        // perror
-#include <cstdlib>       // exit, EXIT_FAILURE
+//#include <cstdio>        // perror
+//#include <cstdlib>       // exit, EXIT_FAILURE
 #include <cstring>       // memset
 #include <sys/socket.h>  // socket
 #include <arpa/inet.h>
 #include <unistd.h>      // close
+#include <fstream>
+
+#include <boost/program_options.hpp>
 
 using namespace std;
+namespace po = boost::program_options;
 
 int Socket(int domain, int type, int protocol) {
     int socket_fd;
@@ -136,15 +140,76 @@ void client_check_arguments(int argc, char* argv[],
     }
 }
 
+//void server_check_arguments(int argc,
+//                            char* argv[],
+//                            uint16_t& port_listen_to,
+//                            const std::string& filepath) {
+//    if (argc != 2) {
+//        cerr << "usage: " << argv[0] << " <port_listen_to>" << endl;
+//        perror("wrong number of arguments");
+//        exit(EXIT_FAILURE);
+//    } else {
+//        port_listen_to = static_cast<uint16_t>(std::stoul(argv[1]));
+//    }
+//}
+
 void server_check_arguments(int argc,
                             char* argv[],
-                            uint16_t& port_listen_to) {
-    if (argc != 2) {
-        cerr << "usage: " << argv[0] << " <port_listen_to>" << endl;
-        perror("wrong number of arguments");
+                            uint16_t& port_listen_to,
+                            std::string& file_path) {
+    po::options_description desc("Allowed options");
+    desc.add_options()
+            ("help,h", "produce help message")
+            ("port,p", po::value<uint16_t>()->required(), "port to listen on")
+            ("file,f", po::value<std::string>()->required(), "path to file containing text to be sent to clients");
+
+    po::variables_map vars_map;
+
+    try {
+        po::store(po::parse_command_line(argc, argv, desc), vars_map);
+
+        if (vars_map.count("help")) {
+            std::cout << desc << "\n";
+            return;
+        }
+
+        // Вызов notify для обработки обязательных аргументов
+        po::notify(vars_map);
+
+        // Присваиваем значения из командной строки в переменные
+        port_listen_to = vars_map["port"].as<uint16_t>();
+        file_path = vars_map["file"].as<std::string>();
+
+        std::cout << "Server will listen on port: " << port_listen_to << "\n";
+        std::cout << "File to send: " << file_path << "\n";
+
+    } catch (const po::error& e) {
+        // Если обязательная опция отсутствует, выводим пользовательское сообщение
+        std::cerr << "Error: Missing required option: " << e.what() << "\n";
+        std::cout << "usage: " << argv[0] << " <port_listen_to> <file_to_read_text_from>\n";
+        desc.print(std::cerr);
         exit(EXIT_FAILURE);
-    } else {
-        port_listen_to = static_cast<uint16_t>(std::stoul(argv[1]));
+    } catch (const std::exception& e) {
+        // Ловим другие возможные ошибки
+        std::cerr << "Error: " << e.what() << "\n";
+        exit(EXIT_FAILURE);
     }
 }
+
+string get_content(const std::string& file_path) {
+    std::ifstream file_in(file_path);
+    if (!file_in.is_open()) {
+        ostringstream oss;
+        oss << "Failed to open file: \"" << file_path
+            << "\" (Reason: " << strerror(errno) << ")." << endl;
+        throw std::runtime_error(oss.str());
+    }
+
+    std::string file_content( (std::istreambuf_iterator<char>(file_in)),
+                              std::istreambuf_iterator<char>() );
+    file_in.close();
+
+    return file_content;
+}
+
 

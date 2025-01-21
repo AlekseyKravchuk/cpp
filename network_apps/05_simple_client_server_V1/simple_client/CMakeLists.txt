@@ -25,5 +25,8 @@ set(SOURCES
 #add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
 add_executable(${PROJECT_NAME} ${SOURCES})
 
-# Ссылка на библиотеку shared
-target_link_libraries(client PRIVATE shared)
+# Обе библиотеки и shared, и Boost — будут добавлены к цели client.
+target_link_libraries(client
+        PRIVATE shared
+        ${Boost_LIBRARIES}
+        )

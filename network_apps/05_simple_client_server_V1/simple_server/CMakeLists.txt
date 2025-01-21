@@ -21,5 +21,17 @@ set(SOURCES
 #add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
 add_executable(${PROJECT_NAME} ${SOURCES})
 
-# Ссылка на библиотеку shared
-target_link_libraries(server PRIVATE shared)
+# Связываем целевой исполняемый файл server с библиотеками "shared" и значением переменной ${Boost_LIBRARIES}.
+# 1) server — это имя целевой программы, которая создаётся с помощью команды add_executable.
+#      Напр., add_executable(server simple_server.cpp) указывает, что server компилируется из файла simple_server.cpp.
+# 2) ${Boost_LIBRARIES} — это переменная, предоставляемая CMake после вызова find_package(Boost ...).
+#      Она содержит список библиотек, необходимых для использования модулей Boost, указанных в параметре find_package.
+#      Напр., для Boost::program_options это может быть что-то вроде -lboost_program_options.
+
+
+# обе библиотеки и shared, и Boost — будут добавлены к цели server.
+target_link_libraries(server
+        PRIVATE shared
+        ${Boost_LIBRARIES}
+)
+

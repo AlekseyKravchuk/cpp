@@ -18,34 +18,32 @@
 #include <thread>
 #include <chrono>
 
+#include <boost/program_options.hpp>
+
 #include "wrappers.h"
 
 using namespace std;
 using namespace std::chrono_literals;
+namespace po = boost::program_options;
 
 int main(int argc, char* argv[]) {
     int listen_fd, client_fd;
     uint16_t port_listen_to = 0;
     const int MAX_QUEUE_PENDING_CONNECTIONS_LEN = 10;
+    string file_path, message;
     // ===========================================================================
+
+    server_check_arguments(argc, argv, port_listen_to, file_path);
 
     constexpr size_t buffer_size = 1024;
     char buffer[buffer_size];
-    const char* message = "Война и мир, Лев Толстой (фрагмент)\n\n"
-                          "В первый раз война, как мы знаем, началась, но она была странной. "
-                          "Скоро стало очевидно, что она не только заставит нас бороться за нашу жизнь, "
-                          "но и откроет нам новые горизонты. Наша страна встретила войну, как испытание. "
-                          "Никто не мог точно предсказать, как она повлияет на нас, но каждый был уверен, что "
-                          "эта борьба будет долгой и трудной. Этот момент был одним из тех, когда жизнь человечества "
-                          "поменяла свою траекторию. Все, кто принял участие, поняли это в тот момент, когда началась война."
-                          "В первый раз война, как мы знаем, началась, но она была странной. "
-                          "Скоро стало очевидно, что она не только заставит нас бороться за нашу жизнь, "
-                          "но и откроет нам новые горизонты. Наша страна встретила войну, как испытание. "
-                          "Никто не мог точно предсказать, как она повлияет на нас, но каждый был уверен, что "
-                          "эта борьба будет долгой и трудной. Этот момент был одним из тех, когда жизнь человечества "
-                          "поменяла свою траекторию. Все, кто принял участие, поняли это в тот момент, когда началась война.";
 
-    server_check_arguments(argc, argv, port_listen_to);
+    try {
+        message = get_content(file_path);
+    } catch (const std::runtime_error& e) {
+        std::cerr << "Error: " << e.what() << "\n";
+        exit(EXIT_FAILURE);
+    }
 
     // ====== Создаем сокет для приема запросов на соединение (listening socket) =====
     listen_fd = Socket(AF_INET, SOCK_STREAM, 0);
@@ -83,13 +81,13 @@ int main(int argc, char* argv[]) {
     // std::this_thread::sleep_for(30s); // 30 секунд
 
     // =============== Отправка данных подключившемуся клиенту ===============
-    size_t message_len = strlen(message);
+    size_t message_len = message.size();
     size_t total_sent = 0;
 
     size_t count = 0;
     while (total_sent < message_len) {
         size_t len_to_send = std::min(buffer_size, message_len - total_sent);
-        memcpy(buffer, message + total_sent, len_to_send);
+        memcpy(buffer, message.c_str() + total_sent, len_to_send);
         ssize_t num_bytes_sent = Send(client_fd, buffer, len_to_send, 0);
         ++count;
         total_sent += static_cast<size_t>(num_bytes_sent);

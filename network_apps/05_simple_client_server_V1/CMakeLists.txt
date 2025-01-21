@@ -11,8 +11,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 # Если в системе несколько версий Boost
 #set(BOOST_ROOT "/path/to/specific/boost")
 # ИЛИ
-#set(BOOST_INCLUDEDIR "/path/to/specific/boost/include")
-#set(BOOST_LIBRARYDIR "/path/to/specific/boost/lib")
+#set(BOOST_INCLUDE_DIR "/path/to/specific/boost/include")
+#set(BOOST_LIBRARY_DIR "/path/to/specific/boost/lib")
 
 # ============ Параметризуем версию Boost ============
 set(BOOST_VERSION "1.75.0" CACHE STRING "Minimum Boost version")

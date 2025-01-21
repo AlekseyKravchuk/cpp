@@ -29,7 +29,7 @@ namespace po = boost::program_options;
 int main(int argc, char* argv[]) {
     int listen_fd, client_fd;
     uint16_t port_listen_to = 0;
-    const int MAX_QUEUE_PENDING_CONNECTIONS_LEN = 10;
+    constexpr int MAX_QUEUE_PENDING_CONNECTIONS_LEN = 10;
     string file_path, message;
     // ===========================================================================
 
@@ -76,7 +76,8 @@ int main(int argc, char* argv[]) {
     // =============== Вывод информации о подключении клиента ===============
     char client_ip[INET_ADDRSTRLEN];
     inet_ntop(AF_INET, &client_address.sin_addr, client_ip, INET_ADDRSTRLEN);
-    cout << "Connected client ==> " << client_ip << ":" << ntohs(client_address.sin_port) << endl << endl;
+    cout << "Connected client ==> " << client_ip
+         << ":" << ntohs(client_address.sin_port) << endl << endl;
 
     // std::this_thread::sleep_for(30s); // 30 секунд
 

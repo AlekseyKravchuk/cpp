@@ -2,19 +2,19 @@
 // Created by kav on 16.01.25.
 //
 #include <iostream>
-
-//#include <cstdio>        // perror
-//#include <cstdlib>       // exit, EXIT_FAILURE
 #include <cstring>       // memset
 #include <sys/socket.h>  // socket
 #include <arpa/inet.h>
 #include <unistd.h>      // close
 #include <fstream>
+#include <filesystem>
+#include <unistd.h>      // getpid()
 
 #include <boost/program_options.hpp>
 
 using namespace std;
 namespace po = boost::program_options;
+namespace fs = std::filesystem;
 
 int Socket(int domain, int type, int protocol) {
     int socket_fd;
@@ -83,11 +83,11 @@ void Bind(int sockfd, const struct sockaddr* addr, socklen_t addrlen) {
 
 void Listen(int sockfd, int backlog) {
     char* ptr;
-    char** endptr = nullptr;
+    char** end_ptr = nullptr;
 
     // May be override 2nd argument with environment variable
     if ( (ptr = getenv("LISTENQ")) != nullptr) {
-        backlog = static_cast<int>(strtol(ptr, endptr, 10));
+        backlog = static_cast<int>(strtol(ptr, end_ptr, 10));
     }
 
     int result = listen(sockfd, backlog);
@@ -127,31 +127,56 @@ void Close(int fd) {
     }
 }
 
-void client_check_arguments(int argc, char* argv[],
+void client_check_arguments(int argc,
+                            char* argv[],
                             string& server_ip,
                             uint16_t& server_port) {
-    if (argc != 3) {
-        cerr << "usage: " << argv[0] << " <server_IP_address> <server_port>" << endl;
-        cerr << "Error: wrong number of arguments" << endl;
+    // Declare the supported options using the options_description class.
+    po::options_description desc("Allowed options");
+    desc.add_options()
+            ("help,h", "produce help message")
+            ("ipaddr,i", po::value<string>()->required(), "server IP address to connect to")
+            ("port,p",   po::value<uint16_t>()->required(), "server port to connect to");
+
+    // переменная для хранения значений опций
+    po::variables_map vars_map;
+
+    // парсинг аргументов
+    try {
+        po::store(po::parse_command_line(argc, argv, desc), vars_map);
+
+        if (vars_map.count("help")) {
+            std::cout << desc;
+            exit(EXIT_SUCCESS);
+        }
+
+        // Вызов notify предназначен для обработки обязательных аргументов;
+        // проверяет, корректно ли заполнены значения опций в vars_map (объект po::variables_map)
+        // и вызывает обработчики (notifiers), если они были заданы для опций.
+        po::notify(vars_map);
+
+        // Присваиваем значения из командной строки в переменные
+        server_ip = vars_map["ipaddr"].as<string>();
+        server_port = vars_map["port"].as<uint16_t>();
+
+        std::cout << "Client (PID = " << getpid() << ") is trying to connect to server at "
+                  << server_ip << ":" << server_port << endl;
+
+    } catch (const po::error& e) {
+        // Если обязательная опция отсутствует, выводим пользовательское сообщение
+        std::cerr << "Error: Missing required option: " << e.what() << "\n";
+
+        fs::path full_path = fs::absolute(argv[0]); // Получаем абсолютный путь
+        fs::path relative_path = fs::relative(full_path, fs::current_path()); // Преобразуем в относительный
+
+        std::cout << "usage: " << relative_path << " <server_ip> <port>\n";
+        desc.print(std::cerr);
         exit(EXIT_FAILURE);
-    } else {
-        server_ip = argv[1];
-        server_port = static_cast<uint16_t>(std::stoul(argv[2]));
+    } catch (const std::exception& e) {  // Ловим другие возможные ошибки
+        std::cerr << "Error: " << e.what() << "\n";
+        exit(EXIT_FAILURE);
     }
 }
-
-//void server_check_arguments(int argc,
-//                            char* argv[],
-//                            uint16_t& port_listen_to,
-//                            const std::string& filepath) {
-//    if (argc != 2) {
-//        cerr << "usage: " << argv[0] << " <port_listen_to>" << endl;
-//        perror("wrong number of arguments");
-//        exit(EXIT_FAILURE);
-//    } else {
-//        port_listen_to = static_cast<uint16_t>(std::stoul(argv[1]));
-//    }
-//}
 
 void server_check_arguments(int argc,
                             char* argv[],
@@ -170,7 +195,7 @@ void server_check_arguments(int argc,
 
         if (vars_map.count("help")) {
             std::cout << desc << "\n";
-            return;
+            exit(EXIT_SUCCESS);;
         }
 
         // Вызов notify для обработки обязательных аргументов
@@ -185,8 +210,11 @@ void server_check_arguments(int argc,
 
     } catch (const po::error& e) {
         // Если обязательная опция отсутствует, выводим пользовательское сообщение
+        fs::path full_path = fs::absolute(argv[0]); // Получаем абсолютный путь
+        fs::path relative_path = fs::relative(full_path, fs::current_path()); // Преобразуем в относительный
+
         std::cerr << "Error: Missing required option: " << e.what() << "\n";
-        std::cout << "usage: " << argv[0] << " <port_listen_to> <file_to_read_text_from>\n";
+        std::cout << "usage: " << relative_path << " <port_listen_to> <file_to_read_text_from>\n";
         desc.print(std::cerr);
         exit(EXIT_FAILURE);
     } catch (const std::exception& e) {
@@ -211,5 +239,3 @@ string get_content(const std::string& file_path) {
 
     return file_content;
 }
-
-

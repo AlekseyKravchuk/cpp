@@ -32,8 +32,7 @@ void Close(int fd);
 
 void client_check_arguments(int argc, char* argv[], std::string& server_ip, uint16_t& server_port);
 
-//void server_check_arguments(int argc, char* argv[], uint16_t& port_listen_to);
-int server_check_arguments(int argc, char* argv[], uint16_t& port_listen_to, std::string& filepath);
+void server_check_arguments(int argc, char* argv[], uint16_t& port_listen_to, std::string& filepath);
 
 std::string get_content(const std::string& file_path);
 

@@ -3,11 +3,9 @@
  */
 
 #include <iostream>
-
 #include <sys/socket.h>  // socket(), recv()
 #include <cstdlib>       // exit()
 #include <netinet/in.h>  // struct sockaddr_in, struct in_addr, htons(...)
-#include <cstdio>        // void perror( const char *s ); Prints a textual description of the error code currently stored in the system variable errno to stderr.
 #include <cstring>       // void* memset( void* dest, int ch, std::size_t count );
 #include <unistd.h>      // close(...)
 

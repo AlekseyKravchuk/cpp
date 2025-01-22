@@ -3,21 +3,14 @@
  */
 
 #include <iostream>
-
 #include <sys/socket.h>  // socket(...), recv(...)
-
 #include <cstdlib>       // exit(...)
 #include <netinet/in.h>  // struct sockaddr_in, struct in_addr, htons(...), INET_ADDRSTRLEN
 #include <arpa/inet.h>   // inet_pton(...)
-#include <cstdio>
-#include <unistd.h>      // close(...)
-
 #include <string>
 #include <cstring>       // std::strerror - analogue of std::perror()
-
 #include <thread>
 #include <chrono>
-
 #include <boost/program_options.hpp>
 
 #include "wrappers.h"
@@ -58,7 +51,7 @@ int main(int argc, char* argv[]) {
 
     // =============== Ожидание входящих соединений на прослушиваемом порту ===============
     Listen(listen_fd, MAX_QUEUE_PENDING_CONNECTIONS_LEN);
-    cout << "Server is waiting connection on port " << port_listen_to << "..." << endl;
+    cout << "Server (PID = " << getpid() << ") is waiting connection on port " << port_listen_to << "..." << endl;
 
     // =============== Принятие соединения с клиентом ===============
     // Создаем структуру "sockaddr_in" для хранения информации о клиенте.

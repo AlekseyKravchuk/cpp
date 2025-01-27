@@ -38,18 +38,38 @@ int main(int argc, char* argv[]) {
     // ====== Создаем сокет для приема запросов на соединение (listening socket) =====
     listen_fd = Socket(AF_INET, SOCK_STREAM, 0);
 
-    // ======== Настраиваем структуру адреса сервера =========
+    // Настраиваем структуру адреса сервера без ограничений (принимаем соединение клиента на любом интерфейсе)
+//    struct sockaddr_in server_address = {
+//            .sin_family = AF_INET,
+//            .sin_port = htons(port_listen_to),
+//            .sin_addr = {INADDR_ANY},
+//            .sin_zero = {}
+//    };
+
+
+    // Настраиваем структуру адреса сервера с ограничениями:(принимаем соединение клиента на любом интерфейсе)
+    // - принимаем соединение клиента только на интерфейсе "iface_name" (== "lo");
+    // - принимаем соединение клиента только на IP-адресе restricted_ip (== "127.0.0.15")
     struct sockaddr_in server_address = {
             .sin_family = AF_INET,
             .sin_port = htons(port_listen_to),
-            .sin_addr = {INADDR_ANY},
+            .sin_addr = {},
             .sin_zero = {}
     };
+    const string restricted_ip = "127.0.0.15";
+    Inet_pton(AF_INET, restricted_ip.c_str(), &server_address.sin_addr);
 
-    // ========== Привязываем сокет к адресу и порту =========
+    int level = SOL_SOCKET;
+    int optname = SO_BINDTODEVICE;
+    string iface_name = "lo";
+    restrict_to_iface(listen_fd, level, optname, (void*) iface_name.c_str(), static_cast<socklen_t>(iface_name.size()));
+
+
+    // Привязываем сокет "listen_fd" к определённому адресу и порту (в данном случае 0.0.0.0:3444)
     Bind(listen_fd, (struct sockaddr*)&server_address, sizeof(server_address));
 
-    // =============== Ожидание входящих соединений на прослушиваемом порту ===============
+    // Вызываем "listen" (в коде wrapper'а), чтобы сокет "listen_fd" мог принимать входящие соединения.
+    // Сокет "listen_fd" после вызова "listen" будет находиться в состоянии "LISTEN"
     Listen(listen_fd, MAX_QUEUE_PENDING_CONNECTIONS_LEN);
     cout << "Server (PID = " << getpid() << ") is waiting connection on port " << port_listen_to << "..." << endl;
 

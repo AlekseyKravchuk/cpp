@@ -36,4 +36,9 @@ void server_check_arguments(int argc, char* argv[], uint16_t& port_listen_to, st
 
 std::string get_content(const std::string& file_path);
 
+void restrict_to_iface(int server_fd,
+                       int level,
+                       int optname,
+                       const void* optval,
+                       socklen_t optlen);
 

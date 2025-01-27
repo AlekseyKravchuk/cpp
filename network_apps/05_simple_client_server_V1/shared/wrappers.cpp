@@ -9,6 +9,7 @@
 #include <fstream>
 #include <filesystem>
 #include <unistd.h>      // getpid()
+#include <net/if.h>      // setsockopt
 
 #include <boost/program_options.hpp>
 
@@ -205,7 +206,7 @@ void server_check_arguments(int argc,
         port_listen_to = vars_map["port"].as<uint16_t>();
         file_path = vars_map["file"].as<std::string>();
 
-        std::cout << "Server will listen on port: " << port_listen_to << "\n";
+        std::cout << "Command args successfully parsed, port to listen to (server side): " << port_listen_to << "\n";
         std::cout << "File to send: " << file_path << "\n";
 
     } catch (const po::error& e) {
@@ -238,4 +239,17 @@ string get_content(const std::string& file_path) {
     file_in.close();
 
     return file_content;
+}
+
+void restrict_to_iface(int server_fd,
+                       int level,
+                       int optname,
+                       const void* optval,
+                       const socklen_t optlen) {
+    if (setsockopt(server_fd, level, optname, optval, optlen) < 0) {
+        // (setsockopt(server_fd, SOL_SOCKET, SO_BINDTODEVICE, "eth0", strlen("eth0")) < 0)
+        perror("Bind to device failed");
+        close(server_fd);
+        exit(EXIT_FAILURE);
+    }
 }

@@ -53,7 +53,7 @@ def main():
         print(f"Запуск клиента {i}...")
         try:
             # subprocess.run(["./client", server_ip, server_port], check=True)
-            subprocess.run(["./cmake-build-debug/simple_client/client", server_ip, server_port], check=True)
+            subprocess.run(["./cmake-build-debug/client/client", server_ip, server_port], check=True)
         except FileNotFoundError:
             print("Ошибка: Файл './client' не найден.")
             sys.exit(1)

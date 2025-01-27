@@ -9,14 +9,12 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall \
                                         -Wconversion \
                                         -Wextra \
                                         -pedantic-errors \
-                                        -O0"
-)
+                                        -O0")
 
 set(CMAKE_BUILD_TYPE Debug)
 
 set(SOURCES
-        simple_client.cpp
-)
+        client.cpp)
 
 #set(HEADERS
 #        some_header.h
@@ -28,5 +26,4 @@ add_executable(${PROJECT_NAME} ${SOURCES})
 # Обе библиотеки и shared, и Boost — будут добавлены к цели client.
 target_link_libraries(client
         PRIVATE shared
-        ${Boost_LIBRARIES}
-        )
+        ${Boost_LIBRARIES})

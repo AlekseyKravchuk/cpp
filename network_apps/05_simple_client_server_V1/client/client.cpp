@@ -52,12 +52,7 @@ int main(int argc, char* argv[]) {
     cout << "The message sent by the server: " <<  complete_message << endl;
 
     // ============= close connection =============
-    if (socket_fd > 0) {
-        close(socket_fd);
-        cout << "\nClient socket was closed successfully." << endl;
-    } else {
-        cerr << "Client socket <= 0." << endl;
-    }
+    Close(socket_fd);
 
     return 0;
 }

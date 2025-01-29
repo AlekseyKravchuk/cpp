@@ -9,7 +9,6 @@
 #include <arpa/inet.h>   // inet_pton(...)
 #include <string>
 #include <cstring>       // std::strerror - analogue of std::perror()
-#include <thread>
 #include <chrono>
 #include <boost/program_options.hpp>
 
@@ -60,10 +59,13 @@ int main(int argc, char* argv[]) {
     Inet_pton(AF_INET, restricted_ip.c_str(), &server_address.sin_addr);
 
     int level = SOL_SOCKET;
-    int optname = SO_BINDTODEVICE;
+    int opt_name = SO_BINDTODEVICE;
     string iface_name = "lo";
-    restrict_to_iface(listen_fd, level, optname, (void*) iface_name.c_str(), static_cast<socklen_t>(iface_name.size()));
-
+    restrict_to_iface(listen_fd,
+                      level,
+                      opt_name,
+                      (void*) iface_name.c_str(),
+                      static_cast<socklen_t>(iface_name.size()));
 
     // Привязываем сокет "listen_fd" к определённому адресу и порту (в данном случае 0.0.0.0:3444)
     Bind(listen_fd, (struct sockaddr*)&server_address, sizeof(server_address));
@@ -89,8 +91,6 @@ int main(int argc, char* argv[]) {
     cout << "Connected client ==> " << client_ip
          << ":" << ntohs(client_address.sin_port) << endl << endl;
 
-    // std::this_thread::sleep_for(30s); // 30 секунд
-
     // =============== Отправка данных подключившемуся клиенту ===============
     size_t message_len = message.size();
     size_t total_sent = 0;
@@ -110,16 +110,11 @@ int main(int argc, char* argv[]) {
     cout << "Function send was called " << count << " times." << endl;
     cout << "Message sent to client." << endl;
 
-    // Первым закрывается сокет клиента (client_fd), т.к. этот сокет участвует в процессе обмена данными с клиентом,
-    // и его нужно закрыть сразу после завершения общения с клиентом.
-    // После этого сокет становится бесполезным, и его необходимо закрыть, чтобы освободить ресурсы.
+    // Закрываем сокет клиента (client_fd), т.к. его нужно закрыть сразу после завершения общения с клиентом.
+    // При этом listen_fd продолжает слушать входящие соединения.
     Close(client_fd);
 
     // Закрытие сокета сервера (listen_fd) происходит после того, как ВСЕ соединения с клиентами завершены,
-    // то есть после того, как все клиентские сокеты были закрыты:
-    // listen_fd продолжает слушать входящие соединения, даже после того, как вы закрыли client_fd.
-    // Если по какой-то причине сервер закрывает свой сокет раньше, чем завершается обработка клиентских соединений,
-    // он больше не сможет принимать новые подключения.
     Close(listen_fd);
 
     return 0;

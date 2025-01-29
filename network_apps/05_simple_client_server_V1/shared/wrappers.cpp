@@ -113,6 +113,8 @@ int Accept(int listen_fd, struct sockaddr* sa, socklen_t* salenptr) {
 ssize_t Send(int socket_fd, const void *buf, size_t len, int flags=0) {
     ssize_t num_bytes_sent = 0;
 
+    // !!! Успешное завершение "send()" ещё не означает, что процесс на другом конце соединения получил отправленные данные!!!
+    // Всё, что гарантирует "send()" - это отсутствие ошибок при передаче данных сетевым драйверам.
     if ( (num_bytes_sent = send(socket_fd, buf, len, flags)) < 0) {
         cerr << "Sending data error (send call): " << strerror(errno) << endl;
         exit(EXIT_FAILURE);

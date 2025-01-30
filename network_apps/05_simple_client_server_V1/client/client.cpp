@@ -7,7 +7,6 @@
 #include <cstdlib>       // exit()
 #include <netinet/in.h>  // struct sockaddr_in, struct in_addr, htons(...)
 #include <cstring>       // void* memset( void* dest, int ch, std::size_t count );
-#include <unistd.h>      // close(...)
 
 #include "wrappers.h"
 

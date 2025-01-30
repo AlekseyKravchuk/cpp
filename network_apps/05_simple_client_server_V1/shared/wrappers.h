@@ -6,13 +6,16 @@
 #include <sys/socket.h>  // socket
 #include <sys/types.h>
 #include <arpa/inet.h>
-#include <unistd.h>      // write
+#include <unistd.h>      // write(), close()
 #include <fstream>
 
 int Socket(int domain, int type, int protocol);
 
-// wrapper fo inet_ptor: convert IPv4 and IPv6 addresses from text to binary form (to network byte order)
+// wrapper fo inet_pton: convert IPv4 and IPv6 addresses from text to binary form (to network byte order)
 int Inet_pton(int af, const char *src, void *dst);
+
+const char* Inet_ntop(int af, const void *src,
+                      char *dst, socklen_t size);
 
 int Connect(int socket_fd,
             const struct sockaddr *addr,
@@ -22,7 +25,7 @@ ssize_t Recv(int socket_fd, void *buffer, size_t buffer_size, int flags);
 
 void Bind(int sockfd, const struct sockaddr* addr, socklen_t addrlen);
 
-void Listen(int sockfd, int backlog);
+void Listen(int sock_fd, int backlog);
 
 int Accept(int fd, struct sockaddr* sa, socklen_t* salenptr);
 

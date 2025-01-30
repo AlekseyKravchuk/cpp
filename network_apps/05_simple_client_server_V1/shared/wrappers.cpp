@@ -42,6 +42,18 @@ int Inet_pton(int af, const char *src, void *dst) {
     return result;
 }
 
+const char* Inet_ntop(int af, const void *src,
+                      char *dst, socklen_t size) {
+    const char* ptr = inet_ntop(af, src, dst, size);
+    if (ptr == nullptr) {
+        cerr << "Client address could not be converted to string representation (inet_ntop): "
+             << strerror(errno) << endl;
+        exit(EXIT_FAILURE);
+    }
+
+    return dst;
+}
+
 int Connect(int socket_fd,
             const struct sockaddr *server_address_casted,
             socklen_t addrlen) {
@@ -82,16 +94,16 @@ void Bind(int sockfd, const struct sockaddr* addr, socklen_t addrlen) {
     }
 }
 
-void Listen(int sockfd, int backlog) {
-    char* ptr;
+void Listen(int sock_fd, int backlog) {
+    char* ptr = getenv("LISTENQ");
     char** end_ptr = nullptr;
 
     // May be override 2nd argument with environment variable
-    if ( (ptr = getenv("LISTENQ")) != nullptr) {
+    if ( ptr != nullptr) {
         backlog = static_cast<int>(strtol(ptr, end_ptr, 10));
     }
 
-    int result = listen(sockfd, backlog);
+    int result = listen(sock_fd, backlog);
 
     if (result == -1) {
         cerr << "listen failed: " << strerror(errno) << endl;
@@ -100,9 +112,9 @@ void Listen(int sockfd, int backlog) {
 }
 
 int Accept(int listen_fd, struct sockaddr* sa, socklen_t* salenptr) {
-    int client_socket_fd;
+    int client_socket_fd = accept(listen_fd, sa, salenptr);
 
-    if ( (client_socket_fd = accept(listen_fd, sa, salenptr)) < 0) {
+    if ( client_socket_fd < 0) {
         cerr << "accept connection error: " << strerror(errno) << endl;
         exit(EXIT_FAILURE);
     }

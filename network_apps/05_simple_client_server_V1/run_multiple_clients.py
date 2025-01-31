@@ -1,8 +1,7 @@
-
-
-import re          # модуль для работы с регулярными выражениями (используется для валидации IP-адреса)
-import sys         # модуль для работы с параметрами командной строки и выхода из программы
+import re  # модуль для работы с регулярными выражениями (используется для валидации IP-адреса)
+import sys  # модуль для работы с параметрами командной строки и выхода из программы
 import subprocess  # модуль для выполнения внешних команд (в данном случае — запуска исполняемого файла ./client)
+
 
 def is_valid_ip(ip):
     """Проверяет валидность IP-адреса."""
@@ -13,6 +12,7 @@ def is_valid_ip(ip):
             return True
     return False
 
+
 def is_valid_port(port):
     """Проверяет валидность порта (1–65535)."""
     if port.isdigit():
@@ -20,9 +20,11 @@ def is_valid_port(port):
         return 1 <= port_num <= 65535
     return False
 
+
 def is_valid_number(number):
     """Проверяет, является ли строка положительным числом."""
     return number.isdigit() and int(number) > 0
+
 
 def main():
     if len(sys.argv) != 4:
@@ -60,6 +62,7 @@ def main():
         except subprocess.CalledProcessError as e:
             print(f"Ошибка при выполнении клиента: {e}")
             sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

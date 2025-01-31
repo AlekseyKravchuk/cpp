@@ -34,7 +34,9 @@ include_directories(${Boost_INCLUDE_DIRS})
 # Добавляем общую библиотеку shared
 add_library(shared STATIC
         shared/wrappers.cpp
-        shared/wrappers.h)
+        shared/wrappers.h
+        shared/utilities.cpp
+        shared/utilities.h)
 
 # Указываем, где искать заголовочные файлы для shared
 target_include_directories(shared PUBLIC ${CMAKE_SOURCE_DIR}/shared)

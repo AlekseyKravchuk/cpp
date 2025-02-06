@@ -173,10 +173,6 @@ void client_check_arguments(int argc,
         // Присваиваем значения из командной строки в переменные
         server_ip = vars_map["ipaddr"].as<string>();
         server_port = vars_map["port"].as<uint16_t>();
-
-        std::cout << "Client (PID = " << getpid() << ") is trying to connect to server at "
-                  << server_ip << ":" << server_port << endl;
-
     } catch (const po::error& e) {
         // Если обязательная опция отсутствует, выводим пользовательское сообщение
         std::cerr << "Error: Missing required option: " << e.what() << "\n";

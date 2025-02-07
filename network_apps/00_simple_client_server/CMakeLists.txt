@@ -20,6 +20,8 @@ set(BOOST_VERSION "1.75.0" CACHE STRING "Minimum Boost version")
 # ================= Подключаем Boost =================
 find_package(Boost ${BOOST_VERSION} REQUIRED COMPONENTS program_options)
 
+# TODO: подключить библиотеки libnl и libnl-genl
+
 if (Boost_FOUND)
     message(STATUS "Found Boost version: ${Boost_VERSION}")
     message(STATUS "Include directories: ${Boost_INCLUDE_DIRS}")

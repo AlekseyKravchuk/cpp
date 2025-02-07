@@ -1,0 +1,3 @@
+# Запуск cmake:
+cmake -S ./ -B build/
+

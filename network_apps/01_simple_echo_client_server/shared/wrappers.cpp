@@ -134,22 +134,40 @@ void Close(int fd) {
     }
 }
 
-void Write_n_bytes_to_sock_fd(int fd, void* ptr, size_t n_bytes) {
-    if (write_n_bytes_to_fd(fd, ptr, n_bytes) != n_bytes) {
-        cerr << "write_n_bytes_to_fd error" << endl;
+void Write_n_bytes_to_sock_fd(int sock_fd, void* buf_start, size_t n_bytes) {
+    if (write_n_bytes_to_sock_fd(sock_fd, buf_start, n_bytes) != n_bytes) {
+        cerr << "write_n_bytes_to_sock_fd error" << endl;
         exit(EXIT_FAILURE);
     }
 }
 
-char* Fgets(char* ptr, int n, FILE* stream) {
-    char* rptr;
+/*
+ * char *fgets(char* str, int size, FILE* file_stream);
+ * стандартная функция из <stdio.h> в POSIX-системах, предназначенная для безопасного чтения строк из потока.
+ * char *str (send_buf)     — буфер, в который записывается считанная строка;
+ * int size  (MAX_BUF_SIZE) — максимальное количество символов, которые можно записать (включая завершающий \0);
+ * FILE *file_stream (fp)        — указатель на поток (stdin, fd из fopen() и т.д), ИЗ КОТОРОГО считываются данные.
+ * ================================================
+ * Возвращаемое значение:
+ *  - Указатель на str при успешном чтении.
+ *  - NULL, если произошла ошибка или достигнут конец файла (EOF).
+ * ================================================
+ * Особенности:
+ * fgets() читает строку, пока не встретит символ \n (перенос строки) или пока не будет прочитано (size - 1) символов.
+ * fgets() читает не более (size-1) символов, т.к. она гарантированно добавляет завершающий нулевой символ (\0) в конец строки.
+ * Завершает строку \0, даже если \n не встречен.
+ * Если строка длиннее, чем size - 1, то fgets() читает только часть, а остальное останется в потоке.
+ * В отличие от gets() (которая небезопасна и удалена из C11), fgets() предотвращает переполнение буфера.
+ */
+char* Fgets(char* str_buf, int n, FILE* file_stream) {
+    char* ptr = fgets(str_buf, n, file_stream);
 
-    if ((rptr = fgets(ptr, n, stream)) == nullptr && ferror(stream)) {
+    if (ptr == nullptr && ferror(file_stream)) {
         cerr << "fgets error: " << strerror(errno) << endl;
         exit(EXIT_FAILURE);
     }
 
-    return (rptr);
+    return ptr;
 }
 
 void Fputs(const char* ptr, FILE* stream) {
@@ -167,6 +185,6 @@ ssize_t Readline(int fd, void* ptr, size_t max_len) {
         exit(EXIT_FAILURE);
     }
 
-    return (n);
+    return n;
 }
 

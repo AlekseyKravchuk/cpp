@@ -127,17 +127,17 @@ tuple<string, uint16_t> get_ip_port_from_addr_struct(sockaddr_storage& client_ad
     return tuple{ip_holder, port};
 }
 
-/* Write "n" bytes to a descriptor "fd". */
-ssize_t write_n_bytes_to_fd(int fd, const void* vptr, size_t n) {
+/* Write "n" bytes starting from "buf_start" to a socket descriptor "sock_fd". */
+ssize_t write_n_bytes_to_sock_fd(int sock_fd, const void* buf_start, size_t n) {
     size_t n_left;
     ssize_t n_written;
     const char* ptr;
 
-    ptr = reinterpret_cast<const char*>(vptr);
+    ptr = reinterpret_cast<const char*>(buf_start);
     n_left = n;
 
     while (n_left > 0) {
-        if ((n_written = send(fd, ptr, n_left, 0)) <= 0) {
+        if ((n_written = send(sock_fd, ptr, n_left, 0)) <= 0) {
             if (n_written < 0 && errno == EINTR)
                 n_written = 0;        /* and call write() again */
             else
@@ -162,7 +162,8 @@ void server_str_echo(int sock_fd) {
 
         if (n_bytes_read > 0) {
             cout << "Успешно прочитано из сокета " << n_bytes_read << " байт.\n"
-                 << "Содержимое: " << buf << endl;
+                 << "Содержимое: " << string(buf, n_bytes_read-1) << endl;
+            cout << "============ Debugging output right after socket content output ============" << endl;
             // Успешное чтение, записываем данные ("n_bytes_read" байтов) обратно в сетевой сокет
             Write_n_bytes_to_sock_fd(sock_fd, buf, n_bytes_read);
         } else if (n_bytes_read < 0 && errno == EINTR) {
@@ -185,13 +186,15 @@ void server_str_echo(int sock_fd) {
     }
 }
 
-ssize_t my_read(int fd, char* ptr) {
+ssize_t my_read(int sock_fd, char* ptr) {
     static ssize_t read_cnt;
     static char* read_ptr;
-    static char read_buf[MAX_BUF_SIZE];
+    static char buf[MAX_BUF_SIZE];
 
     while (read_cnt <= 0) {
-        read_cnt = read(fd, read_buf, sizeof(read_buf));
+        // получаем из "sock_fd" в буфер "buf" максимум sizeof(buf) байт
+        read_cnt = recv(sock_fd, buf, sizeof(buf), 0);
+
         if (read_cnt < 0) {
             if (errno == EINTR) {
                 continue;
@@ -200,7 +203,7 @@ ssize_t my_read(int fd, char* ptr) {
         } else if (read_cnt == 0) {
             return 0;
         }
-        read_ptr = read_buf;
+        read_ptr = buf;
     }
 
     read_cnt--;
@@ -208,18 +211,18 @@ ssize_t my_read(int fd, char* ptr) {
     return EXIT_FAILURE;
 }
 
-ssize_t readline(int fd, void* vptr, size_t max_len) {
+ssize_t readline(int sock_fd, void* vptr, size_t max_len) {
     ssize_t n;
     ssize_t rc;
-    char c;
+    char ch;
     char* ptr;
 
     ptr = reinterpret_cast<char* >(vptr);
 
     for (n = 1; n < max_len; n++) {
-        if ((rc = my_read(fd, &c)) == 1) {
-            *ptr++ = c;
-            if (c == '\n')
+        if ((rc = my_read(sock_fd, &ch)) == 1) {
+            *ptr++ = ch;
+            if (ch == '\n')
                 break;    /* newline is stored, like fgets() */
         } else if (rc == 0) {
             *ptr = 0;
@@ -229,41 +232,37 @@ ssize_t readline(int fd, void* vptr, size_t max_len) {
     }
 
     *ptr = 0;    /* null terminate like fgets() */
-    return (n);
+    return n;
 }
 
-void client_str_echo(FILE* fp, int sock_fd) {
+void client_str_echo(FILE* stdin_fp, int sock_fd) {
     char send_buf[MAX_BUF_SIZE];
     char recv_buf[MAX_BUF_SIZE];
 
-    /*
-     * char *fgets(char* str, int size, FILE* stream);
-     * стандартная функция из <stdio.h> в POSIX-системах, предназначенная для безопасного чтения строк из потока.
-     * char *str (send_buf)     — буфер, в который записывается считанная строка;
-     * int size  (MAX_BUF_SIZE) — максимальное количество символов, которые можно записать (включая завершающий \0);
-     * FILE *stream (fp)        — указатель на поток (stdin, fd из fopen() и т.д), ИЗ КОТОРОГО считываются данные.
-     * ================================================
-     * Возвращаемое значение:
-     *  - Указатель на str при успешном чтении.
-     *  - NULL, если произошла ошибка или достигнут конец файла (EOF).
-     * ================================================
-     * Особенности:
-     * fgets() читает строку, пока не встретит символ \n (перенос строки) или пока не будет прочитано (size - 1) символов.
-     * fgets() читает не более (size-1) символов, т.к. она гарантированно добавляет завершающий нулевой символ (\0) в конец строки.
-     * Завершает строку \0, даже если \n не встречен.
-     * Если строка длиннее, чем size - 1, то fgets() читает только часть, а остальное останется в потоке.
-     * В отличие от gets() (которая небезопасна и удалена из C11), fgets() предотвращает переполнение буфера.
-     */
-    while (Fgets(send_buf, MAX_BUF_SIZE, fp) != nullptr) {
+    while (true) {
+        // ========== считываем из stdin строку ==========
+        char* str_ptr = Fgets(send_buf, MAX_BUF_SIZE, stdin_fp);
+        if (str_ptr == nullptr) {
+            // если произошла ошибка или достигнут конец файла (EOF)
+            break;
+        }
 
-        // "Write_n_bytes_to_sock_fd" отправляет считанную функцией "Fgets" строку серверу.
+        // ========== записываем эту строку в сетевой сокет ==========
+        // "Write_n_bytes_to_sock_fd" отправляет серверу строку, которую считала "Fgets" и записала в буфер "send_buf".
         Write_n_bytes_to_sock_fd(sock_fd, send_buf, strlen(send_buf));
 
+        // TODO: fix buggy Readline function
+        //  readline reads the line echoed back from the server
         if (Readline(sock_fd, recv_buf, MAX_BUF_SIZE) == 0) {
             cerr << "client_str_echo: server terminated prematurely: " << endl;
             exit(EXIT_FAILURE);
         }
 
+        // TODO: заменить fputs на потокобезопасную функцию
+        /*
+         * fputs() не потокобезопасен — в glibc потоки FILE* могут быть использованы одновременно только при блокировке (flockfile()).
+         * В многопоточной программе лучше использовать write() или fprintf().
+         */
         Fputs(recv_buf, stdout);
     }
 }

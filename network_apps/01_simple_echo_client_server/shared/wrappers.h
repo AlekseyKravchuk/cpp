@@ -47,5 +47,6 @@ FILE* Fopen(const char* filename, const char* mode);
 
 void Fputs(const char* ptr, FILE* stream);
 
-ssize_t Readline(int fd, void* ptr, size_t max_len);
+ssize_t Readline(int fd, void* ptr_to_buf, size_t max_len);
 
+pid_t Fork();

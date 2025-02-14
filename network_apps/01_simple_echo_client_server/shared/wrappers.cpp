@@ -146,7 +146,7 @@ void Write_n_bytes_to_sock_fd(int sock_fd, void* buf_start, size_t n_bytes) {
  * стандартная функция из <stdio.h> в POSIX-системах, предназначенная для безопасного чтения строк из потока.
  * char *str (send_buf)     — буфер, в который записывается считанная строка;
  * int size  (MAX_BUF_SIZE) — максимальное количество символов, которые можно записать (включая завершающий \0);
- * FILE *file_stream (fp)        — указатель на поток (stdin, fd из fopen() и т.д), ИЗ КОТОРОГО считываются данные.
+ * FILE *file_stream (fp)   — указатель на поток (stdin, fd из fopen() и т.д), ИЗ КОТОРОГО считываются данные.
  * ================================================
  * Возвращаемое значение:
  *  - Указатель на str при успешном чтении.
@@ -177,14 +177,26 @@ void Fputs(const char* ptr, FILE* stream) {
     }
 }
 
-ssize_t Readline(int fd, void* ptr, size_t max_len) {
+ssize_t Readline(int fd, void* ptr_to_buf, size_t max_len) {
     ssize_t n;
 
-    if ((n = readline(fd, ptr, max_len)) < 0) {
+    if ((n = readline(fd, ptr_to_buf, max_len)) < 0) {
         cerr << "readline error: " << strerror(errno) << endl;
         exit(EXIT_FAILURE);
     }
 
     return n;
 }
+
+pid_t Fork() {
+    pid_t	pid;
+
+    if ( (pid = fork()) == -1) {
+        cerr << "fork error: " << strerror(errno) << endl;
+        exit(EXIT_FAILURE);
+    }
+
+    return(pid);
+}
+
 

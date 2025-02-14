@@ -36,7 +36,9 @@ add_library(shared STATIC
         shared/wrappers.cpp
         shared/wrappers.h
         shared/utilities.cpp
-        shared/utilities.h)
+        shared/utilities.h
+        shared/parsing.cpp
+        shared/parsing.h)
 
 # Указываем, где искать заголовочные файлы для shared
 target_include_directories(shared PUBLIC ${CMAKE_SOURCE_DIR}/shared)

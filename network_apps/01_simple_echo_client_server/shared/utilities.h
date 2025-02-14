@@ -28,8 +28,8 @@ ssize_t write_n_bytes_to_sock_fd(int sock_fd, const void* buf_start, size_t n);
 
 void server_str_echo(int sock_fd);
 
-ssize_t my_read(int sock_fd, char* ptr);
+ssize_t my_read(int sock_fd, char* ch_ptr);
 
-ssize_t readline(int sock_fd, void* vptr, size_t max_len);
+ssize_t readline(int sock_fd, void* ptr_to_recv_buf, size_t max_len);
 
 void client_str_echo(FILE* stdin_fp, int sock_fd);

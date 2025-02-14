@@ -2,9 +2,6 @@
 #include <tuple>
 #include <sys/types.h>
 #include <unistd.h>
-#include <filesystem>
-
-#include <boost/program_options.hpp>
 
 #include "utilities.h"
 #include "wrappers.h"
@@ -12,97 +9,8 @@
 #define MAX_BUF_SIZE 4096  /* Максимальный размер строки (буфера, в который осуществляется чтение из сокета) */
 
 using namespace std;
-namespace po = boost::program_options;
-namespace fs = std::filesystem;
 
-void echo_client_check_arguments(int argc,
-                                 char* argv[],
-                                 string& server_ip,
-                                 uint16_t& server_port) {
-    // Declare the supported options using the options_description class.
-    po::options_description desc("Allowed options");
-    desc.add_options()
-            ("help,h", "produce help message")
-            ("ipaddr,i", po::value<string>()->required(), "server IP address to connect to")
-            ("port,p", po::value<uint16_t>()->required(), "server port to connect to");
-
-    // переменная для хранения значений опций
-    po::variables_map vars_map;
-
-    // парсинг аргументов
-    try {
-        po::store(po::parse_command_line(argc, argv, desc), vars_map);
-
-        if (vars_map.count("help")) {
-            std::cout << desc;
-            exit(EXIT_SUCCESS);
-        }
-
-        // Вызов notify предназначен для обработки обязательных аргументов;
-        // проверяет, корректно ли заполнены значения опций в vars_map (объект po::variables_map)
-        // и вызывает обработчики (notifiers), если они были заданы для опций.
-        po::notify(vars_map);
-
-        // Присваиваем значения из командной строки в переменные
-        server_ip = vars_map["ipaddr"].as<string>();
-        server_port = vars_map["port"].as<uint16_t>();
-    } catch (const po::error& e) {
-        // Если обязательная опция отсутствует, выводим пользовательское сообщение
-        std::cerr << "Error: Missing required option: " << e.what() << "\n";
-
-        fs::path full_path = fs::absolute(argv[0]); // Получаем абсолютный путь
-        fs::path relative_path = fs::relative(full_path, fs::current_path()); // Преобразуем в относительный
-
-        std::cout << "usage: " << relative_path << " <server_ip> <port>\n";
-        desc.print(std::cerr);
-        exit(EXIT_FAILURE);
-    } catch (const std::exception& e) {  // Ловим другие возможные ошибки
-        std::cerr << "Error: " << e.what() << "\n";
-        exit(EXIT_FAILURE);
-    }
-}
-
-void echo_server_check_arguments(int argc,
-                                 char* argv[],
-                                 uint16_t& port_listen_to) {
-    po::options_description desc("Allowed options");
-    desc.add_options()
-            ("help,h", "produce help message")
-            ("port,p", po::value<uint16_t>()->required(), "port to listen on");
-
-    po::variables_map vars_map;
-
-    try {
-        po::store(po::parse_command_line(argc, argv, desc), vars_map);
-
-        if (vars_map.count("help")) {
-            std::cout << desc << "\n";
-            exit(EXIT_SUCCESS);;
-        }
-
-        // Вызов notify для обработки обязательных аргументов
-        po::notify(vars_map);
-
-        // Присваиваем значения из командной строки в переменные
-        port_listen_to = vars_map["port"].as<uint16_t>();
-
-        std::cout << "Command args successfully parsed, port to listen to (server side): " << port_listen_to << "\n";
-    } catch (const po::error& e) {
-        // Если обязательная опция отсутствует, выводим пользовательское сообщение
-        fs::path full_path = fs::absolute(argv[0]); // Получаем абсолютный путь
-        fs::path relative_path = fs::relative(full_path, fs::current_path()); // Преобразуем в относительный
-
-        std::cerr << "Error: Missing required option: " << e.what() << "\n";
-        std::cout << "usage: " << relative_path << " <port_listen_to> <file_to_read_text_from>\n";
-        desc.print(std::cerr);
-        exit(EXIT_FAILURE);
-    } catch (const std::exception& e) {
-        // Ловим другие возможные ошибки
-        std::cerr << "Error: " << e.what() << "\n";
-        exit(EXIT_FAILURE);
-    }
-}
-
+// ############################## Server-related ##############################
 tuple<string, uint16_t> get_ip_port_from_addr_struct(sockaddr_storage& client_address) {
     char ip_holder[INET6_ADDRSTRLEN];  // универсальный буфер, достаточный для хранения как адреса IPv4, так и адреса IPv6
     uint16_t port = 0;
@@ -127,30 +35,6 @@ tuple<string, uint16_t> get_ip_port_from_addr_struct(sockaddr_storage& client_ad
     return tuple{ip_holder, port};
 }
 
-/* Write "n" bytes starting from "buf_start" to a socket descriptor "sock_fd". */
-ssize_t write_n_bytes_to_sock_fd(int sock_fd, const void* buf_start, size_t n) {
-    size_t n_left;
-    ssize_t n_written;
-    const char* ptr;
-
-    ptr = reinterpret_cast<const char*>(buf_start);
-    n_left = n;
-
-    while (n_left > 0) {
-        if ((n_written = send(sock_fd, ptr, n_left, 0)) <= 0) {
-            if (n_written < 0 && errno == EINTR)
-                n_written = 0;        /* and call write() again */
-            else
-                return (-1);          /* error */
-        }
-
-        n_left -= n_written;
-        ptr += n_written;
-    }
-
-    return static_cast<ssize_t>(n);
-}
-
 void server_str_echo(int sock_fd) {
     ssize_t n_bytes_read;
     char buf[MAX_BUF_SIZE];
@@ -163,7 +47,6 @@ void server_str_echo(int sock_fd) {
         if (n_bytes_read > 0) {
             cout << "Успешно прочитано из сокета " << n_bytes_read << " байт.\n"
                  << "Содержимое: " << string(buf, n_bytes_read-1) << endl;
-            cout << "============ Debugging output right after socket content output ============" << endl;
             // Успешное чтение, записываем данные ("n_bytes_read" байтов) обратно в сетевой сокет
             Write_n_bytes_to_sock_fd(sock_fd, buf, n_bytes_read);
         } else if (n_bytes_read < 0 && errno == EINTR) {
@@ -186,88 +69,110 @@ void server_str_echo(int sock_fd) {
     }
 }
 
-ssize_t my_read(int sock_fd, char* ptr) {
-    static ssize_t read_cnt;
-    static char* read_ptr;
-    static char buf[MAX_BUF_SIZE];
-
-    while (read_cnt <= 0) {
-        // получаем из "sock_fd" в буфер "buf" максимум sizeof(buf) байт
-        read_cnt = recv(sock_fd, buf, sizeof(buf), 0);
-
-        if (read_cnt < 0) {
-            if (errno == EINTR) {
-                continue;
-            }
-            return -1;
-        } else if (read_cnt == 0) {
-            return 0;
-        }
-        read_ptr = buf;
-    }
-
-    read_cnt--;
-    *ptr = *read_ptr++;
-    return EXIT_FAILURE;
-}
-
-ssize_t readline(int sock_fd, void* vptr, size_t max_len) {
-    ssize_t n;
-    ssize_t rc;
-    char ch;
-    char* ptr;
-
-    ptr = reinterpret_cast<char* >(vptr);
-
-    for (n = 1; n < max_len; n++) {
-        if ((rc = my_read(sock_fd, &ch)) == 1) {
-            *ptr++ = ch;
-            if (ch == '\n')
-                break;    /* newline is stored, like fgets() */
-        } else if (rc == 0) {
-            *ptr = 0;
-            return (n - 1);    /* EOF, n - 1 bytes were read */
-        } else
-            return (-1);        /* error, errno set by read() */
-    }
-
-    *ptr = 0;    /* null terminate like fgets() */
-    return n;
-}
-
+// ############################## Client-related ##############################
 void client_str_echo(FILE* stdin_fp, int sock_fd) {
     char send_buf[MAX_BUF_SIZE];
     char recv_buf[MAX_BUF_SIZE];
 
-    while (true) {
-        // ========== считываем из stdin строку ==========
-        char* str_ptr = Fgets(send_buf, MAX_BUF_SIZE, stdin_fp);
-        if (str_ptr == nullptr) {
-            // если произошла ошибка или достигнут конец файла (EOF)
-            break;
-        }
-
-        // ========== записываем эту строку в сетевой сокет ==========
+    while ((Fgets(send_buf, MAX_BUF_SIZE, stdin_fp)) != nullptr) {
         // "Write_n_bytes_to_sock_fd" отправляет серверу строку, которую считала "Fgets" и записала в буфер "send_buf".
         Write_n_bytes_to_sock_fd(sock_fd, send_buf, strlen(send_buf));
 
-        // TODO: fix buggy Readline function
-        //  readline reads the line echoed back from the server
+        // TODO: fix buggy Readline function (readline reads the line echoed back from the server)
         if (Readline(sock_fd, recv_buf, MAX_BUF_SIZE) == 0) {
             cerr << "client_str_echo: server terminated prematurely: " << endl;
             exit(EXIT_FAILURE);
         }
 
-        // TODO: заменить fputs на потокобезопасную функцию
-        /*
-         * fputs() не потокобезопасен — в glibc потоки FILE* могут быть использованы одновременно только при блокировке (flockfile()).
-         * В многопоточной программе лучше использовать write() или fprintf().
-         */
-        Fputs(recv_buf, stdout);
+        Fputs(recv_buf, stdout);  // TODO: заменить fputs на потокобезопасную функцию
     }
 }
 
+/*
+ * sock_fd         - дескриптор сетевого сокета, из которого читаем
+ * ptr_to_recv_buf - указатель на буфер, в который записываем полученные данные
+ * max_len         - максимальный размер буфера
+ */
+ssize_t readline(int sock_fd, void* ptr_to_recv_buf, size_t max_len) {
+    ssize_t w_count;          // счетчик записанных байтов в буфер, на который указывает "ptr_to_recv_buf"
+    ssize_t res;              // возвращаемое значение из фукнции "my_read"
+    char ch;                  // временный буфер для одного считанного функцией "my_read" символа
+    char* pos_ptr = nullptr;  // указатель на текущую позицию в буфере, на который указывает "ptr_to_recv_buf"
+
+    pos_ptr = reinterpret_cast<char* >(ptr_to_recv_buf);
+
+    for (w_count = 1; w_count < max_len; ++w_count) {
+        if ((res = my_read(sock_fd, &ch)) == 1) {
+            *pos_ptr++ = ch;
+            if (ch == '\n')
+                break;    /* newline is stored, like fgets() */
+        } else if (res == 0) {
+            *pos_ptr = 0;
+            return (w_count - 1);    /* EOF, w_count - 1 bytes were read */
+        } else
+            return (-1);        /* error, errno set by read() */
+    }
+
+    *pos_ptr = 0;    /* null terminate like fgets() */
+
+    return w_count;
+}
 
 
+// my_read реализует идею буферизации + построчного чтения:
+// ===== буферизированное построчное чтение функцией my_read =====
+//     - Читает сразу большой блок через read (эквивалент recv без MSG_PEEK).
+//     - Хранит данные в read_buf и выдаёт по 1 байту из буфера.
+//     - Если встретился \n, readline завершает чтение строки.
+// ch_ptr - это адрес, куда "my_read" должна записать 1 байт
+ssize_t my_read(int sock_fd, char* ch_ptr) {
+    static ssize_t n_bytes_read = 0;
+    static char read_buf[MAX_BUF_SIZE];
+    static char* read_ptr = nullptr;
 
+    // при первом вызове "my_read" мы "проваливаемся" в цикл "while"
+    while (n_bytes_read <= 0) {
+        // считываем из сетевого сокета "sock_fd" полученные байты в буфер "read_buf" (максимум sizeof(read_buf)) байт
+        n_bytes_read = recv(sock_fd, read_buf, sizeof(read_buf), 0);
 
+        if (n_bytes_read < 0) {
+            if (errno == EINTR) {
+                continue;
+            }
+            return -1;
+        } else if (n_bytes_read == 0) {
+            return 0;
+        }
+        read_ptr = read_buf;
+    }
+
+    n_bytes_read--;
+    *ch_ptr = *read_ptr++;
+
+    return 1;
+}
+
+// ############################# Common functions #############################
+/* Write "n" bytes starting from "buf_start" to a socket descriptor "sock_fd". */
+ssize_t write_n_bytes_to_sock_fd(int sock_fd, const void* buf_start, size_t n) {
+    size_t n_left;
+    ssize_t n_written;
+    const char* ptr;
+
+    ptr = reinterpret_cast<const char*>(buf_start);
+    n_left = n;
+
+    while (n_left > 0) {
+        if ((n_written = Send(sock_fd, ptr, n_left, 0)) <= 0) {
+            if (n_written < 0 && errno == EINTR)
+                n_written = 0;        /* and call write() again */
+            else
+                return (-1);          /* error */
+        }
+
+        n_left -= n_written;
+        ptr += n_written;
+    }
+
+    return static_cast<ssize_t>(n);
+}

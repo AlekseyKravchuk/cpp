@@ -18,7 +18,6 @@ int main(int argc, char* argv[]) {
 
     echo_client_check_arguments(argc, argv, server_ip, server_port);
 
-    // ============== Create a socket ==============
     int socket_fd = Socket(AF_INET, SOCK_STREAM, 0);
 
     // Частично заполняем server_address типа "sockaddr_in":
@@ -34,11 +33,12 @@ int main(int argc, char* argv[]) {
 
     Connect(socket_fd, (sockaddr*) &server_address, sizeof(server_address));
 
-    // После успешного выполнения функции connect и возвращения управления в клиентский TCP-процесс, которые НЕ вызывал
-    // bind(), функция getsockname возвращает IP адрес и номер локального порта, присвоенные ядром ОС.
     sockaddr_storage client_struct_address{};  // используем универсальную структуру адреса для адреса подключенного клиента
     socklen_t addr_len = sizeof(client_struct_address);
+
+    // "getsockname" возвращает IP адрес и номер локального порта, присвоенные ядром ОС.
     getsockname(socket_fd, (struct sockaddr*) &client_struct_address, &addr_len);
+
     auto [client_ip, client_port] = get_ip_port_from_addr_struct(client_struct_address);
 
     std::cout << "Client " << client_ip << ":" << client_port
@@ -50,7 +50,7 @@ int main(int argc, char* argv[]) {
 
     // Явно вызываем close() для завершения соединения на стороне клиента.
     // Это нужно для того, чтобы  освободить все ресурсы, связанные с этим соединением, включая файловые дескрипторы.
-//    Close(socket_fd);
+    Close(socket_fd);
 
     // В Linux при завершении процесса ядро автоматически закрывает все открытые файловые дескрипторы, включая сокеты.
     // Если процесс клиента завершился, ядро закроет сокет, и в результате будет отправлен [FIN, ACK].

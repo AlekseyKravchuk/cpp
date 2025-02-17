@@ -18,6 +18,8 @@ void echo_server_check_arguments(int argc,
                                  char* argv[],
                                  uint16_t& port_listen_to);
 
+void print_info_about_connected_client(sockaddr_storage& client_address);
+
 //std::string get_content(const std::string& file_path);
 
 std::tuple<std::string, uint16_t> get_ip_port_from_addr_struct(sockaddr_storage& client_address);

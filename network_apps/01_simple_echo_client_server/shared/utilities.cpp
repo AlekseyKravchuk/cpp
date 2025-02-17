@@ -36,49 +36,39 @@ tuple<string, uint16_t> get_ip_port_from_addr_struct(sockaddr_storage& client_ad
 }
 
 void server_str_echo(int sock_fd) {
-    ssize_t n_bytes_read;
+    ssize_t n;
     char buf[MAX_BUF_SIZE];
-    bool should_retry = false;
 
     while (true) {
-        // Считываем данные из сокета "sock_fd" в буфер "buf"
-        n_bytes_read = recv(sock_fd, buf, MAX_BUF_SIZE, 0);
+        n = recv(sock_fd, buf, MAX_BUF_SIZE, 0);  // Получаем "" из сетевого сокета "sock_fd" в буфер "buf"
 
-        if (n_bytes_read > 0) {
-            cout << "Успешно прочитано из сокета " << n_bytes_read << " байт.\n"
-                 << "Содержимое: " << string(buf, n_bytes_read-1) << endl;
-            // Успешное чтение, записываем данные ("n_bytes_read" байтов) обратно в сетевой сокет
-            Write_n_bytes_to_sock_fd(sock_fd, buf, n_bytes_read);
-        } else if (n_bytes_read < 0 && errno == EINTR) {
-            // =========== Чтение было прервано сигналом; повторяем попытку ===========
-            /*EINTR (Interrupted system call) возникает, когда системный вызов прерывается сигналом.
-             * Это стандартная ошибка в Unix-подобных системах, которая указывает на то, что системный вызов,
-             * такой как read, write, или accept, был прерван сигналом и не был выполнен полностью.*/
-            should_retry = true;
-        } else if (n_bytes_read < 0) {
-            cerr << "server_str_echo: read error: " << strerror(errno) << endl;
-            exit(EXIT_FAILURE);
-        }
-
-        // Если чтение НЕ было прервано сигналом, выходим из цикла, иначе продолжаем крутиться в цикле
-        if (!should_retry) {
+        if (n > 0) {
+            Write_n_bytes_to_sock_fd(sock_fd, buf, n);
+        } else if (n < 0 && errno == EINTR) {
+            continue; // Чтение было прервано сигналом; повторяем попытку
+        } else if (n < 0) {
+            cerr << "str_echo: read error" << endl;
             break;
+        } else {
+            break; // n == 0, клиент закрыл соединение
         }
-
-        should_retry = false;  // Сброс флага
     }
 }
 
 // ############################## Client-related ##############################
+void print_info_about_connected_client(sockaddr_storage& client_address) {
+    auto [client_ip, client_port] = get_ip_port_from_addr_struct(client_address);
+    cout << "Connected client: [IP = " << client_ip << "], " << "[PORT = " << client_port << "]" << endl;
+}
+
 void client_str_echo(FILE* stdin_fp, int sock_fd) {
     char send_buf[MAX_BUF_SIZE];
     char recv_buf[MAX_BUF_SIZE];
 
     while ((Fgets(send_buf, MAX_BUF_SIZE, stdin_fp)) != nullptr) {
-        // "Write_n_bytes_to_sock_fd" отправляет серверу строку, которую считала "Fgets" и записала в буфер "send_buf".
+        // Отправляем серверу строку, которую "Fgets" и записала в буфер "send_buf".
         Write_n_bytes_to_sock_fd(sock_fd, send_buf, strlen(send_buf));
 
-        // TODO: fix buggy Readline function (readline reads the line echoed back from the server)
         if (Readline(sock_fd, recv_buf, MAX_BUF_SIZE) == 0) {
             cerr << "client_str_echo: server terminated prematurely: " << endl;
             exit(EXIT_FAILURE);
@@ -105,12 +95,12 @@ ssize_t readline(int sock_fd, void* ptr_to_recv_buf, size_t max_len) {
         if ((res = my_read(sock_fd, &ch)) == 1) {
             *pos_ptr++ = ch;
             if (ch == '\n')
-                break;    /* newline is stored, like fgets() */
+                break;             // newline is stored, like fgets()
         } else if (res == 0) {
             *pos_ptr = 0;
-            return (w_count - 1);    /* EOF, w_count - 1 bytes were read */
+            return (w_count - 1);  // EOF, w_count - 1 bytes were read */
         } else
-            return (-1);        /* error, errno set by read() */
+            return (-1);           // error, errno set by read() */
     }
 
     *pos_ptr = 0;    /* null terminate like fgets() */

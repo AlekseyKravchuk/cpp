@@ -4,6 +4,10 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
+void sigchld_handler(int signal_number);
+
+void set_signal_handler();
+
 void echo_client_check_arguments(int argc,
                                  char* argv[],
                                  std::string& server_ip,
@@ -19,6 +23,8 @@ void echo_server_check_arguments(int argc,
                                  uint16_t& port_listen_to);
 
 void print_info_about_connected_client(sockaddr_storage& client_address);
+
+void print_client_info(const std::string& server_ip, uint16_t server_port, int socket_fd);
 
 //std::string get_content(const std::string& file_path);
 

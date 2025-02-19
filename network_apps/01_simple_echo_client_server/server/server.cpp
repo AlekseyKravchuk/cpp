@@ -10,15 +10,11 @@
 #include <chrono>
 #include <unistd.h>      // getpid(), pause()
 
-#include <boost/program_options.hpp>
-
 #include "wrappers.h"
 #include "utilities.h"
 #include "parsing.h"
 
 using namespace std;
-using namespace std::chrono_literals;
-namespace po = boost::program_options;
 
 int main(int argc, char* argv[]) {
     int listen_fd, connected_fd;
@@ -59,13 +55,17 @@ int main(int argc, char* argv[]) {
         // =============== Вывод информации о подключении клиента ===============
         print_info_about_connected_client(client_address);
 
+        // Устанавливаем (регистрируем) обработчик SIGCHLD для обработки зомбированных процессов
+        // перед циклом обработки входящих соединений от клиентов
+        set_signal_handler();
+
         // =============== Обработка каждого подсоединившегося клиента в отдельном процессе ===============
         pid_t child_pid = Fork();
         if (child_pid == 0) {
-            cout << "=== Child process with PID = " << getpid() << " started processing. ===" << endl;
+            cout << "===> Child process with PID = " << getpid() << " STARTED processing." << endl;
             Close(listen_fd);
             server_str_echo(connected_fd);
-            cout << "=== Child process with PID = " << getpid() << " ENDED processing. ===" << endl;
+            cout << "<=== Child process with PID = " << getpid() << " ENDED processing." << endl;
             cout << "=====================================================================\n" << endl;
             Close(connected_fd);
 

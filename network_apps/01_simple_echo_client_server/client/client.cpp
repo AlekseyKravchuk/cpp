@@ -33,17 +33,7 @@ int main(int argc, char* argv[]) {
 
     Connect(socket_fd, (sockaddr*) &server_address, sizeof(server_address));
 
-    sockaddr_storage client_struct_address{};  // используем универсальную структуру адреса для адреса подключенного клиента
-    socklen_t addr_len = sizeof(client_struct_address);
-
-    // "getsockname" возвращает IP адрес и номер локального порта, присвоенные ядром ОС.
-    getsockname(socket_fd, (struct sockaddr*) &client_struct_address, &addr_len);
-
-    auto [client_ip, client_port] = get_ip_port_from_addr_struct(client_struct_address);
-
-    std::cout << "Client " << client_ip << ":" << client_port
-              << " (PID = " << getpid() << ") "
-              << "is connected to server " << server_ip << ":" << server_port << endl;
+    print_client_info(server_ip, server_port, socket_fd);
 
     // Эта функция выполняет все необходимые действия со стороны клиента.
     client_str_echo(stdin, socket_fd);

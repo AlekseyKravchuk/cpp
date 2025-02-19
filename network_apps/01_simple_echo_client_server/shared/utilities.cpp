@@ -2,6 +2,7 @@
 #include <tuple>
 #include <sys/types.h>
 #include <unistd.h>
+#include <sys/wait.h>
 
 #include "utilities.h"
 #include "wrappers.h"
@@ -11,6 +12,48 @@
 using namespace std;
 
 // ############################## Server-related ##############################
+// очищает таблицу завершенных дочерних процессов (обработка зомбированных процессов)
+void sigchld_handler(int signal_number) {
+    pid_t pid;
+    int stat;
+
+    // Значение для pid = -1 означает, что нужно дождаться завершения первого дочернего процесса
+
+    // Освобождаем ресурсы завершенных процессов
+    while ((pid = waitpid(-1, &stat, WNOHANG)) > 0) {
+        cout << "sigchld_handler: child with PID=" << pid << " terminated" << endl;
+    }
+}
+
+void set_signal_handler() {
+    // sigaction — это структура, используемая в современном POSIX API для работы с сигналами.
+    // Она позволяет задать обработчик сигнала и его параметры.
+    struct sigaction sig_act{};
+
+    // sig_act.sa_handler - это указатель на функцию, которая будет вызвана при получении сигнала SIGCHLD
+    sig_act.sa_handler = sigchld_handler;
+
+    // sigemptyset(&sa.sa_mask) очищает маску (никакие сигналы не блокируются дополнительно).
+    // sa_mask определяет набор сигналов, которые будут временно заблокированы во время выполнения обработчика.
+    sigemptyset(&sig_act.sa_mask);
+
+    // Установка флагов обработчика
+    // SA_RESTART:   - Автоматически перезапускает прерванные системные вызовы
+    //               (accept(), read(), write(), recv(), send() и т. д.), если они были прерваны сигналом.
+    //               - Без него системные вызовы могут завершаться с EINTR, что приведет к accept()=-1 (ошибка на сервере).
+    // SA_NOCLDSTOP: - Предотвращает ненужные сигналы
+    //               - Означает, что SIGCHLD не будет приходить, если дочерний процесс
+    //                 просто приостановлен (SIGSTOP, SIGTSTP, SIGTTIN, SIGTTOU).
+    //               - Без него сервер мог бы получать SIGCHLD не только при завершении процессов,
+    //                 но и при их остановке (например, если кто-то отправил SIGSTOP дочернему процессу).
+    sig_act.sa_flags = SA_RESTART | SA_NOCLDSTOP;
+
+    if (sigaction(SIGCHLD, &sig_act, nullptr) == -1) {
+        cerr << "sigaction error: " << strerror(errno) << endl;
+        exit(EXIT_FAILURE);
+    }
+}
+
 tuple<string, uint16_t> get_ip_port_from_addr_struct(sockaddr_storage& client_address) {
     char ip_holder[INET6_ADDRSTRLEN];  // универсальный буфер, достаточный для хранения как адреса IPv4, так и адреса IPv6
     uint16_t port = 0;
@@ -61,6 +104,37 @@ void print_info_about_connected_client(sockaddr_storage& client_address) {
     cout << "Connected client: [IP = " << client_ip << "], " << "[PORT = " << client_port << "]" << endl;
 }
 
+void print_client_info(const string& server_ip, uint16_t server_port, int socket_fd) {
+    sockaddr_storage client_struct_address{};  // используем универсальную структуру адреса для адреса подключенного клиента
+    socklen_t addr_len = sizeof(client_struct_address);
+
+    // "getsockname" возвращает IP адрес и номер локального порта, присвоенные ядром ОС.
+    getsockname(socket_fd, (struct sockaddr*) &client_struct_address, &addr_len);
+
+    auto [client_ip, client_port] = get_ip_port_from_addr_struct(client_struct_address);
+
+    std::cout << "Client " << client_ip << ":" << client_port
+              << " (PID = " << getpid() << ") "
+              << "is connected to server " << server_ip << ":" << server_port << endl;
+}
+
+//void client_str_echo(FILE* stdin_fp, int sock_fd) {
+//    char send_buf[MAX_BUF_SIZE];
+//    char recv_buf[MAX_BUF_SIZE];
+//
+//    while ((Fgets(send_buf, MAX_BUF_SIZE, stdin_fp)) != nullptr) {
+//        // Отправляем серверу строку, которую "Fgets" и записала в буфер "send_buf".
+//        Write_n_bytes_to_sock_fd(sock_fd, send_buf, strlen(send_buf));
+//
+//        if (Readline(sock_fd, recv_buf, MAX_BUF_SIZE) == 0) {
+//            cerr << "client_str_echo: server terminated prematurely: " << endl;
+//            exit(EXIT_FAILURE);
+//        }
+//
+//        Fputs(recv_buf, stdout);  // TODO: заменить fputs на потокобезопасную функцию
+//    }
+//}
+
 void client_str_echo(FILE* stdin_fp, int sock_fd) {
     char send_buf[MAX_BUF_SIZE];
     char recv_buf[MAX_BUF_SIZE];
@@ -69,12 +143,19 @@ void client_str_echo(FILE* stdin_fp, int sock_fd) {
         // Отправляем серверу строку, которую "Fgets" и записала в буфер "send_buf".
         Write_n_bytes_to_sock_fd(sock_fd, send_buf, strlen(send_buf));
 
+        // Cчитываем из сетевого сокета данные в "recv_buf"
         if (Readline(sock_fd, recv_buf, MAX_BUF_SIZE) == 0) {
             cerr << "client_str_echo: server terminated prematurely: " << endl;
             exit(EXIT_FAILURE);
         }
 
-        Fputs(recv_buf, stdout);  // TODO: заменить fputs на потокобезопасную функцию
+        // Записываем полученную из сетевого сокета строку в stdout
+        Fputs(recv_buf, stdout);
+
+//        size_t recv_buf_len = strlen(recv_buf);
+//        cout << "recv_buf_len = " << recv_buf_len << endl;
+//        ssize_t bytes_count = Write(fileno(stdout), recv_buf, recv_buf_len);
+//        cout << "wrote " << bytes_count << " bytes." << endl;
     }
 }
 
@@ -107,7 +188,6 @@ ssize_t readline(int sock_fd, void* ptr_to_recv_buf, size_t max_len) {
 
     return w_count;
 }
-
 
 // my_read реализует идею буферизации + построчного чтения:
 // ===== буферизированное построчное чтение функцией my_read =====

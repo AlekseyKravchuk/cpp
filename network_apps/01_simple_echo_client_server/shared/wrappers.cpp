@@ -170,11 +170,32 @@ char* Fgets(char* str_buf, int n, FILE* file_stream) {
     return ptr;
 }
 
-void Fputs(const char* ptr, FILE* stream) {
-    if (fputs(ptr, stream) == EOF) {
+void Fputs(const char* str, FILE* stream) {
+    if (!str || !stream) {
+        cerr << "Fputs error: nullptr." << endl;
+        exit(EXIT_FAILURE);
+    }
+
+    // Защищаем доступ к файловому потоку
+    flockfile(stream);   // Блокируем поток
+    // fputs() writes the string "str" to file stream, without its terminating null byte ('\0').
+    int result = fputs(str, stream);
+    funlockfile(stream); // Разблокируем поток
+
+    if (result == EOF) {
         cerr << "fputs error: " << strerror(errno) << endl;
         exit(EXIT_FAILURE);
     }
+}
+
+ssize_t Write(int fd, const void* recv_buf, size_t recv_buf_len) {
+    ssize_t bytes_count = write(fileno(stdout), recv_buf, recv_buf_len);
+    if (bytes_count == -1) {
+        cerr << "write error: " << strerror(errno) << endl;
+        exit(EXIT_FAILURE);
+    }
+
+    return bytes_count;
 }
 
 ssize_t Readline(int fd, void* ptr_to_buf, size_t max_len) {

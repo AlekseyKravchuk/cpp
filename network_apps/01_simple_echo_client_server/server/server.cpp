@@ -42,8 +42,12 @@ int main(int argc, char* argv[]) {
     sockaddr_storage client_address{};  // используем универсальную структуру адреса
     socklen_t client_address_len = sizeof(client_address);
 
+    // Устанавливаем (регистрируем) обработчик SIGCHLD для обработки зомбированных процессов
+    // перед циклом обработки входящих соединений от клиентов
+    set_signal_handler();
+
     for (;;) {
-        connected_fd = Accept(listen_fd, (struct sockaddr*) &client_address, &client_address_len);
+        connected_fd = accept(listen_fd, (struct sockaddr*) &client_address, &client_address_len);
         if (connected_fd < 0) {
             if (errno == EINTR) {
                 continue;  // назад в цикл for
@@ -55,10 +59,6 @@ int main(int argc, char* argv[]) {
         // =============== Вывод информации о подключении клиента ===============
         print_info_about_connected_client(client_address);
 
-        // Устанавливаем (регистрируем) обработчик SIGCHLD для обработки зомбированных процессов
-        // перед циклом обработки входящих соединений от клиентов
-        set_signal_handler();
-
         // =============== Обработка каждого подсоединившегося клиента в отдельном процессе ===============
         pid_t child_pid = Fork();
         if (child_pid == 0) {
@@ -67,7 +67,7 @@ int main(int argc, char* argv[]) {
             server_str_echo(connected_fd);
             cout << "<=== Child process with PID = " << getpid() << " ENDED processing." << endl;
             cout << "=====================================================================\n" << endl;
-            Close(connected_fd);
+            Close(connected_fd);  // явно закрывает connected socket клиента для наглядности
 
             exit(0);
         }

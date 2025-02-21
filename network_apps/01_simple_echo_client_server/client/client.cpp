@@ -16,7 +16,7 @@ using namespace std;
 int main(int argc, char* argv[]) {
     string server_ip{};
     uint16_t server_port{};
-    constexpr size_t MAX_CONNECTIONS = 5;
+    constexpr size_t MAX_CONNECTIONS = 1;
     vector<int> client_sockets{MAX_CONNECTIONS};
 
     echo_client_check_arguments(argc, argv, server_ip, server_port);

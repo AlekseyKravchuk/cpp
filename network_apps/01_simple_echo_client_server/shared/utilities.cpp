@@ -145,8 +145,19 @@ void client_str_echo(FILE* stdin_fp, int sock_fd) {
     char recv_buf[MAX_BUF_SIZE];
 
     while ((Fgets(send_buf, MAX_BUF_SIZE, stdin_fp)) != nullptr) {
-        // Отправляем серверу строку, которую "Fgets" и записала в буфер "send_buf".
+//        // Отправляем серверу строку, которую "Fgets" и записала в буфер "send_buf".
         Write_n_bytes_to_sock_fd(sock_fd, send_buf, strlen(send_buf));
+
+        // ================= DEBUGGING ================
+//        // Сначала в сетевой сокет записываем первый байт данных
+//        Write_n_bytes_to_sock_fd(sock_fd, send_buf, 1);
+//
+//        // пауза в 1 сек.
+//        sleep(1);
+//
+//        // отправляем оставшуюся часть данных
+//        Write_n_bytes_to_sock_fd(sock_fd, send_buf+1, strlen(send_buf)-1);
+        // ============= END OF DEBUGGING =============
 
         // Cчитываем из сетевого сокета данные в "recv_buf"
         if (Readline(sock_fd, recv_buf, MAX_BUF_SIZE) == 0) {
@@ -216,6 +227,7 @@ ssize_t my_read(int sock_fd, char* ch_ptr) {
             }
             return -1;
         } else if (n_bytes_read == 0) {
+            cout << "my_read: n_bytes_read = 0 ===> quit" << endl;
             return 0;
         }
         read_ptr = read_buf;

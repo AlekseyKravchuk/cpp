@@ -44,7 +44,6 @@ int main(int argc, char* argv[]) {
         print_client_info(server_ip, server_port, client_sockets[i]);
     }
 
-
     // Эта функция выполняет все необходимые действия со стороны клиента.
     /*client_str_echo(stdin, socket_fd);*/
     client_str_echo(stdin, client_sockets[0]);

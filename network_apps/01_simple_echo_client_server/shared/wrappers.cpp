@@ -134,7 +134,7 @@ void Close(int fd) {
     }
 }
 
-void Write_n_bytes_to_sock_fd(int sock_fd, void* buf_start, size_t n_bytes) {
+void Write_n_bytes_to_sock_fd(int sock_fd, const void* buf_start, size_t n_bytes) {
     if (write_n_bytes_to_sock_fd(sock_fd, buf_start, n_bytes) != n_bytes) {
         cerr << "write_n_bytes_to_sock_fd error" << endl;
         exit(EXIT_FAILURE);

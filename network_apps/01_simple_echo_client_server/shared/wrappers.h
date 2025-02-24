@@ -39,7 +39,7 @@ void Close(int fd);
 //                       const void* optval,
 //                       socklen_t optlen);
 
-void Write_n_bytes_to_sock_fd(int sock_fd, void* buf_start, size_t n_bytes);
+void Write_n_bytes_to_sock_fd(int sock_fd, const void* buf_start, size_t n_bytes);
 
 char* Fgets(char* str_buf, int n, FILE* file_stream);
 

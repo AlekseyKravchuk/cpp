@@ -1,4 +1,6 @@
 #include <iostream>
+#include <sstream>
+#include <vector>
 #include <tuple>
 #include <sys/types.h>
 #include <unistd.h>
@@ -85,13 +87,42 @@ tuple<string, uint16_t> get_ip_port_from_addr_struct(sockaddr_storage& client_ad
 
 void server_str_echo(int sock_fd) {
     ssize_t n;
-    char buf[MAX_BUF_SIZE];
+    char line[MAX_BUF_SIZE];
 
     while (true) {
-        n = recv(sock_fd, buf, MAX_BUF_SIZE, 0);  // Получаем "" из сетевого сокета "sock_fd" в буфер "buf"
+        /*n = recv(sock_fd, line, MAX_BUF_SIZE, 0);  // Получаем "n" байт из сетевого сокета "sock_fd" в буфер "line"*/
+        n = readline(sock_fd, line, MAX_BUF_SIZE);   // Получаем "n" байт из сетевого сокета "sock_fd" в буфер "line"
 
         if (n > 0) {
-            Write_n_bytes_to_sock_fd(sock_fd, buf, n);
+            vector<int64_t> args;
+            char* p = line;
+            for (;;) {
+                errno = 0;
+                char* p_end = nullptr;
+                int64_t value = std::strtol(p, &p_end, 10);
+
+                if (p == p_end) {
+                    break;
+                }
+
+                if (errno == ERANGE) {
+                    cerr << "std::strtol: range error occured.\n";
+                }
+
+                p = p_end;
+                args.push_back(value);
+            }
+
+            ostringstream oss;
+            if (args.size() == 2) {
+                oss << args[0] + args[1] << endl;
+            } else {
+                oss << "input error" << endl;
+            }
+
+            const string& out_str = oss.str();
+            n = static_cast<ssize_t>(strlen(out_str.c_str()));
+            Write_n_bytes_to_sock_fd(sock_fd, out_str.c_str(), n);
         } else if (n < 0 && errno == EINTR) {
             continue; // Чтение было прервано сигналом; повторяем попытку
         } else if (n < 0) {
@@ -113,7 +144,8 @@ void print_client_info(const string& server_ip, uint16_t server_port, int socket
     sockaddr_storage client_struct_address{};  // используем универсальную структуру адреса для адреса подключенного клиента
     socklen_t addr_len = sizeof(client_struct_address);
 
-    // "getsockname" возвращает IP адрес и номер локального порта, присвоенные ядром ОС.
+    // "getsockname" вызывается ПОСЛЕ установления соединения (после успешного завершения функции "connect")
+    // и возвращает IP адрес и номер локального порта, присвоенные ядром ОС.
     getsockname(socket_fd, (struct sockaddr*) &client_struct_address, &addr_len);
 
     auto [client_ip, client_port] = get_ip_port_from_addr_struct(client_struct_address);
@@ -122,23 +154,6 @@ void print_client_info(const string& server_ip, uint16_t server_port, int socket
               << " (PID = " << getpid() << ") "
               << "is connected to server " << server_ip << ":" << server_port << endl;
 }
-
-//void client_str_echo(FILE* stdin_fp, int sock_fd) {
-//    char send_buf[MAX_BUF_SIZE];
-//    char recv_buf[MAX_BUF_SIZE];
-//
-//    while ((Fgets(send_buf, MAX_BUF_SIZE, stdin_fp)) != nullptr) {
-//        // Отправляем серверу строку, которую "Fgets" и записала в буфер "send_buf".
-//        Write_n_bytes_to_sock_fd(sock_fd, send_buf, strlen(send_buf));
-//
-//        if (Readline(sock_fd, recv_buf, MAX_BUF_SIZE) == 0) {
-//            cerr << "client_str_echo: server terminated prematurely: " << endl;
-//            exit(EXIT_FAILURE);
-//        }
-//
-//        Fputs(recv_buf, stdout);  // TODO: заменить fputs на потокобезопасную функцию
-//    }
-//}
 
 void client_str_echo(FILE* stdin_fp, int sock_fd) {
     char send_buf[MAX_BUF_SIZE];
@@ -200,7 +215,7 @@ ssize_t readline(int sock_fd, void* ptr_to_recv_buf, size_t max_len) {
             return (-1);           // error, errno set by read() */
     }
 
-    *pos_ptr = 0;    /* null terminate like fgets() */
+    *pos_ptr = 0;                  /* null terminate like fgets() */
 
     return w_count;
 }

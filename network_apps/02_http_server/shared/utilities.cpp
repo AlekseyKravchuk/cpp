@@ -85,13 +85,20 @@ tuple<string, uint16_t> get_ip_port_from_addr_struct(sockaddr_storage& client_ad
     return tuple{ip_holder, port};
 }
 
-void handle_clent_http_request(int connected_fd, const string& http_data) {
+void handle_client_http_request(int listen_fd, int connected_fd, const string& http_data) {
+    // закрываем прослушиваемый сокет, т.к. в коде дочернего процесса сервера,
+    // который отвечает только за обработку установленных соединений, он не нужен
+    Close(listen_fd);
+
     cout << "===> Child process with PID = " << getpid() << " STARTED processing." << endl;
-    //================
-    send(connected_fd, http_data.c_str(), http_data.size(), 0);
-    // ===============
+    //================================================================
+    Send(connected_fd, http_data.c_str(), http_data.size(), 0);
+    // ===============================================================
+    shutdown(connected_fd, SHUT_WR);  // из дочернего процесса сервера отправляем клиенту сегмент [FIN] после его обработки
     cout << "<=== Child process with PID = " << getpid() << " ENDED processing." << endl;
     cout << "=====================================================================\n" << endl;
+
+    exit(EXIT_SUCCESS);  // дочерние процессы должны явно завершаться после обработки клиента
 }
 
 void restrict_to_iface(int server_fd,
@@ -128,39 +135,9 @@ void print_client_info(const string& server_ip, uint16_t server_port, int socket
               << "is connected to server " << server_ip << ":" << server_port << endl;
 }
 
-void client_str_echo(FILE* stdin_fp, int sock_fd) {
-    char send_buf[MAX_BUF_SIZE];
-    char recv_buf[MAX_BUF_SIZE];
-
-    while ((Fgets(send_buf, MAX_BUF_SIZE, stdin_fp)) != nullptr) {
-//        // Отправляем серверу строку, которую "Fgets" и записала в буфер "send_buf".
-        Write_n_bytes_to_sock_fd(sock_fd, send_buf, strlen(send_buf));
-
-        // ================= DEBUGGING ================
-//        // Сначала в сетевой сокет записываем первый байт данных
-//        Write_n_bytes_to_sock_fd(sock_fd, send_buf, 1);
-//
-//        // пауза в 1 сек.
-//        sleep(1);
-//
-//        // отправляем оставшуюся часть данных
-//        Write_n_bytes_to_sock_fd(sock_fd, send_buf+1, strlen(send_buf)-1);
-        // ============= END OF DEBUGGING =============
-
-        // Cчитываем из сетевого сокета данные в "recv_buf"
-        if (Readline(sock_fd, recv_buf, MAX_BUF_SIZE) == 0) {
-            cerr << "client_str_echo: server terminated prematurely: " << endl;
-            exit(EXIT_FAILURE);
-        }
-
-        // Записываем полученную из сетевого сокета строку в stdout
-        Fputs(recv_buf, stdout);
-
-//        size_t recv_buf_len = strlen(recv_buf);
-//        cout << "recv_buf_len = " << recv_buf_len << endl;
-//        ssize_t bytes_count = Write(fileno(stdout), recv_buf, recv_buf_len);
-//        cout << "wrote " << bytes_count << " bytes." << endl;
-    }
+void send_http_request(FILE* stdin_fp, int client_sock_fd) {
+    const string request = "GET / HTTP/1.1\r\n";
+    Send(client_sock_fd, request.c_str(), request.size(), 0);
 }
 
 /*

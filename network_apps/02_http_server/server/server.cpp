@@ -85,14 +85,8 @@ int main(int argc, char* argv[]) {
         print_info_about_connected_client(client_address);
 
         // =============== Обработка каждого подсоединившегося клиента в отдельном процессе ===============
-        pid_t child_pid = Fork();
-        if (child_pid == 0) {
-            Close(listen_fd);
-            handle_clent_http_request(connected_fd, http_data);
-            Close(connected_fd);  // явно закрывает connected socket клиента для наглядности
-            exit(EXIT_SUCCESS);
-            // TODO: понять, почему сервер после обработки клиента обрывает соединение с флагом [RST], вместо
-            //       корректного завершения.
+        if (pid_t child_pid = Fork(); child_pid == 0) {
+            handle_client_http_request(listen_fd, connected_fd, http_data);
         }
 
         // Родитель закрывает клиентский сокет, т.к. обработка соединения выполняется concurrently дочерним процессом.

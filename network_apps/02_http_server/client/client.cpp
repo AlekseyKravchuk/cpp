@@ -1,7 +1,3 @@
-/*
- * Simple ECHO TCP-client
- */
-
 #include <iostream>
 #include <vector>
 #include <sys/socket.h>  // socket(), recv()
@@ -23,7 +19,7 @@ int main(int argc, char* argv[]) {
 
     /*
      * Клиент устанавливает "MAX_CONNECTIONS" соединений, а задем использует первое из них "client_sockets[0]"
-     * для вызова функции "client_str_echo". Несколько соединений устанавливаются для того, чтобы породить от
+     * для вызова функции "send_http_request". Несколько соединений устанавливаются для того, чтобы породить от
      * concurrent-сервера множество дочерних процессов
     */
     for (size_t i = 0; i < MAX_CONNECTIONS; ++i) {
@@ -45,8 +41,42 @@ int main(int argc, char* argv[]) {
     }
 
     // Эта функция выполняет все необходимые действия со стороны клиента.
-    /*client_str_echo(stdin, socket_fd);*/
-    client_str_echo(stdin, client_sockets[0]);
+    /*send_http_request(stdin, socket_fd);*/
+    send_http_request(stdin, client_sockets[0]);
+
+//    char response[4096] = {'\0'}; // инициализируем буфер нулями
+//    ssize_t bytes_count = recv(client_sockets[0], &response, 4096, 0);
+//    if (bytes_count > 0) {
+//        response[bytes_count] = '\0'; // Гарантированно завершаем строку
+//        cout << "Client got response from server: " << response << endl;
+//    } else if (bytes_count == 0) {
+//        cout << "Server closed the connection gracefully.\n";
+//    } else {
+//        cerr << "recv failed: " << ::strerror(errno) << endl;
+//    }
+
+//    string response(4096, '\0'); // Выделяем инициализированных '\0' 4096 байт памяти под строку
+//    ssize_t bytes_count = recv(client_sockets[0], &response[0], response.size(), 0);
+//    if (bytes_count > 0) {
+//        response.resize(static_cast<size_t>(bytes_count));  // Обрезаем строку до реального количества полученных данных
+//        cout << "Client got response from server: " << response << endl;
+//    } else if (bytes_count == 0) {
+//        cout << "Server closed the connection gracefully.\n";
+//    } else {
+//        cerr << "recv failed: " << ::strerror(errno) << endl;
+//    }
+
+    vector response(4096, '\0'); // Выделяем инициализированных '\0' 4096 байт памяти в векторе
+    ssize_t bytes_count = recv(client_sockets[0], response.data(), response.size(), 0);
+    if (bytes_count > 0) {
+        response.resize(static_cast<size_t>(bytes_count));  // Обрезаем строку до реального количества полученных данных
+        cout << "Client got response from server: " << string(response.data(), bytes_count) << endl;
+    } else if (bytes_count == 0) {
+        cout << "Server closed the connection gracefully.\n";
+    } else {
+        cerr << "recv failed: " << ::strerror(errno) << endl;
+    }
+
 
     // Явно вызываем close() для завершения соединения на стороне клиента.
     // Это нужно для того, чтобы  освободить все ресурсы, связанные с этим соединением, включая файловые дескрипторы.

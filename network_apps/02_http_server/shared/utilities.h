@@ -30,17 +30,15 @@ void print_client_info(const std::string& server_ip, uint16_t server_port, int s
 
 std::tuple<std::string, uint16_t> get_ip_port_from_addr_struct(sockaddr_storage& client_address);
 
-//void handle_client(int connected_fd, const std::string& message);
-
 ssize_t write_n_bytes_to_sock_fd(int sock_fd, const void* buf_start, size_t n);
 
-void handle_clent_http_request(int sock_fd, const std::string& http_data);
+void handle_client_http_request(int listen_fd, int connected_fd, const std::string& http_data);
 
 ssize_t my_read(int sock_fd, char* ch_ptr);
 
 ssize_t readline(int sock_fd, void* ptr_to_recv_buf, size_t max_len);
 
-void client_str_echo(FILE* stdin_fp, int sock_fd);
+void send_http_request(FILE* stdin_fp, int sock_fd);
 
 void restrict_to_iface(int server_fd,
                        int level,

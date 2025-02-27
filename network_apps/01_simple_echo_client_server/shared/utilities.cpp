@@ -155,11 +155,47 @@ void print_client_info(const string& server_ip, uint16_t server_port, int socket
               << "is connected to server " << server_ip << ":" << server_port << endl;
 }
 
-void client_str_echo(FILE* stdin_fp, int sock_fd) {
+void client_str_echo(FILE* stdin_file, int sock_fd) {
     char send_buf[MAX_BUF_SIZE];
     char recv_buf[MAX_BUF_SIZE];
 
-    while ((Fgets(send_buf, MAX_BUF_SIZE, stdin_fp)) != nullptr) {
+    fd_set read_fds;
+    FD_ZERO(&read_fds);
+    int file_fd = fileno(stdin_file);
+    int max_fd = std::max(file_fd, sock_fd) + 1;  // Наибольший дескриптор + 1
+
+    FD_SET(file_fd, &read_fds);
+    FD_SET(sock_fd, &read_fds);
+
+    for (;;) {
+        /*
+         * В функции "select":
+         *    - первый параметр "nfds" — это количество дескрипторов, за которыми select() должен следить.
+         *      "nfds" должен быть на 1 больше, чем наибольший файловый дескриптор в множествах fd_set
+         */
+
+        // TODO: закончить с select
+        Select(max_fd, &read_fds, nullptr, nullptr, nullptr);
+
+        if (FD_ISSET(sock_fd, &read_fds)) {	/* socket is readable */
+            if (Readline(sock_fd, recv_buf, MAX_BUF_SIZE) == 0) {
+                cerr << "str_cli: server terminated prematurely" << endl;
+            }
+
+            Fputs(recv_buf, stdout);
+        }
+
+        if (FD_ISSET(file_fd, &read_fds)) {  /* input is readable */
+            if (Fgets(send_buf, MAX_BUF_SIZE, stdin_file) == nullptr) {
+                return;		/* all done */
+            }
+            Write_n_bytes_to_sock_fd(sock_fd, send_buf, strlen(send_buf));
+        }
+    }
+
+    // TODO: убрать лишний код (strcliselect01.c)
+
+    while ((Fgets(send_buf, MAX_BUF_SIZE, stdin_file)) != nullptr) {
 //        // Отправляем серверу строку, которую "Fgets" и записала в буфер "send_buf".
         Write_n_bytes_to_sock_fd(sock_fd, send_buf, strlen(send_buf));
 
@@ -277,4 +313,15 @@ ssize_t write_n_bytes_to_sock_fd(int sock_fd, const void* buf_start, size_t n) {
     }
 
     return static_cast<ssize_t>(n);
+}
+
+// ========================================================================================
+int Select(int n_fds, fd_set* read_fds, fd_set* write_fds, fd_set* except_fds, struct timeval* timeout) {
+    int n;
+
+    if ((n = select(n_fds, read_fds, write_fds, except_fds, timeout)) < 0) {
+        cerr << "select error" << endl;
+    }
+
+    return (n);        /* can return 0 on timeout */
 }

@@ -59,7 +59,7 @@ int main(int argc, char* argv[]) {
         // =============== Вывод информации о подключении клиента ===============
         print_info_about_connected_client(client_address);
 
-        // =============== Обработка каждого подсоединившегося клиента в отдельном процессе ===============
+        // q=============== Обработка каждого подсоединившегося клиента в отдельном процессе ===============
         pid_t child_pid = Fork();
         if (child_pid == 0) {
             cout << "===> Child process with PID = " << getpid() << " STARTED processing." << endl;

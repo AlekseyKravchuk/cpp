@@ -40,4 +40,6 @@ ssize_t my_read(int sock_fd, char* ch_ptr);
 
 ssize_t readline(int sock_fd, void* ptr_to_recv_buf, size_t max_len);
 
-void client_str_echo(FILE* stdin_fp, int sock_fd);
+void client_str_echo(FILE* stdin_file, int sock_fd);
+
+int Select(int n_fds, fd_set* read_fds, fd_set* write_fds, fd_set* except_fds, struct timeval* timeout);

@@ -159,70 +159,34 @@ void client_str_echo(FILE* stdin_file, int sock_fd) {
     char send_buf[MAX_BUF_SIZE];
     char recv_buf[MAX_BUF_SIZE];
 
-    fd_set read_fds;
+    fd_set read_fds;  // нам нужен только 1 набор дескрипторов - для проверки готовности сокета для чтения
     FD_ZERO(&read_fds);
     int file_fd = fileno(stdin_file);
-    int max_fd = std::max(file_fd, sock_fd) + 1;  // Наибольший дескриптор + 1
-
-    FD_SET(file_fd, &read_fds);
-    FD_SET(sock_fd, &read_fds);
+    int max_fd = std::max(file_fd, sock_fd) + 1; // номер наибольшего дескриптора + 1
 
     for (;;) {
-        /*
-         * В функции "select":
-         *    - первый параметр "nfds" — это количество дескрипторов, за которыми select() должен следить.
-         *      "nfds" должен быть на 1 больше, чем наибольший файловый дескриптор в множествах fd_set
-         */
+        // если использовать select() в цикле, наборы должны быть повторно инициализированы перед каждым вызовом.
+        FD_SET(file_fd, &read_fds);
+        FD_SET(sock_fd, &read_fds);
 
-        // TODO: закончить с select
+        // "nfds" должен быть на 1 больше, чем наибольший файловый дескриптор в множествах fd_set
         Select(max_fd, &read_fds, nullptr, nullptr, nullptr);
 
-        if (FD_ISSET(sock_fd, &read_fds)) {	/* socket is readable */
+        if (FD_ISSET(sock_fd, &read_fds)) {	     // сокет готов для чтения
             if (Readline(sock_fd, recv_buf, MAX_BUF_SIZE) == 0) {
                 cerr << "str_cli: server terminated prematurely" << endl;
             }
 
+            // Записываем в stdout строку, полученную из сокета и хранимую в буфере "recv_buf"
             Fputs(recv_buf, stdout);
         }
 
-        if (FD_ISSET(file_fd, &read_fds)) {  /* input is readable */
+        if (FD_ISSET(file_fd, &read_fds)) {       // STDIN готов для чтения
             if (Fgets(send_buf, MAX_BUF_SIZE, stdin_file) == nullptr) {
                 return;		/* all done */
             }
             Write_n_bytes_to_sock_fd(sock_fd, send_buf, strlen(send_buf));
         }
-    }
-
-    // TODO: убрать лишний код (strcliselect01.c)
-
-    while ((Fgets(send_buf, MAX_BUF_SIZE, stdin_file)) != nullptr) {
-//        // Отправляем серверу строку, которую "Fgets" и записала в буфер "send_buf".
-        Write_n_bytes_to_sock_fd(sock_fd, send_buf, strlen(send_buf));
-
-        // ================= DEBUGGING ================
-//        // Сначала в сетевой сокет записываем первый байт данных
-//        Write_n_bytes_to_sock_fd(sock_fd, send_buf, 1);
-//
-//        // пауза в 1 сек.
-//        sleep(1);
-//
-//        // отправляем оставшуюся часть данных
-//        Write_n_bytes_to_sock_fd(sock_fd, send_buf+1, strlen(send_buf)-1);
-        // ============= END OF DEBUGGING =============
-
-        // Cчитываем из сетевого сокета данные в "recv_buf"
-        if (Readline(sock_fd, recv_buf, MAX_BUF_SIZE) == 0) {
-            cerr << "client_str_echo: server terminated prematurely: " << endl;
-            exit(EXIT_FAILURE);
-        }
-
-        // Записываем полученную из сетевого сокета строку в stdout
-        Fputs(recv_buf, stdout);
-
-//        size_t recv_buf_len = strlen(recv_buf);
-//        cout << "recv_buf_len = " << recv_buf_len << endl;
-//        ssize_t bytes_count = Write(fileno(stdout), recv_buf, recv_buf_len);
-//        cout << "wrote " << bytes_count << " bytes." << endl;
     }
 }
 
@@ -323,5 +287,6 @@ int Select(int n_fds, fd_set* read_fds, fd_set* write_fds, fd_set* except_fds, s
         cerr << "select error" << endl;
     }
 
-    return (n);        /* can return 0 on timeout */
+    // Возвращаемое значение м.б. равно нулю, если тайм-аут истек до того, как какие-либо файловые дескрипторы стали готовы.
+    return (n);
 }

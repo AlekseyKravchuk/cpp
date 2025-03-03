@@ -220,4 +220,20 @@ pid_t Fork() {
     return(pid);
 }
 
+ssize_t Read(int fd, void* ptr, size_t n_bytes) {
+    ssize_t n;
+
+    if ((n = read(fd, ptr, n_bytes)) == -1)
+        cerr << "read error: " << strerror(errno) << endl;
+    return (n);
+}
+
+void Shutdown(int fd, int how) {
+    if (shutdown(fd, how) < 0) {
+        cerr << "shutdown error" << strerror(errno) << endl;
+    }
+}
+
+
+
 

@@ -16,12 +16,15 @@
 #include <vector>
 #include <sys/socket.h>  // socket(), recv()
 #include <netinet/in.h>  // struct sockaddr_in, struct in_addr, htons(...)
+#include <thread>
+#include <chrono>
 
 #include "wrappers.h"
 #include "utilities.h"
 #include "parsing.h"
 
 using namespace std;
+using namespace chrono_literals;
 
 int main(int argc, char* argv[]) {
     string server_ip{};
@@ -61,7 +64,9 @@ int main(int argc, char* argv[]) {
     // Явно вызываем close() для завершения соединения на стороне клиента.
     // Это нужно для того, чтобы  освободить все ресурсы, связанные с этим соединением, включая файловые дескрипторы.
     /*Close(socket_fd);*/
-    Close(client_sockets[0]);
+//    Close(client_sockets[0]);
+    shutdown(client_sockets[0], SHUT_WR);
+    std::this_thread::sleep_for(6s);
 
     // В Linux при завершении процесса ядро автоматически закрывает все открытые файловые дескрипторы, включая сокеты.
     // Если процесс клиента завершился, ядро закроет сокет, и в результате будет отправлен [FIN, ACK].

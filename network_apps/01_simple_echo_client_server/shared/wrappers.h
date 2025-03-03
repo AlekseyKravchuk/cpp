@@ -52,3 +52,7 @@ ssize_t Write(int fd, const void* recv_buf, size_t recv_buf_len);
 ssize_t Readline(int fd, void* ptr_to_buf, size_t max_len);
 
 pid_t Fork();
+
+ssize_t Read(int fd, void* ptr, size_t n_bytes);
+
+void Shutdown(int fd, int how);

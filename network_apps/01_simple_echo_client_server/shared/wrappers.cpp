@@ -71,7 +71,7 @@ ssize_t Recv(int socket_fd, void* buffer, size_t buffer_size, int flags) {
         cout << "Connection closed by server." << endl;
     } else if (bytes_read < 0) {
         cerr << "socket read error: " << strerror(errno) << endl;
-        exit(EXIT_FAILURE);
+//        exit(EXIT_FAILURE);
     }
 
     return bytes_read;
@@ -220,18 +220,20 @@ pid_t Fork() {
     return(pid);
 }
 
-ssize_t Read(int fd, void* ptr, size_t n_bytes) {
-    ssize_t n;
-
-    if ((n = read(fd, ptr, n_bytes)) == -1)
-        cerr << "read error: " << strerror(errno) << endl;
-    return (n);
-}
-
 void Shutdown(int fd, int how) {
     if (shutdown(fd, how) < 0) {
         cerr << "shutdown error" << strerror(errno) << endl;
     }
+}
+
+ssize_t Read(int fd, void* ptr, size_t n_bytes) {
+    ssize_t n;
+
+    if ((n = read(fd, ptr, n_bytes)) == -1) {
+        cerr << "read error" << strerror(errno) << endl;
+    }
+
+    return (n);
 }
 
 

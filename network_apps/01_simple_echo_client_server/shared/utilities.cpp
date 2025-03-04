@@ -91,7 +91,7 @@ void server_str_echo(int sock_fd) {
 
     while (true) {
         /*n = recv(sock_fd, line, MAX_BUF_SIZE, 0);  // Получаем "n" байт из сетевого сокета "sock_fd" в буфер "line"*/
-        n = readline(sock_fd, line, MAX_BUF_SIZE);   // Получаем "n" байт из сетевого сокета "sock_fd" в буфер "line"
+        n = readline(sock_fd, line, MAX_BUF_SIZE);   // С буферизацией: получаем "n" байт из сетевого сокета "sock_fd" в буфер "line"
 
         if (n > 0) {
             vector<int64_t> args;
@@ -195,7 +195,7 @@ void client_str_echo(FILE* stdin_file, int sock_fd) {
     char buf[MAX_BUF_SIZE];
     int max_fd = 0;
 
-    fd_set read_fds;  // нам нужен только 1 набор дескрипторов - для проверки готовности сокета для чтения
+    fd_set read_fds;  // нам нужен только 1 набор дескрипторов - для проверки готовности дескриптора для чтения
     FD_ZERO(&read_fds);
 
     int file_fd = fileno(stdin_file);
@@ -203,18 +203,20 @@ void client_str_echo(FILE* stdin_file, int sock_fd) {
     ssize_t n_bytes = 0;
 
     for (;;) {
-        // если использовать select() в цикле, наборы должны быть повторно инициализированы перед каждым вызовом.
+        // если использовать select() в цикле, наборы должны быть повторно инициализированы перед каждым вызовом,
+        // поскольку каждый вызов select() требует пересоздания множества "fd_set"
         if (stdin_eof == 0) {
             FD_SET(file_fd, &read_fds);
         }
+
         FD_SET(sock_fd, &read_fds);
         max_fd = std::max(file_fd, sock_fd) + 1; // номер наибольшего дескриптора + 1
 
         // "nfds" должен быть на 1 больше, чем наибольший файловый дескриптор в множествах fd_set
         Select(max_fd, &read_fds, nullptr, nullptr, nullptr);
 
-        if (FD_ISSET(sock_fd, &read_fds)) {	     // сокет готов для чтения
-            if ((n_bytes = Read(sock_fd, buf, MAX_BUF_SIZE)) == 0) {
+        if (FD_ISSET(sock_fd, &read_fds)) {	     //  пришли данные от сервера: сокет готов для чтения
+            if ((n_bytes = Recv(sock_fd, buf, MAX_BUF_SIZE, 0)) == 0) {
                 if (stdin_eof == 1) {
                     return;  // нормальное завершение
                 } else {
@@ -222,6 +224,7 @@ void client_str_echo(FILE* stdin_file, int sock_fd) {
                     exit(EXIT_FAILURE);
                 }
             }
+            cout << n_bytes << " bytes was read from socket\n";
 
             Write(fileno(stdout), buf, n_bytes);
         }
@@ -233,6 +236,8 @@ void client_str_echo(FILE* stdin_file, int sock_fd) {
                 FD_CLR(file_fd, &read_fds);
                 continue;
             }
+            cout << n_bytes << " bytes was read from file or stdin\n";
+
             Write_n_bytes_to_sock_fd(sock_fd, buf, n_bytes);
         }
     }
@@ -252,7 +257,9 @@ ssize_t readline(int sock_fd, void* ptr_to_recv_buf, size_t max_len) {
     pos_ptr = reinterpret_cast<char* >(ptr_to_recv_buf);
 
     for (w_count = 1; w_count < max_len; ++w_count) {
-        if ((res = my_read(sock_fd, &ch)) == 1) {
+        res = my_read(sock_fd, &ch);
+
+        if (res == 1) {
             *pos_ptr++ = ch;
             if (ch == '\n')
                 break;             // newline is stored, like fgets()

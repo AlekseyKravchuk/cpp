@@ -66,7 +66,7 @@ int main(int argc, char* argv[]) {
     /*Close(socket_fd);*/
 //    Close(client_sockets[0]);
     shutdown(client_sockets[0], SHUT_WR);
-    std::this_thread::sleep_for(6s);
+//    std::this_thread::sleep_for(6s);
 
     // В Linux при завершении процесса ядро автоматически закрывает все открытые файловые дескрипторы, включая сокеты.
     // Если процесс клиента завершился, ядро закроет сокет, и в результате будет отправлен [FIN, ACK].

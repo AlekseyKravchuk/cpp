@@ -5,6 +5,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <fcntl.h>
 
 #include "utilities.h"
 #include "wrappers.h"
@@ -191,14 +192,15 @@ void print_client_info(const string& server_ip, uint16_t server_port, int socket
 //    }
 //}
 
-void client_str_echo(FILE* stdin_file, int sock_fd) {
+// TODO: переписать на epoll
+void client_str_echo(FILE* fp, int sock_fd) {
     char buf[MAX_BUF_SIZE];
     int max_fd = 0;
 
     fd_set read_fds;  // нам нужен только 1 набор дескрипторов - для проверки готовности дескриптора для чтения
     FD_ZERO(&read_fds);
 
-    int file_fd = fileno(stdin_file);
+    int file_fd = fileno(fp);
     int stdin_eof = 0;  // пока этот флаг равен '0', будем проверять готовность "stdin" к чтению с помощью "select"
     ssize_t n_bytes = 0;
 
@@ -344,4 +346,34 @@ int Select(int n_fds, fd_set* read_fds, fd_set* write_fds, fd_set* except_fds, s
 
     // Возвращаемое значение м.б. равно нулю, если тайм-аут истек до того, как какие-либо файловые дескрипторы стали готовы.
     return (n);
+}
+
+void make_socket_nonblocking(int sock_fd) {
+    int flags = fcntl(sock_fd, F_GETFL, 0);
+
+    if (flags == -1) {
+        cerr << "fcntl(F_GETFL): " << ::strerror(errno) << endl;
+        exit(EXIT_FAILURE);
+    }
+
+    int result = fcntl(sock_fd, F_SETFL, flags | O_NONBLOCK);
+    if (result == -1) {
+        cerr << "fcntl(F_SETFL, O_NONBLOCK): " << ::strerror(errno) << endl;
+        exit(EXIT_FAILURE);
+    }
+}
+
+// ========================================================================================
+// Функция для чтения из файла или stdin и возвращения уникального указателя на FILE
+std::unique_ptr<FILE, decltype(&fclose)> read_from_file(FILE* fp) {
+    std::unique_ptr<FILE, decltype(&fclose)> file_ptr(nullptr, fclose);
+
+    // Дублируем файловый дескриптор для потока
+    file_ptr.reset(fdopen(dup(fileno(fp)), "r"));  // Дублируем поток, будь то stdin или файл
+
+    if (!file_ptr) {
+        std::cerr << "read_from_file error" << endl;
+    }
+
+    return file_ptr;
 }

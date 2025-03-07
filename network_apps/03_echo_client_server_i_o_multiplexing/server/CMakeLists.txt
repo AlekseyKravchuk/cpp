@@ -16,9 +16,6 @@ set(CMAKE_BUILD_TYPE Debug)
 #set(SOURCES
 #        server.cpp)
 
-#set(SOURCES
-#        stub_for_server.cpp)
-
 set(SOURCES
         epoll_server.cpp)
 

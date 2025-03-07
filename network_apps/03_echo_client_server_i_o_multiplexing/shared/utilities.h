@@ -3,6 +3,7 @@
 #include <string>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <memory>
 
 void sigchld_handler(int signal_number);
 
@@ -40,6 +41,10 @@ ssize_t my_read(int sock_fd, char* ch_ptr);
 
 ssize_t readline(int sock_fd, void* ptr_to_recv_buf, size_t max_len);
 
-void client_str_echo(FILE* stdin_file, int sock_fd);
+void client_str_echo(FILE* fp, int sock_fd);
 
 int Select(int n_fds, fd_set* read_fds, fd_set* write_fds, fd_set* except_fds, struct timeval* timeout);
+
+void make_socket_nonblocking(int sock_fd);
+
+std::unique_ptr<FILE, decltype(&fclose)> read_from_file(FILE* fp);

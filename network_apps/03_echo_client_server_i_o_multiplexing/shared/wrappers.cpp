@@ -72,7 +72,7 @@ ssize_t Recv(int socket_fd, void* buffer, size_t buffer_size, int flags) {
         cout << "Connection closed by server." << endl;
     } else if (bytes_read < 0) {
         cerr << "socket read error: " << strerror(errno) << endl;
-//        exit(EXIT_FAILURE);
+        exit(EXIT_FAILURE);
     }
 
     return bytes_read;

@@ -10,7 +10,8 @@
 #include "utilities.h"
 #include "wrappers.h"
 
-#define MAX_BUF_SIZE 4096  /* Максимальный размер строки (буфера, в который осуществляется чтение из сокета) */
+#define MAX_BUF_SIZE 4'096  // Максимальный размер буфера, в который осуществляется чтение из сокета за одно чтение
+#define MAX_EVENTS   1'000  // Максимальное количество событий, возвращаемых одним вызовом epoll_wait()
 
 using namespace std;
 
@@ -156,91 +157,71 @@ void print_client_info(const string& server_ip, uint16_t server_port, int socket
               << "is connected to server " << server_ip << ":" << server_port << endl;
 }
 
-//// buggy client_str_echo
-//void client_str_echo(FILE* stdin_file, int sock_fd) {
-//    char send_buf[MAX_BUF_SIZE];
-//    char recv_buf[MAX_BUF_SIZE];
-//
-//    fd_set read_fds;  // нам нужен только 1 набор дескрипторов - для проверки готовности сокета для чтения
-//    FD_ZERO(&read_fds);
-//    int file_fd = fileno(stdin_file);
-//    int max_fd = std::max(file_fd, sock_fd) + 1; // номер наибольшего дескриптора + 1
-//
-//    for (;;) {
-//        // если использовать select() в цикле, наборы должны быть повторно инициализированы перед каждым вызовом.
-//        FD_SET(file_fd, &read_fds);
-//        FD_SET(sock_fd, &read_fds);
-//
-//        // "nfds" должен быть на 1 больше, чем наибольший файловый дескриптор в множествах fd_set
-//        Select(max_fd, &read_fds, nullptr, nullptr, nullptr);
-//
-//        if (FD_ISSET(sock_fd, &read_fds)) {	     // сокет готов для чтения
-//            if (Readline(sock_fd, recv_buf, MAX_BUF_SIZE) == 0) {
-//                cerr << "str_cli: server terminated prematurely" << endl;
-//            }
-//
-//            // Записываем в stdout строку, полученную из сокета и хранимую в буфере "recv_buf"
-//            Fputs(recv_buf, stdout);
-//        }
-//
-//        if (FD_ISSET(file_fd, &read_fds)) {       // STDIN готов для чтения
-//            if (Fgets(send_buf, MAX_BUF_SIZE, stdin_file) == nullptr) {
-//                return;		/* all done */
-//            }
-//            Write_n_bytes_to_sock_fd(sock_fd, send_buf, strlen(send_buf));
-//        }
-//    }
-//}
-
-// TODO: переписать на epoll
-void client_str_echo(FILE* fp, int sock_fd) {
+void client_str_echo_using_epoll(FILE* fp, int sock_fd) {
     char buf[MAX_BUF_SIZE];
-    int max_fd = 0;
-
-    fd_set read_fds;  // нам нужен только 1 набор дескрипторов - для проверки готовности дескриптора для чтения
-    FD_ZERO(&read_fds);
-
     int file_fd = fileno(fp);
-    int stdin_eof = 0;  // пока этот флаг равен '0', будем проверять готовность "stdin" к чтению с помощью "select"
+
     ssize_t n_bytes = 0;
+    bool eof_reached = false;
+
+    // Инициализируем контекст опроса событий - создаем экземпляр epoll, который будет отслеживать файловые дескрипторы.
+    int epoll_fd = Epoll_create1(EPOLL_CLOEXEC);
+    // Буфер "events.data()" используется для возвращения из "epoll_wait" информации из списка дескрипторов, готовых к I/O операциям ("ready list")
+    std::vector<epoll_event> events(MAX_EVENTS);  // вектор сокетов/файлов для отслеживания
+
+    set_nonblocking(file_fd);
+    set_nonblocking(sock_fd);
+
+    if (file_is_regular(file_fd)) {
+        cout << "Reading input file before entering epoll..." << endl;
+        n_bytes = Read(file_fd, buf, MAX_BUF_SIZE);
+        eof_reached = true;
+        cout << n_bytes << " bytes was read from file (stdin redirection was used)\n";
+        Write_n_bytes_to_sock_fd(sock_fd, buf, n_bytes);
+    } else {
+        // Добавляем file_fd в epoll (для чтения)
+        epoll_event file_ev{};
+        file_ev.events = EPOLLIN;     // ждем события на ЧТЕНИЕ
+        file_ev.data.fd = file_fd;    // привязываем событие к файловому дескриптору открытого файла
+        epoll_ctl(epoll_fd, EPOLL_CTL_ADD, file_fd, &file_ev);  // добавляем в контекст опроса событий файловый дескриптор "file_fd"
+    }
+
+    // Добавляем sock_fd в epoll (для чтения)
+    epoll_event sock_ev{};
+    sock_ev.events = EPOLLIN;     // ждем события на ЧТЕНИЕ
+    sock_ev.data.fd = sock_fd;    // привязываем событие к сокету
+    epoll_ctl(epoll_fd, EPOLL_CTL_ADD, sock_fd, &sock_ev);  // добавляем в контекст опроса событий сокет "sock_fd"
 
     for (;;) {
-        // если использовать select() в цикле, наборы должны быть повторно инициализированы перед каждым вызовом,
-        // поскольку каждый вызов select() требует пересоздания множества "fd_set"
-        if (stdin_eof == 0) {
-            FD_SET(file_fd, &read_fds);
-        }
+        int n_ready = epoll_wait(epoll_fd, events.data(), MAX_EVENTS, -1);
 
-        FD_SET(sock_fd, &read_fds);
-        max_fd = std::max(file_fd, sock_fd) + 1; // номер наибольшего дескриптора + 1
+        for (int i = 0; i < n_ready; ++i) {
+            int fd = events[i].data.fd;
 
-        // "nfds" должен быть на 1 больше, чем наибольший файловый дескриптор в множествах fd_set
-        Select(max_fd, &read_fds, nullptr, nullptr, nullptr);
+            if (fd == file_fd) {
+                n_bytes = Read(file_fd, buf, MAX_BUF_SIZE);
 
-        if (FD_ISSET(sock_fd, &read_fds)) {	     //  пришли данные от сервера: сокет готов для чтения
-            if ((n_bytes = Recv(sock_fd, buf, MAX_BUF_SIZE, 0)) == 0) {
-                if (stdin_eof == 1) {
-                    return;  // нормальное завершение
-                } else {
-                    cerr << "str_cli: server terminated prematurely" << endl;
-                    exit(EXIT_FAILURE);
+                if (n_bytes == 0) {  // все данные считаны; читать из файла больше нечего
+                    eof_reached = true;
+                    Shutdown(sock_fd, SHUT_WR);  // send FIN: больше новых данных нет - закрываем свою часть соединения
+                    epoll_ctl(epoll_fd, EPOLL_CTL_DEL, file_fd, nullptr);  // больше не нужно отслеживать файловый дескриптор
+                }
+
+                cout << n_bytes << " bytes was read from stdin\n";
+                Write_n_bytes_to_sock_fd(sock_fd, buf, n_bytes);
+
+            } else if (fd == sock_fd) {
+                n_bytes = Recv(sock_fd, buf, MAX_BUF_SIZE, 0);
+
+                if (n_bytes == 0) {
+                    if (eof_reached) {
+                        return;  // нормальное завершение: файл полностью прочитан и данных в сокете нет
+                    } else {
+                        cerr << "client_str_echo_using_epoll: server terminated prematurely" << endl;
+                        exit(EXIT_FAILURE);
+                    }
                 }
             }
-            cout << n_bytes << " bytes was read from socket\n";
-
-            Write(fileno(stdout), buf, n_bytes);
-        }
-
-        if (FD_ISSET(file_fd, &read_fds)) {       // STDIN готов для чтения (есть данные на входе)
-            if ((n_bytes = Read(file_fd, buf, MAX_BUF_SIZE)) == 0) {
-                stdin_eof = 1;
-                Shutdown(sock_fd, SHUT_WR); /* send FIN */
-                FD_CLR(file_fd, &read_fds);
-                continue;
-            }
-            cout << n_bytes << " bytes was read from file or stdin\n";
-
-            Write_n_bytes_to_sock_fd(sock_fd, buf, n_bytes);
         }
     }
 }
@@ -348,7 +329,7 @@ int Select(int n_fds, fd_set* read_fds, fd_set* write_fds, fd_set* except_fds, s
     return (n);
 }
 
-void make_socket_nonblocking(int sock_fd) {
+void set_nonblocking(int sock_fd) {
     int flags = fcntl(sock_fd, F_GETFL, 0);
 
     if (flags == -1) {
@@ -376,4 +357,42 @@ std::unique_ptr<FILE, decltype(&fclose)> read_from_file(FILE* fp) {
     }
 
     return file_ptr;
+}
+
+std::string get_content(const std::string& filename) {
+    auto size = std::filesystem::file_size(filename);
+    std::string content(size, '\0');
+    std::ifstream in(filename);
+    in.read(&content[0], size);
+
+    return content;
+
+//    std::ifstream ifs(filename);
+//    std::string str((std::istreambuf_iterator<char>(ifs)),
+//                     std::istreambuf_iterator<char>(   ));
+}
+
+std::string get_content(FILE* fp) {
+    int fd = fileno(fp);
+    const size_t buffer_size = sysconf(_SC_PAGESIZE);  // Размер буфера для чтения, равный размеру страницы (4K)
+    std::string content;
+
+    char buffer[buffer_size];  // Выделяем место в строке для буфера
+    ssize_t bytes_read;
+
+    while ((bytes_read = read(fd, buffer, buffer_size)) > 0) {
+        // Добавляем считанные данные в строку
+        content.append(buffer, bytes_read);
+    }
+
+    if (bytes_read == -1) {
+        throw std::runtime_error("Error attempting to read file by its file descriptor #" + to_string(fd));
+    }
+
+    return content;
+}
+
+bool file_is_regular(int file_fd) {
+    struct stat st{};
+    return fstat(file_fd, &st) == 0 && S_ISREG(st.st_mode);
 }

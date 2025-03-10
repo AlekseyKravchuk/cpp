@@ -4,6 +4,8 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <memory>
+#include <filesystem>
+#include <sys/stat.h>
 
 void sigchld_handler(int signal_number);
 
@@ -27,7 +29,9 @@ void print_info_about_connected_client(sockaddr_storage& client_address);
 
 void print_client_info(const std::string& server_ip, uint16_t server_port, int socket_fd);
 
-//std::string get_content(const std::string& file_path);
+std::string get_content(const std::string& file_path);
+
+std::string get_content(FILE* fp);
 
 std::tuple<std::string, uint16_t> get_ip_port_from_addr_struct(sockaddr_storage& client_address);
 
@@ -43,8 +47,12 @@ ssize_t readline(int sock_fd, void* ptr_to_recv_buf, size_t max_len);
 
 void client_str_echo(FILE* fp, int sock_fd);
 
+void client_str_echo_using_epoll(FILE* fp, int sock_fd);
+
 int Select(int n_fds, fd_set* read_fds, fd_set* write_fds, fd_set* except_fds, struct timeval* timeout);
 
-void make_socket_nonblocking(int sock_fd);
+void set_nonblocking(int sock_fd);
 
 std::unique_ptr<FILE, decltype(&fclose)> read_from_file(FILE* fp);
+
+bool file_is_regular(int file_fd);

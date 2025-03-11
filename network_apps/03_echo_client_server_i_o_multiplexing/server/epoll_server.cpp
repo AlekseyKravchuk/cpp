@@ -2,6 +2,8 @@
 #include <netinet/in.h>
 #include <unistd.h>
 #include <sys/epoll.h>
+#include <fcntl.h>
+
 #include "wrappers.h"
 #include "utilities.h"
 #include "parsing.h"
@@ -19,7 +21,10 @@ int main(int argc, char** argv) {
 
     echo_server_check_arguments(argc, argv, port_listen_to);
     listen_fd = Socket(AF_INET, SOCK_STREAM, 0);
-    set_nonblocking(listen_fd);
+
+    // Установка опции "SO_REUSEADDR" позволяет серверу быстро перезапускаться без ожидания завершения старых соединений.
+//    int opt = 1;
+//    setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 
     struct sockaddr_in server_address = {
             .sin_family = AF_INET,
@@ -31,6 +36,9 @@ int main(int argc, char** argv) {
     Bind(listen_fd, (struct sockaddr*)&server_address, sizeof(server_address));
     Listen(listen_fd, LISTEN_QUEUE_LEN);
 
+//    set_nonblocking(listen_fd);
+    fcntl(listen_fd, F_SETFL, O_NONBLOCK);
+
     // Инициализируем контекст опроса событий - создаем экземпляр epoll, который будет отслеживать файловые дескрипторы.
     int epoll_fd = Epoll_create1(EPOLL_CLOEXEC);
 
@@ -40,52 +48,62 @@ int main(int argc, char** argv) {
     // Объект "ev" используется для добавления/удаления/модификации файловых дескрипторов в epoll
     // и задания типа событий, которые нас интересуют (в данном случае - событие на чтение, EPOLLIN).
     epoll_event ev{};
-    ev.events = EPOLLIN;     // ждем события на ЧТЕНИЕ
-    ev.data.fd = listen_fd;  // привязываем событие к прослушиваемому (listening, серверному) сокету
-
-    // При использовании epoll с edge-triggered (EPOLLET) режимом:
-    // - epoll_wait() сигнализирует о событии только один раз, когда новое соединение доступно;
-    // - если accept() в этот момент не обработает все входящие соединения, следующие вызовы epoll_wait()
-    //   не будут уведомлять о новых подключениях;
-    // ev.events = EPOLLIN | EPOLLET;  // ждем события на ЧТЕНИЕ + используем Edge-triggered mode (EPOLLET)
+    ev.events = EPOLLIN | EPOLLET; // ждем события на ЧТЕНИЕ + используем Edge-triggered mode (EPOLLET)
+    ev.data.fd = listen_fd;        // привязываем событие к прослушиваемому (listening, серверному) сокету
 
     // "epoll_ctl" добавляет в контекст опроса событий сокет "listen_fd"
     epoll_ctl(epoll_fd, EPOLL_CTL_ADD, listen_fd, &ev);
 
-    // TODO: добавить обработку клиентских сокетов
-    // TODO: разобраться с edge-triggered (EPOLLET) режимом и переписать код
+    // TODO: fix bug related to edge-triggered (EPOLLET) режимом и переписать код
+    // accept connection error: Resource temporarily unavailable
     for (;;) {
         // Обработка событий с помощью epoll_wait(), который блокирует выполнение, ожидая события от подключенных клиентов.
         int n_ready = epoll_wait(epoll_fd, events.data(), MAX_EVENTS, -1);
+//        int n_ready = epoll_wait(epoll_fd, events.data(), MAX_EVENTS, 0);
 
         for (int i = 0; i < n_ready; i++) {
-            int fd = events[i].data.fd;
+            // Проверяем, произошла ли ошибка (EPOLLERR) или был ли закрыт удалённый конец соединения (EPOLLHUP):
+            // EPOLLERR: ошибка на сокете. Например, если клиент неожиданно отключился или произошёл сбой сети.
+            // EPOLLHUP: клиент закрыл соединение (close() с его стороны), но сервер ещё не вызвал read(), чтобы получить EOF.
+            if (events[i].events & EPOLLERR || events[i].events & EPOLLHUP) {
+                close(events[i].data.fd);
+                continue;
+            }
 
-            // Поскольку используем edge-triggered (EPOLLET) режим, то внутри epoll-цикла после срабатывания события
-            // на listen_sock нужно принять все ожидающие подключения в цикле while
+            int fd = events[i].data.fd;
             if (fd == listen_fd) {
+                // ===================== Обработка в режиме edge-triggered (EPOLLET) =====================
+                // Поскольку используем edge-triggered (EPOLLET) режим, то внутри epoll-цикла после срабатывания события
+                // на listen_sock нужно принять все ожидающие подключения в цикле while - в режиме edge-triggered ядро
+                // уведомит нас только один раз, когда появляются новые данные.
+                // Если мы не вычитаем все данные из буфера, следующего уведомления мы не получим!
                 for(;;) {
                     sockaddr_storage client_addr{};
                     socklen_t client_addr_len = sizeof(client_addr);
 
                     int connected_fd = Accept(listen_fd, (struct sockaddr*)&client_addr, &client_addr_len);
-                    if (connected_fd < 0) {
+
+                    if (connected_fd == -1) {
                         if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                            cerr << "No pending connections, breaking accept loop" << endl;
                             break;  // Очередь пуста
                         } else {
                             // TODO: fix error: "accept connection error: Resource temporarily unavailable"
                             cerr << "accept error: " << ::strerror(errno) << endl;
-                            exit(EXIT_FAILURE);
+                            continue;
+                            // exit(EXIT_FAILURE);
                         }
                     }
-                    set_nonblocking(connected_fd);
+                    fcntl(connected_fd, F_SETFL, O_NONBLOCK);
+//                    set_nonblocking(connected_fd);
                     print_info_about_connected_client(client_addr);
 
                     epoll_event client_event{};
-                    client_event.events = EPOLLIN;
+                    client_event.events = EPOLLIN | EPOLLET;
                     client_event.data.fd = connected_fd;
                     epoll_ctl(epoll_fd, EPOLL_CTL_ADD, connected_fd, &client_event);
                 }
+                // ================== КОНЕЦ обработки в режиме edge-triggered (EPOLLET) ==================
 
 //            // А что если без цикла:
 //                sockaddr_storage client_addr{};
@@ -99,14 +117,41 @@ int main(int argc, char** argv) {
 //                client_event.events = EPOLLIN;
 //                client_event.data.fd = connected_fd;
 //                epoll_ctl(epoll_fd, EPOLL_CTL_ADD, connected_fd, &client_event);
-            } else {
-                ssize_t n_bytes = Read(fd, buf, MAX_BUF_SIZE);
-                if (n_bytes == 0) {
-                    epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, nullptr);
-                    close(fd);
-                } else {
-                    Write_n_bytes_to_sock_fd(fd, buf, static_cast<size_t>(n_bytes));
-                    shutdown(fd, SHUT_WR);
+            } else {  // fd != listen_fd
+                // Этот "while (true)" нужен, потому что EPOLLET (edge-triggered) уведомляет нас только один раз,
+                // когда появляются новые данные.
+                // Если мы не вычитаем все данные из буфера, следующего уведомления мы не получим!
+                while (true) {
+                    ssize_t n_bytes = Recv(fd, buf, MAX_BUF_SIZE, 0);
+
+                    if (n_bytes == -1) {  // recv error
+                        // Этот if:
+                        //    - Защищает от ситуации, когда read() вызывается на пустом буфере.
+                        //    - Гарантирует, что цикл не зависнет в read(), если данные временно недоступны.
+                        //    - Позволяет корректно закрывать соединение при критических ошибках.
+                        // Эти коды ошибок означают, что в данный момент в сокете нет данных для чтения:
+                        // => EAGAIN (Resource temporarily unavailable) — означает, что операция recv() выполнена
+                        //    в неблокирующем режиме и на данный момент нет доступных данных.
+                        // =>  EWOULDBLOCK — по сути, то же самое, что EAGAIN, но исторически применялось в BSD-системах.
+                        // В современных Linux EWOULDBLOCK и EAGAIN эквивалентны.
+                        // Они не являются фатальными ошибками! Просто буфер пуст, и мы должны прекратить чтение.
+                        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                            break;
+                        }
+                    } else if (n_bytes == 0) {  // удаленная сторона (клиент) закрыла соединение
+                        // В Berkeley Sockets (TCP-сокеты) закрытие соединения происходит поэтапно. Когда клиент вызывает close() или shutdown(fd, SHUT_WR), сервер не сразу получает ошибку, а сначала получает EOF (конец файла).
+                        //EOF в recv() означает, что:
+                        //    - Клиент закрыл соединение => сервер больше не должен использовать этот сокет.
+                        //    - В TCP больше не будет данных от клиента.
+                        //    - Мы обязаны закрыть fd на сервере.
+                        if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, nullptr) == -1) {
+                            cerr << "epoll_ctl DEL" << endl;
+                        }
+                        close(fd);  // Нет смысла оставлять fd открытым после EOF.
+                        break;      // всё, вычитали все данные из клиентского сокета => выходим из цикла
+                    } else if (n_bytes > 0) {
+                        Write_n_bytes_to_sock_fd(fd, buf, static_cast<size_t>(n_bytes));
+                    }
                 }
             }
         }

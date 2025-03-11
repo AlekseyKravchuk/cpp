@@ -221,9 +221,15 @@ void client_str_echo_using_epoll(FILE* fp, int sock_fd) {
                         exit(EXIT_FAILURE);
                     }
                 }
+
+                if (eof_reached) {
+                    epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, nullptr);
+                    Shutdown(fd, SHUT_WR);
+                    return;
+                }
             }
-        }
-    }
+        }  // end of INNER for loop
+    } // end of outer for loop
 }
 
 /*

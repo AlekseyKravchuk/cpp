@@ -48,8 +48,9 @@ int main(int argc, char* argv[]) {
 
         client_str_echo_using_epoll(new_fp, client_sockets[i]);  // Выполняем все необходимые действия со стороны клиента.
 
-        shutdown(client_sockets[i], SHUT_WR);        // Закрываем записывающую половину соединения
-
+        // Клиент завершил передачу данных, но всё ещё ожидает ответ от сервера
+        // Закрываем только записывающую половину соединения(SHUT_WR), запрещая send() на этом сокете.
+        shutdown(client_sockets[i], SHUT_WR);
     }
 
     return 0;

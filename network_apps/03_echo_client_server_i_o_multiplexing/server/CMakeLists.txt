@@ -14,7 +14,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall \
 set(CMAKE_BUILD_TYPE Debug)
 
 set(SOURCES
-        epoll_server.cpp)
+        epoll_tcp_echo_server.cpp)
 
 #set(HEADERS)
 

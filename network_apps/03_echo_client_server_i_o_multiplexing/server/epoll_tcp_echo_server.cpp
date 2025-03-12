@@ -34,8 +34,7 @@ int main(int argc, char** argv) {
 
     Bind(listen_fd, (struct sockaddr*) &server_address, sizeof(server_address));
     Listen(listen_fd, LISTEN_QUEUE_LEN);
-
-    set_nonblocking(listen_fd);
+    set_nonblocking(listen_fd);  // make listening socket to be nonblocking
 
     // Инициализируем контекст опроса событий - создаем экземпляр epoll, который будет отслеживать файловые дескрипторы.
     int epoll_fd = Epoll_create1(EPOLL_CLOEXEC);
@@ -48,7 +47,6 @@ int main(int argc, char** argv) {
     epoll_event ev{};
     ev.events = EPOLLIN | EPOLLET; // ждем события на ЧТЕНИЕ + используем Edge-triggered mode (EPOLLET)
     ev.data.fd = listen_fd;        // привязываем событие к прослушиваемому (listening, серверному) сокету
-
     epoll_ctl(epoll_fd, EPOLL_CTL_ADD, listen_fd, &ev);  // добавляем в контекст опроса событий сокет "listen_fd"
 
     for (;;) {
@@ -70,12 +68,11 @@ int main(int argc, char** argv) {
             }
 
             int fd = events[i].data.fd;
-            if (fd == listen_fd) {
-                for (;;) {  // пока есть клиенты в очереди входящих соединений
-                    // ===================== Обработка в режиме edge-triggered (EPOLLET) =====================
-                    // Поскольку используем edge-triggered (EPOLLET) режим, то внутри epoll-цикла после срабатывания события
-                    // на listen_sock нужно принять все ожидающие подключения в цикле while - в режиме edge-triggered ядро
-                    // уведомит нас только один раз, когда появляются новые данные.
+            if (fd == listen_fd) {  // обработка  очереди входящих соединений в режиме edge-triggered (EPOLLET)
+                for (;;) {  // пока есть клиенты в очереди входящих соединений, крутимся в цикле
+                    // В режиме EPOLLET после срабатывания события на listen_fd внутри epoll-цикла нужно принять все
+                    // ожидающие подключения в цикле for(;;), т.к. в режиме edge-triggered ядро уведомит нас только
+                    // один раз, когда появляются новые данные.
                     // Если мы не вычитаем все данные из буфера, следующего уведомления мы не получим!
                     sockaddr_storage client_addr{};
                     socklen_t client_addr_len = sizeof(client_addr);
@@ -88,16 +85,12 @@ int main(int argc, char** argv) {
                                  << endl;
                             break;  // Очередь пуста, выходим из цикла обработки входящих соединений
                         } else {
-                            cerr << R"(Other than the "EAGAIN/EWOULDBLOC" accept connection error: )" << strerror(errno)
-                                 << endl;
+                            cerr << R"(Other than the "EAGAIN" accept connection error: )" << strerror(errno) << endl;
                             continue;
-                            // exit(EXIT_FAILURE);
                         }
                     }
 
-                    // Делаем клиентский сокет (connected socket) неблокирующим
-                    set_nonblocking(connected_fd);
-
+                    set_nonblocking(connected_fd);  // make connected socket to be nonblocking
                     print_info_about_connected_client(client_addr);
 
                     epoll_event client_event{};
@@ -105,35 +98,33 @@ int main(int argc, char** argv) {
                     client_event.data.fd = connected_fd;
                     epoll_ctl(epoll_fd, EPOLL_CTL_ADD, connected_fd, &client_event);
                 }
-            } else if (fd != listen_fd) {
-                // Этот "while (true)" нужен, потому что EPOLLET (edge-triggered) уведомляет нас только один раз,
-                // когда появляются новые данные.
-                // Если мы не вычитаем все данные из буфера, следующего уведомления мы не получим!
+            } else if (fd != listen_fd) {  // вычитываем все данные из клиентского сокета
                 while (true) {
-                    //ssize_t n_bytes = Recv(fd, buf, MAX_BUF_SIZE, 0);
+                    // Цикл нужен, т.к. EPOLLET уведомляет нас только один раз, когда появляются новые данные.
+                    // Если мы не вычитаем все данные из буфера recv(), следующего уведомления мы не получим!
+                    // !!! Нужно читать до тех пор, пока не получим EAGAIN !!!:
                     ssize_t n_bytes = recv(fd, buf, MAX_BUF_SIZE, 0);
 
-                    if (n_bytes == -1) {  // recv error
+                    if (n_bytes == -1) {
                         // Этот if:
                         //    - Защищает от ситуации, когда recv() вызывается на пустом буфере.
                         //    - Гарантирует, что цикл не зависнет в recv(), если данные временно недоступны.
                         //    - Позволяет корректно закрывать соединение при критических ошибках.
-                        // Эти коды ошибок означают, что в данный момент в сокете нет данных для чтения:
                         // => EAGAIN (Resource temporarily unavailable) — означает, что операция recv() выполнена
                         //    в неблокирующем режиме и на данный момент нет доступных данных.
-                        // =>  EWOULDBLOCK — по сути, то же самое, что EAGAIN, но исторически применялось в BSD-системах.
-                        // В современных Linux EWOULDBLOCK и EAGAIN эквивалентны.
+                        // =>  EWOULDBLOCK — в современных Linux EWOULDBLOCK и EAGAIN эквивалентны.
                         // Они не являются фатальными ошибками! Просто буфер пуст, и мы должны прекратить чтение.
                         if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                            break;  // Данные в сокете закончились
-                        } else {
+                            break;  // Данные в сокете закончились, мы вычитали все данные, можно выходить из цикла
+                        } else {    // получили критическую ошибку
                             cerr << R"(Other than the "EAGAIN/EWOULDBLOC" recv error: )" << strerror(errno) << endl;
                             close(fd);
                             break;
                         }
                     } else if (n_bytes == 0) {  // удаленная сторона (клиент) закрыла соединение
-                        // В Berkeley Sockets (TCP-сокеты) закрытие соединения происходит поэтапно. Когда клиент вызывает close() или shutdown(fd, SHUT_WR), сервер не сразу получает ошибку, а сначала получает EOF (конец файла).
-                        //EOF в recv() означает, что:
+                        // В Berkeley Sockets (TCP-сокеты) закрытие соединения происходит поэтапно.
+                        // Когда клиент вызывает close() или shutdown(fd, SHUT_WR), сервер не сразу получает ошибку, а сначала получает EOF (конец файла).
+                        // EOF в recv() означает, что:
                         //    - Клиент закрыл соединение => сервер больше не должен использовать этот сокет.
                         //    - В TCP больше не будет данных от клиента.
                         //    - Мы обязаны закрыть fd на сервере.

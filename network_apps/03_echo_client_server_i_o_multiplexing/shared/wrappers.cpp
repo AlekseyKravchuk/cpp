@@ -104,12 +104,17 @@ void Listen(int sock_fd, int backlog) {
     }
 }
 
+// Accept could return "-1" in case of "EAGAIN/EWOULDBLOC" error
 int Accept(int listen_fd, struct sockaddr* sa, socklen_t* salenptr) {
     int client_socket_fd = accept(listen_fd, sa, salenptr);
 
     if (client_socket_fd < 0) {
-        cerr << "accept connection error: " << strerror(errno) << endl;
-        exit(EXIT_FAILURE);
+        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+            cerr << "EAGAIN/EWOULDBLOCK triggered in accept call" << endl;
+        } else {
+            cerr << R"(Other than the "EAGAIN/EWOULDBLOC" accept connection error: )" << strerror(errno) << endl;
+            exit(EXIT_FAILURE);
+        }
     }
 
     return client_socket_fd;

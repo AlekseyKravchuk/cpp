@@ -343,8 +343,7 @@ void set_nonblocking(int sock_fd) {
         exit(EXIT_FAILURE);
     }
 
-    int result = fcntl(sock_fd, F_SETFL, flags | O_NONBLOCK);
-    if (result == -1) {
+    if (fcntl(sock_fd, F_SETFL, flags | O_NONBLOCK) == -1) {
         cerr << "fcntl(F_SETFL, O_NONBLOCK): " << ::strerror(errno) << endl;
         exit(EXIT_FAILURE);
     }

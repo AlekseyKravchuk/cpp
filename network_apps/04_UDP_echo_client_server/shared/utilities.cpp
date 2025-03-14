@@ -9,7 +9,8 @@
 #include "utilities.h"
 #include "wrappers.h"
 
-#define MAX_BUF_SIZE 4'096  // Максимальный размер буфера, в который осуществляется чтение из сокета за одно чтение
+//#define MAX_BUF_SIZE 4'096  // Максимальный размер буфера, в который осуществляется чтение из сокета за одно чтение
+#define MAX_BUF_SIZE 66'000  // Максимальный размер буфера, в который осуществляется чтение из сокета за одно чтение
 #define MAX_EVENTS   1'000  // Максимальное количество событий, возвращаемых одним вызовом epoll_wait()
 
 using namespace std;
@@ -208,6 +209,32 @@ void client_str_echo(FILE* stdin_file, int sock_fd) {
     }
 }
 
+void udp_client_echo(FILE* fp, int sock_fd, const struct sockaddr* serv_addr, socklen_t serv_addr_len) {
+    char send_buf[MAX_BUF_SIZE];
+    char recv_buf[MAX_BUF_SIZE + 1];
+    auto p_repply_addr = std::make_unique<sockaddr_storage>();
+    socklen_t repply_addr_len = sizeof(*p_repply_addr.get());
+
+    while (Fgets(send_buf, MAX_BUF_SIZE, fp) != nullptr) {
+        Sendto(sock_fd, send_buf, strlen(send_buf), 0, serv_addr, serv_addr_len);
+
+        // TODO: сделать так, чтобы клиент не блокировался в recvfrom, если сервер по какой-то причине не отвечает.
+        ssize_t n = Recvfrom(sock_fd, recv_buf, MAX_BUF_SIZE, 0, (sockaddr*) p_repply_addr.get(), &repply_addr_len);
+
+        auto [srv_ip, srv_port] = get_ip_port_from_addr_struct(*p_repply_addr.get());
+        if (serv_addr_len != repply_addr_len
+            || memcmp(serv_addr, p_repply_addr.get(), serv_addr_len) != 0) {
+            cout << "reply from ignored [IP:PORT]: " << srv_ip << ":" << srv_port << endl;
+            continue;
+        } else {
+            cout << "UDP reply got from server at: " << srv_ip << ":" << srv_port << endl;
+        }
+
+        recv_buf[n] = 0;  // null terminate
+        Fputs(recv_buf, stdout);
+    }
+}
+
 void client_str_echo_using_epoll(FILE* fp, int sock_fd) {
     char buf[MAX_BUF_SIZE];
     int file_fd = fileno(fp);
@@ -396,29 +423,27 @@ ssize_t write_n_bytes_to_sock_fd(int sock_fd, const void* buf_start, size_t n) {
 
 // ========================================================================================
 int Select(int n_fds, fd_set* read_fds, fd_set* write_fds, fd_set* except_fds, struct timeval* timeout) {
-    int n;
-
-    if ((n = select(n_fds, read_fds, write_fds, except_fds, timeout)) < 0) {
+    int n = select(n_fds, read_fds, write_fds, except_fds, timeout);
+    if (n < 0) {
         cerr << "select error" << endl;
     }
 
-    // Возвращаемое значение м.б. равно нулю, если тайм-аут истек до того, как какие-либо файловые дескрипторы стали готовы.
-    return (n);
+    return (n);  // Возвращаемое значение м.б. равно нулю, если тайм-аут истек до того, как какие-либо файловые дескрипторы стали готовы.
 }
 
 
-void udp_srv_echo(int sock_fd, struct sockaddr_storage* udp_client_addr, socklen_t* udp_client_addr_len) {
+void udp_srv_echo(int sock_fd, struct sockaddr_storage* udp_src_addr, socklen_t* udp_src_addr_len) {
     ssize_t n_bytes;
-
     char buf[MAX_BUF_SIZE];
 
     for (;;) {
         n_bytes = Recvfrom(sock_fd, buf, MAX_BUF_SIZE, 0,
-                           (sockaddr*) udp_client_addr, udp_client_addr_len);
+                           (sockaddr*) udp_src_addr, udp_src_addr_len);
 
-        print_info_about_connected_client(*udp_client_addr);
+        auto [client_ip, client_port] = get_ip_port_from_addr_struct(*udp_src_addr);
+        cout << "UDP-segment from client: [IP = " << client_ip << "], " << "[PORT = " << client_port << "]" << endl;
 
         Sendto(sock_fd, buf, n_bytes, 0,
-               (sockaddr*) udp_client_addr, *udp_client_addr_len);
+               (sockaddr*) udp_src_addr, *udp_src_addr_len);
     }
 }

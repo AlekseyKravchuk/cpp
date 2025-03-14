@@ -8,6 +8,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>      // write(), close()
 #include <fstream>
+#include <string.h>      // strlen
 
 int Socket(int domain, int type, int protocol);
 
@@ -34,8 +35,8 @@ int Accept(int fd, struct sockaddr* sa, socklen_t* salenptr);
 
 ssize_t Send(int socket_fd, const void *buf, size_t len, int flags=0);
 
-int Sendto(int sock_fd, const void* buf_ptr, size_t max_buf_size, int flags,
-           const struct sockaddr* sa, socklen_t sa_len);
+ssize_t Sendto(int sock_fd, const void* buf_ptr, size_t max_buf_size, int flags,
+               const struct sockaddr* sa, socklen_t sa_len);
 
 void Close(int fd);
 

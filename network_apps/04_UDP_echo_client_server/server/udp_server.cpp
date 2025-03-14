@@ -13,6 +13,13 @@ using namespace std;
 
 int main(int argc, char* argv[]) {
     int server_sock_fd;
+    const string udp_serv_ip = "127.0.0.15";
+
+    // TODO: сделать так, чтобы сервер UDP создал по одному сокету для каждого IP-адреса, сконфигурированного на хосте,
+    //       связал с помощью bind() этот IP-адрес с сокетом, вызвал функцию epoll для каждого из этих сокетов, ожидая,
+    //       когда какой-либо из них станет доступен для чтения, а затем ответит с этого готового для чтения сокета.
+    //       Раздел 22.6 (Стивенс)
+    // const string udp_serv_ip = "192.168.1.147";
     uint16_t udp_serv_port = 0;
 
     echo_server_check_arguments(argc, argv, udp_serv_port);
@@ -21,10 +28,11 @@ int main(int argc, char* argv[]) {
     struct sockaddr_in server_address = {
             .sin_family = AF_INET,
             .sin_port = htons(udp_serv_port),
-            .sin_addr = {htonl(INADDR_ANY)},
+            .sin_addr = {},
             .sin_zero = {}
     };
 
+    Inet_pton(AF_INET, udp_serv_ip.c_str(), &server_address.sin_addr);  // converts IP addresses from text to binary form
     Bind(server_sock_fd, (struct sockaddr*) &server_address, sizeof(server_address));
 
     sockaddr_storage client_addr{};

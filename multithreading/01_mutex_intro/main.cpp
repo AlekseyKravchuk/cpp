@@ -5,7 +5,6 @@
 template<typename T>
 class ThreadSafe {
   public:
-    // Конструктор для инициализации значения
     explicit ThreadSafe(T initial_value)
             : data_(initial_value) {}
 
@@ -18,7 +17,7 @@ class ThreadSafe {
 
   private:
     mutable std::mutex mtx_;
-    T data_;
+    T data_ GUARDED_BY(mtx_);
 };
 
 // Функция для потока, увеличивающая значение

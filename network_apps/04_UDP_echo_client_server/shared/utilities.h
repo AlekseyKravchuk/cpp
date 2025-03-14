@@ -6,6 +6,7 @@
 #include <sys/epoll.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <memory>
 
 void sigchld_handler(int signal_number);
 
@@ -39,13 +40,15 @@ ssize_t write_n_bytes_to_sock_fd(int sock_fd, const void* buf_start, size_t n);
 
 void server_str_echo(int sock_fd);
 
-void udp_srv_echo(int sock_fd, struct sockaddr_storage* udp_client_addr, socklen_t* udp_client_addr_len);
+void udp_srv_echo(int sock_fd, struct sockaddr_storage* udp_src_addr, socklen_t* udp_src_addr_len);
 
 ssize_t my_read(int sock_fd, char* ch_ptr);
 
 ssize_t readline(int sock_fd, void* ptr_to_recv_buf, size_t max_len);
 
 void client_str_echo(FILE* stdin_file, int sock_fd);
+
+void udp_client_echo(FILE* fp, int sock_fd, const struct sockaddr* serv_addr, socklen_t serv_addr_len);
 
 void client_str_echo_using_epoll(FILE* fp, int sock_fd);
 

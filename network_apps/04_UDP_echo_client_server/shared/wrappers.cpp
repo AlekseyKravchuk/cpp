@@ -139,14 +139,14 @@ ssize_t Send(int socket_fd, const void* buf, size_t len, int flags = 0) {
     return num_bytes_sent;
 }
 
-int Sendto(int sock_fd, const void* buf_ptr, size_t max_buf_size, int flags,
-           const struct sockaddr* sa, socklen_t sa_len) {
+ssize_t Sendto(int sock_fd, const void* buf_ptr, size_t max_buf_size, int flags,
+               const struct sockaddr* sa, socklen_t sa_len) {
     // UDP не разбивает данные на части при отправке.
     // Если sendto() не смог отправить весь пакет, он вообще его не отправит и вернёт ошибку (-1).
-    int n_bytes = sendto(sock_fd, buf_ptr, max_buf_size, flags, sa, sa_len);
+    ssize_t n_bytes = sendto(sock_fd, buf_ptr, max_buf_size, flags, sa, sa_len);
 
     if (n_bytes == -1) {
-        cerr << "sendto error" << ::strerror(errno) << endl;
+        cerr << "sendto error: " << ::strerror(errno) << endl;
     }
 
     return n_bytes;
@@ -187,6 +187,7 @@ void Write_n_bytes_to_sock_fd(int sock_fd, const void* buf_start, size_t n_bytes
  */
 char* Fgets(char* str_buf, int n, FILE* file_stream) {
     char* ptr = fgets(str_buf, n, file_stream);
+    cout << "Client side, fgets read " << strlen(str_buf) << " bytes from FILE stream" << endl;
 
     if (ptr == nullptr && ferror(file_stream)) {
         cerr << "fgets error: " << strerror(errno) << endl;

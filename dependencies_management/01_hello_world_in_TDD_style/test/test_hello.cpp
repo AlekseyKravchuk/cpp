@@ -1,18 +1,19 @@
 #include "hello.h"
-#include <cassert>
+#include <gtest/gtest.h>
 
-void test_hello() {
+// Тест на функцию hello()
+// HelloTest   — имя группы тестов (логическое объединение похожих тестов).
+// OutputCheck — имя конкретного теста внутри группы.
+TEST(HelloTest, OutputCheck) {  // макрос GoogleTest, который создаёт тест "OutputCheck" внутри группы тестов "HelloTest"
     std::stringstream ss;
     hello(ss);
-//    assert("Hello, world" == ss.str());
-    assert("Hello, world!" == ss.str());
-    std::cout << R"(Test 'test_hello()' succeeded.)" << std::endl;
+    EXPECT_EQ(ss.str(), "Hello, world!");
 }
 
-void run_tests() {
-    test_hello();
-}
+// Точка входа для GoogleTest
+int main(int argc, char **argv) {
+    // Инициализирует GoogleTest (разбирает аргументы командной строки, настраивает систему тестирования)
+    ::testing::InitGoogleTest(&argc, argv);
 
-int main() {
-    run_tests();
+    return RUN_ALL_TESTS();  // Запускает все зарегистрированные тесты, выводит результаты в консоль.
 }

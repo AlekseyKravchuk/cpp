@@ -447,3 +447,12 @@ void udp_srv_echo(int sock_fd, struct sockaddr_storage* udp_src_addr, socklen_t*
                (sockaddr*) udp_src_addr, *udp_src_addr_len);
     }
 }
+
+string get_file_name_from_absolute_path(const char* path) {
+    string full_path{path};
+    size_t pos = full_path.rfind('/');
+    string file_name = (pos == std::string::npos)
+                       ? full_path :
+                       full_path.substr(pos + 1);
+    return file_name;
+}

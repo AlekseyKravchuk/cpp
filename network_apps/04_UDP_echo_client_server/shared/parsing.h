@@ -1,7 +1,7 @@
 #pragma once
 
+#include <algorithm>
 #include <iostream>
-#include <filesystem>
 #include <boost/program_options.hpp>
 
 void echo_client_check_arguments(int argc,

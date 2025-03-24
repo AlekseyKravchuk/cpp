@@ -1,7 +1,7 @@
 #include "parsing.h"
+#include "utilities.h"
 
 namespace po = boost::program_options;
-namespace fs = std::filesystem;
 using std::string;
 using std::cout;
 using std::cerr;
@@ -37,14 +37,10 @@ void echo_client_check_arguments(int argc,
         // Присваиваем значения из командной строки в переменные
         server_ip = vars_map["ipaddr"].as<string>();
         server_port = vars_map["port"].as<uint16_t>();
-    } catch (const po::error& e) {
-        // Если обязательная опция отсутствует, выводим пользовательское сообщение
+    } catch (const po::error& e) {  // Если обязательная опция отсутствует, выводим пользовательское сообщение
         std::cerr << "Error: Missing required option: " << e.what() << "\n";
-
-        fs::path full_path = fs::absolute(argv[0]); // Получаем абсолютный путь
-        fs::path relative_path = fs::relative(full_path, fs::current_path()); // Преобразуем в относительный
-
-        std::cout << "usage: " << relative_path << " <server_ip> <port>\n";
+        string file_name = get_file_name_from_absolute_path(argv[0]);
+        std::cout << "usage: " << file_name << " <server_ip> <port>\n";
         desc.print(std::cerr);
         exit(EXIT_FAILURE);
     } catch (const std::exception& e) {  // Ловим другие возможные ошибки
@@ -59,7 +55,7 @@ void echo_server_check_arguments(int argc,
     po::options_description desc("Allowed options");
     desc.add_options()
             ("help,h", "produce help message")
-            ("port,p", po::value<uint16_t>()->required(), "port to listen on");
+            ("port,p", po::value<uint16_t>()->required(), "port to listen to");
 
     po::variables_map vars_map;
 
@@ -78,13 +74,10 @@ void echo_server_check_arguments(int argc,
         port_listen_to = vars_map["port"].as<uint16_t>();
 
         std::cout << "Command args successfully parsed, port to listen to (server side): " << port_listen_to << "\n";
-    } catch (const po::error& e) {
-        // Если обязательная опция отсутствует, выводим пользовательское сообщение
-        fs::path full_path = fs::absolute(argv[0]); // Получаем абсолютный путь
-        fs::path relative_path = fs::relative(full_path, fs::current_path()); // Преобразуем в относительный
-
+    } catch (const po::error& e) {  // Если обязательная опция отсутствует, выводим пользовательское сообщение
+        string file_name = get_file_name_from_absolute_path(argv[0]);
         std::cerr << "Error: Missing required option: " << e.what() << "\n";
-        std::cout << "usage: " << relative_path << " <port_listen_to> <file_to_read_text_from>\n";
+        std::cout << "usage: " << file_name << " <port_listen_to>\n";
         desc.print(std::cerr);
         exit(EXIT_FAILURE);
     } catch (const std::exception& e) {

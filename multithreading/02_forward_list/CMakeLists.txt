@@ -1,8 +1,36 @@
 cmake_minimum_required(VERSION 3.28)
 project(02_forward_list)
 
-set(CMAKE_CXX_COMPILER clang++-17)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wthread-safety")
+set(CMAKE_CXX_COMPILER clang++-20)
+
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wthread-safety \
+#                                        -Wall \
+#                                        -Wunused-variable \
+#                                        -Wconversion \
+#                                        -Wextra \
+#                                        -pedantic-errors \
+#                                        -pthread \
+#                                        -g \
+#                                        -D_GLIBCXX_DEBUG \
+#                                        -D_GLIBCXX_DEBUG_PEDANTIC \
+#                                        -fsanitize=address \
+#                                        -fno-omit-frame-pointer \
+#                                        -fsanitize=undefined \
+#                                        -fno-optimize-sibling-calls \
+#                                        -O3")
+
+#-fsanitize=thread
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wthread-safety \
+                                        -Wall \
+                                        -Wunused-variable \
+                                        -Wconversion \
+                                        -Wextra \
+                                        -pedantic-errors \
+                                        -pthread \
+                                        -g \
+                                        -fsanitize=thread \
+                                        -O3")
+
 
 # 1) ThreadSanitizer (TSan) используется для динамического анализа во время выполнения программы.
 #    Чтобы использовать TSan, необходимо скомпилировать программу с флагами -fsanitize=thread, а затем запустить её, чтобы обнаружить гонки данных.
@@ -20,11 +48,11 @@ set(CMAKE_CXX_STANDARD 20)
 set(SOURCES
         main.cpp)
 
-set(HEADERS
-        mutex.h)
+#set(HEADERS
+#        mutex.h)
 
-add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
-#add_executable(${PROJECT_NAME} ${SOURCES})
+#add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
+add_executable(${PROJECT_NAME} ${SOURCES})
 
 
 

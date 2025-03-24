@@ -12,20 +12,6 @@ void sigchld_handler(int signal_number);
 
 void set_signal_handler();
 
-void echo_client_check_arguments(int argc,
-                                 char* argv[],
-                                 std::string& server_ip,
-                                 uint16_t& server_port);
-
-void server_check_arguments(int argc,
-                            char* argv[],
-                            uint16_t& port_listen_to,
-                            std::string& file_path);
-
-void echo_server_check_arguments(int argc,
-                                 char* argv[],
-                                 uint16_t& port_listen_to);
-
 void print_info_about_connected_client(sockaddr_storage& client_address);
 
 void print_client_info(const std::string& server_ip, uint16_t server_port, int socket_fd);
@@ -57,3 +43,5 @@ int Select(int n_fds, fd_set* read_fds, fd_set* write_fds, fd_set* except_fds, s
 void set_nonblocking(int sock_fd);
 
 bool file_is_regular(int file_fd);
+
+std::string get_file_name_from_absolute_path(const char* path);

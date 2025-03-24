@@ -18,6 +18,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(BOOST_VERSION "1.75.0" CACHE STRING "Minimum Boost version")
 
 # ================= Подключаем Boost =================
+set(Boost_USE_STATIC_LIBS ON)  # Используем статические библиотеки
 find_package(Boost ${BOOST_VERSION} REQUIRED COMPONENTS program_options)
 
 if (Boost_FOUND)
@@ -46,4 +47,3 @@ target_include_directories(shared PUBLIC ${CMAKE_SOURCE_DIR}/shared)
 # Подключаем подкаталоги клиента и сервера
 add_subdirectory(client)
 add_subdirectory(server)
-

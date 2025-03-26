@@ -209,21 +209,29 @@ void client_str_echo(FILE* stdin_file, int sock_fd) {
     }
 }
 
+// функция "udp_client_echo" не зависит от протокола, т.к. она не лезет внутрь структуры "sockaddr"
 void udp_client_echo(FILE* fp, int sock_fd, const struct sockaddr* serv_addr, socklen_t serv_addr_len) {
     char send_buf[MAX_BUF_SIZE];
     char recv_buf[MAX_BUF_SIZE + 1];
-    auto p_repply_addr = std::make_unique<sockaddr_storage>();
-    socklen_t repply_addr_len = sizeof(*p_repply_addr.get());
+    auto p_reply_addr = std::make_unique<sockaddr_storage>();
+    socklen_t reply_addr_len = sizeof(*p_reply_addr.get());
+
+    // делаем сокет "sock_fd" connected-сокетом
+    Connect(sock_fd, (struct sockaddr*) serv_addr, serv_addr_len);
 
     while (Fgets(send_buf, MAX_BUF_SIZE, fp) != nullptr) {
-        Sendto(sock_fd, send_buf, strlen(send_buf), 0, serv_addr, serv_addr_len);
+        // Sendto(sock_fd, send_buf, strlen(send_buf), 0, serv_addr, serv_addr_len);
+        // используем "send" для работы с присоединенным сокетом UDP
+        Send(sock_fd, send_buf, strlen(send_buf), 0);
 
         // TODO: сделать так, чтобы клиент не блокировался в recvfrom, если сервер по какой-то причине не отвечает.
-        ssize_t n = Recvfrom(sock_fd, recv_buf, MAX_BUF_SIZE, 0, (sockaddr*) p_repply_addr.get(), &repply_addr_len);
+        // ssize_t n = Recvfrom(sock_fd, recv_buf, MAX_BUF_SIZE, 0, (sockaddr*) p_reply_addr.get(), &reply_addr_len);
+        // используем "recv" для работы с присоединенным сокетом UDP
+        ssize_t n = Recv(sock_fd, recv_buf, MAX_BUF_SIZE, 0);
 
-        auto [srv_ip, srv_port] = get_ip_port_from_addr_struct(*p_repply_addr.get());
-        if (serv_addr_len != repply_addr_len
-            || memcmp(serv_addr, p_repply_addr.get(), serv_addr_len) != 0) {
+        auto [srv_ip, srv_port] = get_ip_port_from_addr_struct(*p_reply_addr.get());
+        if (serv_addr_len != reply_addr_len
+            || memcmp(serv_addr, p_reply_addr.get(), serv_addr_len) != 0) {
             cout << "reply from ignored [IP:PORT]: " << srv_ip << ":" << srv_port << endl;
             continue;
         } else {
@@ -419,6 +427,21 @@ ssize_t write_n_bytes_to_sock_fd(int sock_fd, const void* buf_start, size_t n) {
     }
 
     return static_cast<ssize_t>(n);
+}
+
+sockaddr_in get_filled_address_structure(const string& ip, uint16_t port) {
+    // Частично заполняем server_address типа "sockaddr_in":
+    sockaddr_in server_address{
+            .sin_family = AF_INET,
+            .sin_port = htons(port),
+            .sin_addr = {},
+            .sin_zero = {}
+    };
+
+    // Преобразование IP-адреса из точечно-десятичной нотации в двоичный вид (network-byte order)
+    Inet_pton(AF_INET, ip.c_str(), &server_address.sin_addr);  // converts IP addresses from text to binary form
+
+    return server_address;
 }
 
 // ========================================================================================

@@ -12,25 +12,15 @@
 using namespace std;
 
 int main(int argc, char* argv[]) {
-    string server_ip{};
-    uint16_t server_port{};
+    cout << "Advanced udp client with connected socket." << endl;
+
     FILE* fp = stdin;
 
-    echo_client_check_arguments(argc, argv, server_ip, server_port);
-
-    // Частично заполняем server_address типа "sockaddr_in":
-    sockaddr_in server_address{
-            .sin_family = AF_INET,
-            .sin_port = htons(server_port),
-            .sin_addr = {},
-            .sin_zero = {}
-    };
-
-    // Преобразование IP-адреса из точечно-десятичной нотации в двоичный вид (network-byte order)
-    Inet_pton(AF_INET, server_ip.c_str(), &server_address.sin_addr);
+    // в клиенте должны быть заданы (через аргументы командной строки) IP-адрес сервера и номер порта для вызова "sendto"
+    auto [server_ip, server_port] = echo_client_check_arguments(argc, argv);
 
     int sock_fd = Socket(AF_INET, SOCK_DGRAM, 0);
-
+    sockaddr_in server_address = get_filled_address_structure(server_ip, server_port);
     udp_client_echo(fp, sock_fd, (struct sockaddr*) &server_address, sizeof(server_address));
 
     return 0;

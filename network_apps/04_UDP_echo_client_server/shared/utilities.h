@@ -38,6 +38,8 @@ void udp_client_echo(FILE* fp, int sock_fd, const struct sockaddr* serv_addr, so
 
 void client_str_echo_using_epoll(FILE* fp, int sock_fd);
 
+sockaddr_in get_filled_address_structure(const std::string& ip, uint16_t port);
+
 int Select(int n_fds, fd_set* read_fds, fd_set* write_fds, fd_set* except_fds, struct timeval* timeout);
 
 void set_nonblocking(int sock_fd);

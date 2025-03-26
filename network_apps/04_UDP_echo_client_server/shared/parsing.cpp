@@ -5,11 +5,9 @@ namespace po = boost::program_options;
 using std::string;
 using std::cout;
 using std::cerr;
+using std::tuple;
 
-void echo_client_check_arguments(int argc,
-                                 char* argv[],
-                                 string& server_ip,
-                                 uint16_t& server_port) {
+tuple<string, uint16_t> echo_client_check_arguments(int argc, char* argv[]) {
     // Declare the supported options using the options_description class.
     po::options_description desc("Allowed options");
     desc.add_options()
@@ -35,8 +33,10 @@ void echo_client_check_arguments(int argc,
         po::notify(vars_map);
 
         // Присваиваем значения из командной строки в переменные
-        server_ip = vars_map["ipaddr"].as<string>();
-        server_port = vars_map["port"].as<uint16_t>();
+        string server_ip = vars_map["ipaddr"].as<string>();
+        uint16_t server_port = vars_map["port"].as<uint16_t>();
+
+        return {server_ip, server_port};
     } catch (const po::error& e) {  // Если обязательная опция отсутствует, выводим пользовательское сообщение
         std::cerr << "Error: Missing required option: " << e.what() << "\n";
         string file_name = get_file_name_from_absolute_path(argv[0]);
@@ -49,9 +49,7 @@ void echo_client_check_arguments(int argc,
     }
 }
 
-void echo_server_check_arguments(int argc,
-                                 char* argv[],
-                                 uint16_t& port_listen_to) {
+uint16_t echo_server_check_arguments(int argc, char* argv[]) {
     po::options_description desc("Allowed options");
     desc.add_options()
             ("help,h", "produce help message")
@@ -71,9 +69,10 @@ void echo_server_check_arguments(int argc,
         po::notify(vars_map);
 
         // Присваиваем значения из командной строки в переменные
-        port_listen_to = vars_map["port"].as<uint16_t>();
+        uint16_t port_listen_to = vars_map["port"].as<uint16_t>();
 
         std::cout << "Command args successfully parsed, port to listen to (server side): " << port_listen_to << "\n";
+        return port_listen_to;
     } catch (const po::error& e) {  // Если обязательная опция отсутствует, выводим пользовательское сообщение
         string file_name = get_file_name_from_absolute_path(argv[0]);
         std::cerr << "Error: Missing required option: " << e.what() << "\n";

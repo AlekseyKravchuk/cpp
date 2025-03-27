@@ -6,6 +6,9 @@ project(UDP_echo_client_server)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
+#message(STATUS "CXX Compiler: ${CMAKE_CXX_COMPILER}")
+#message(STATUS "CXX Flags: ${CMAKE_CXX_FLAGS}")
+
 # Используем библиотеку Boost::program_options для парсинга аргументов командной строки
 
 # Если в системе несколько версий Boost

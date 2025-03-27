@@ -4,21 +4,20 @@ project(udp_server)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall \
-#                                        -Wextra \
-#                                        -Wpedantic \
-#                                        -Wunused-variable \
-#                                        -Wconversion \
-#                                        -g \
-#                                        -fno-omit-frame-pointer \
-#                                        -O0")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall \
+                                        -Wextra \
+                                        -Wpedantic \
+                                        -Wunused-variable \
+                                        -Wconversion \
+                                        -g \
+                                        -fno-omit-frame-pointer \
+                                        -O0")
 
 # https://clang.llvm.org/docs/DiagnosticsReference.html
 add_compile_options(-Wall -Wextra -Wpedantic -g -fno-omit-frame-pointer)
 
-# Turn warnings into errors
+# Turn warnings into errors: !!! works only for Clang
 add_compile_options(-Werror -Wno-language-extension-token)
-
 add_compile_options(-Wno-error=unused-command-line-argument)
 
 message(STATUS "C++ standard: ${CMAKE_CXX_STANDARD}")
